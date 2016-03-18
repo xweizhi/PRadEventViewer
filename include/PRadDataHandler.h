@@ -6,10 +6,10 @@
 // comment hash map definition if the compiler does not support C++11
 #define  USE_HASH_MAP
 
-// multi threads to deal with several banks in an event simultaneously
-// depends on the running evironment,
-// you may have greatly increased performance to read large evio file
-#define MULTI_THREAD
+// Multi threads to deal with several banks in an event simultaneously.
+// Depends on the running evironment, you may have greatly improved
+// performance to read large evio file.
+//#define MULTI_THREAD
 
 #ifdef USE_HASH_MAP
 #include <unordered_map>

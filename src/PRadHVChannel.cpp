@@ -80,7 +80,7 @@ void PRadHVChannel::Initialize()
             cerr << "Cannot connect to "
                  << crateList[i].name << "@" << crateList[i].ip
                  << endl;
-            cerr << errorToString(err) << endl;
+            showError("HV Initialize", err);
         }
 
         unsigned short NbofSlot;
@@ -119,6 +119,16 @@ void PRadHVChannel::Initialize()
 
 }
 
+void PRadHVChannel::HeartBeat()
+{
+    for(size_t i = 0; i < crateList.size(); ++i)
+    {
+        char sw[30];
+        int err = CAENHV_GetSysProp(crateList[i].handle, "SwRelease", sw);
+        showError("HV Heartbeat", err);
+    }
+}
+
 void PRadHVChannel::SetPowerOn(bool &val)
 {
     for(size_t i = 0; i < crateList.size(); ++i)
@@ -140,8 +150,7 @@ void PRadHVChannel::SetPowerOn(bool &val)
                                         size,
                                         list,
                                         valList);
-            if(err != CAENHV_OK)
-                cerr << errorToString(err) << endl;
+            showError("HV Power On", err);
         }
     }
 }
@@ -155,8 +164,7 @@ void PRadHVChannel::SetPowerOn(CrateConfig &config, bool &val)
             unsigned short slot = (unsigned short) config.slot;
             unsigned short channel = (unsigned short) config.channel;
             int err = CAENHV_SetChParam(crateList[i].handle, slot, "Pw", 1, &channel, &value);
-            if(err != CAENHV_OK)
-                cerr << errorToString(err) << endl;
+            showError("HV Power On", err);
             return;
         }
     }
@@ -179,8 +187,7 @@ void PRadHVChannel::SetVoltage(const char *name, CrateConfig &config, float &val
             unsigned short slot = (unsigned short) config.slot;
             unsigned short channel = (unsigned short) config.channel;
             int err = CAENHV_SetChParam(crateList[i].handle, slot, "Pw", 1, &channel, &value);
-            if(err != CAENHV_OK)
-                cerr << errorToString(err) << endl;
+            showError("HV Set Voltage", err);
             return;
         }
     }
@@ -209,10 +216,7 @@ void PRadHVChannel::ReadVoltage()
                                    size,
                                    list,
                                    nameList);
-
-            if(err != CAENHV_OK)
-                cerr << errorToString(err) << endl;
-
+            showError("HV Read Voltage", err);
 
             err = CAENHV_GetChParam(crateList[i].handle,
                                     crateList[i].boardList[j].slot,
@@ -220,8 +224,7 @@ void PRadHVChannel::ReadVoltage()
                                     size,
                                     list,
                                     pwON);
-            if(err != CAENHV_OK)
-                cerr << errorToString(err) << endl;
+            showError("HV Read Voltage", err);
 
             err = CAENHV_GetChParam(crateList[i].handle,
                                     crateList[i].boardList[j].slot,
@@ -229,8 +232,7 @@ void PRadHVChannel::ReadVoltage()
                                     size,
                                     list,
                                     monVals);
-            if(err != CAENHV_OK)
-                cerr << errorToString(err) << endl;
+            showError("HV Read Voltage", err);
 
             err = CAENHV_GetChParam(crateList[i].handle,
                                     crateList[i].boardList[j].slot,
@@ -238,9 +240,7 @@ void PRadHVChannel::ReadVoltage()
                                     size,
                                     list,
                                     setVals);
-
-            if(err != CAENHV_OK)
-                cerr << errorToString(err) << endl;
+            showError("HV Read Voltage", err);
 
             hvData.config.slot = (unsigned char)crateList[i].boardList[j].slot;
             for(int k = 0; k < size; ++k)
@@ -288,12 +288,16 @@ void PRadHVChannel::PrintOut()
     }
 }
 
-string PRadHVChannel::errorToString(const int &err)
+void PRadHVChannel::showError(const string &prefix, const int &err, ShowErrorType type)
 {
-    string result = "HV CHANNEL ERROR: ";
+    if(err == CAENHV_OK && type != ShowAnything)
+        return;
+
+    string result = prefix + " ERROR: ";
+    
     switch(err)
     {
-    case 0: result = ""; break;
+    case 0: cout << prefix << ": Command is successfully executed," << endl; return;
     case 1: result += "Error of operatived system"; break;
     case 2: result += "Write error in communication channel"; break;
     case 3: result += "Read error in communication channel"; break;
@@ -330,5 +334,6 @@ string PRadHVChannel::errorToString(const int &err)
     case 0x1007: result += "Incorrect username/password"; break;
     default: result += "Unknown error code"; break;
     }
-    return result;
+
+    cerr << result << endl;
 }

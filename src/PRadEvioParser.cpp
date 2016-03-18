@@ -82,6 +82,11 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                 // Self defined crate data header
                 if((buffer[index]&0xff0fff00) == ADC1881M_DATABEG) {
 #ifdef MULTI_THREAD
+                    // for LMS event, since every module is fired, each thread needs to modify the non-local
+                    // variable E_total and the container for current event. Which means very frequent actions
+                    // on mutex lock and unlock, it indeed undermine the performance
+                    // TODO, separate thread for GEM and HyCal only, there won't be any shared object between
+                    // these two sub-system
                     bank_threads.push_back(thread(&PRadEvioParser::parseADC1881M, this, &buffer[index]));
 #else
                     parseADC1881M(&buffer[index]);

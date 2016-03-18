@@ -5,9 +5,10 @@
 #include <QWidget>
 
 class QRootCanvas;
-class QTimer;
+class QGridLayout;
 class TObject;
 class TCanvas;
+class TColor;
 class TF1;
 
 class PRadHistCanvas : public QWidget
@@ -15,14 +16,17 @@ class PRadHistCanvas : public QWidget
     Q_OBJECT
 
 public:
-    PRadHistCanvas( QWidget *parent = 0);
+    PRadHistCanvas(QWidget *parent = 0);
     virtual ~PRadHistCanvas() {}
-    void UpdateHyCalHist(TObject *hist, double ped_mean, double ped_sigma);
-    void UpdateEnergyHist(TObject *hist);
+    void AddCanvas(int row, int column, int fillColor);
+    void UpdateHist(int index, TObject *hist, int range_min = 0, int range_max = 0);
 
 protected:
-    QRootCanvas *canvas1;
-    QRootCanvas *canvas2;
+    QGridLayout *layout;
+    TColor *bkgColor;
+    TColor *frmColor;
+    QVector<QRootCanvas *> canvases;
+    QVector<int> fillColors;
 };
 
 #endif

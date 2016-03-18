@@ -195,6 +195,12 @@ void PRadEventViewer::createControlPanel()
     eventSpin->setPrefix("Event # ");
     connect(eventSpin, SIGNAL(valueChanged(int)),
             this, SLOT(changeCurrentEvent(int)));
+
+    QPushButton *histCleanButton = new QPushButton("Erase Buffer");
+    connect(histCleanButton, SIGNAL(clicked()),
+            this, SLOT(eraseBufferAction()));
+    
+
     annoTypeBox = new QComboBox();
     annoTypeBox->addItem(tr("No Annotation"));
     annoTypeBox->addItem(tr("Module ID"));
@@ -224,7 +230,8 @@ void PRadEventViewer::createControlPanel()
     QGridLayout *layout = new QGridLayout();
 
     layout->addWidget(eventSpin,            0, 0, 1, 1);
-    layout->addWidget(eventCntLabel,        0, 1, 1, 2);
+    layout->addWidget(eventCntLabel,        0, 1, 1, 1);
+    layout->addWidget(histCleanButton,      0, 2, 1, 1);
     layout->addWidget(viewModeBox,          1, 0, 1, 1);
     layout->addWidget(annoTypeBox,          1, 1, 1, 1);
     layout->addWidget(spectrumSettingButton,1, 2, 1, 1);
@@ -258,6 +265,8 @@ void PRadEventViewer::createStatusWindow()
     // status info part
     setupInfoWindow();
     histCanvas = new PRadHistCanvas(this);
+    histCanvas->AddCanvas(0, 0, 38);
+    histCanvas->AddCanvas(1, 0, 46);
 
     statusWindow->addWidget(statusInfoWidget);
     statusWindow->addWidget(histCanvas);
@@ -537,8 +546,9 @@ void PRadEventViewer::openFile()
     fileName = getFileName(tr("Choose a data file"), codaData, "Data files (*.dat)", "");
 
     if (!fileName.isEmpty()) {
-        QtConcurrent::run(this, &PRadEventViewer::readEventFromFile, fileName);
-//        readEventFromFile(fileName.toStdString().c_str());
+        //TODO, dialog to notice waiting
+//        QtConcurrent::run(this, &PRadEventViewer::readEventFromFile, fileName);
+        readEventFromFile(fileName);
         UpdateStatusBar(DATA_FILE);
     }
 }
@@ -579,6 +589,17 @@ void PRadEventViewer::changeSpectrumSetting()
         specSetting->close();
     else
         specSetting->show();
+}
+
+void PRadEventViewer::eraseBufferAction()
+{
+    QMessageBox::StandardButton confirm;
+    confirm = QMessageBox::question(this,
+                                   "Erase Event Buffer",
+                                   "Clear all the events, including histograms?",
+                                    QMessageBox::Yes|QMessageBox::No);
+    if(confirm == QMessageBox::Yes)
+        eraseModuleBuffer();
 }
 
 void PRadEventViewer::UpdateStatusBar(ViewerStatus mode)
@@ -623,9 +644,11 @@ void PRadEventViewer::UpdateHistCanvas()
     gSystem->ProcessEvents();
     if(selection != NULL) {
         HyCalModule::Pedestal ped = selection->GetPedestal();
-        histCanvas->UpdateHyCalHist(selection->adcHist, ped.mean, ped.sigma);
+        int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
+        int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
+        histCanvas->UpdateHist(1, selection->adcHist, fit_min, fit_max);
     }
-    histCanvas->UpdateEnergyHist(handler->GetEnergyHist());
+    histCanvas->UpdateHist(2, handler->GetEnergyHist());
 }
 
 void PRadEventViewer::SelectModule(HyCalModule* module)
@@ -963,46 +986,3 @@ void PRadEventViewer::onlineUpdate()
     }
 }
 
-
-/*
-    // test of HV channel
-    PRadHVChannel *hvChannel = new PRadHVChannel(handler);
-    hvChannel->AddCrate("PRadHV_1", "129.57.160.67", 1);
-    hvChannel->AddCrate("PRadHV_2", "129.57.160.68", 2);
-    hvChannel->AddCrate("PRadHV_3", "129.57.160.69", 3);
-    hvChannel->AddCrate("PRadHV_4", "129.57.160.70", 4);
-    hvChannel->AddCrate("PRadHV_5", "129.57.160.71", 5);
-    hvChannel->Initialize();
-    hvChannel->PrintOut();
-    hvChannel->ReadVoltage();
-*/
-
-/*
-
-    spectrumRangeSpin = new QSpinBox;
-    spectrumRangeSlider = new QSlider(Qt::Horizontal);
-    spectrumRangeSpin->setRange(10, 100000);
-    spectrumRangeSpin->setValue((int)energySpectrum->GetMaximum());
-    spectrumRangeSlider->setRange(10, 100000);
-    spectrumRangeSlider->setValue((int)energySpectrum->GetMaximum());
-
-    connect(spectrumRangeSpin, SIGNAL(valueChanged(int)),
-            this, SLOT(changeSpectrumRange(int)));
-    connect(spectrumRangeSlider, SIGNAL(valueChanged(int)),
-            this, SLOT(changeSpectrumRange(int)));
-
-void PRadEventViewer::changeSpectrumType(int index)
-{
-    energySpectrum->SetSpectrumType((Spectrum::SpectrumType)index);
-    Refresh();
-}
-
-void PRadEventViewer::changeSpectrumRange(int value)
-{
-    spectrumRangeSpin->setValue(value);
-    spectrumRangeSlider->setValue(value);
-    energySpectrum->SetRange(energySpectrum->GetMinimum(),(double)value);
-    Refresh();
-}
-
-*/

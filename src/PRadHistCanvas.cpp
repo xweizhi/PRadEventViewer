@@ -22,67 +22,55 @@
 
 PRadHistCanvas::PRadHistCanvas(QWidget *parent) : QWidget(parent)
 {
-    // add canvas in vertical layout
-    QVBoxLayout *l = new QVBoxLayout(this);
-    l->addWidget(canvas1 = new QRootCanvas(this));
-    l->addWidget(canvas2 = new QRootCanvas(this));
+    layout = new QGridLayout(this);
 
-    // global settings for root
+    bkgColor = new TColor(200, 1, 1, 0.96);
     gStyle->SetTitleFontSize(HIST_FONT_SIZE);
     gStyle->SetStatFontSize(HIST_FONT_SIZE);
+}
 
-    TColor *color = new TColor(123, 1, 1, 0.96);
-    canvas1->GetCanvas()->SetFillColor(color->GetNumber());
-    canvas1->GetCanvas()->SetFrameFillColor(10);
-    canvas2->GetCanvas()->SetFillColor(color->GetNumber());
-    canvas2->GetCanvas()->SetFrameFillColor(10);
+void PRadHistCanvas::AddCanvas(int row, int column, int color)
+{
+    QRootCanvas *newCanvas = new QRootCanvas(this);
+    canvases.push_back(newCanvas);
+    fillColors.push_back(color);
+    
+    // add canvas in vertical layout
+    layout->addWidget(newCanvas, row, column);
+    newCanvas->SetFillColor(bkgColor->GetNumber());
+    newCanvas->SetFrameFillColor(10); // white
 }
 
 // show the histogram in first slot, try a Gaussian fit with given parameters
-void PRadHistCanvas::UpdateHyCalHist(TObject *hist, double ped_mean, double ped_sigma)
+void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int range_max)
 {
-    TCanvas *c1 = canvas1->GetCanvas();
-    c1->cd();
-    c1->SetGrid();
+    --index;
+    if(index < 0 || index >= canvases.size())
+        return;
+
+    canvases[index]->cd();
+    canvases[index]->SetGrid();
     gPad->SetLogy();
 
-    TH1I *adcValHist = (TH1I*)hist;
+    TH1 *hist = (TH1*)tob;
 
-    adcValHist->GetXaxis()->SetRangeUser(adcValHist->FindFirstBinAbove(0,1) - 10,
-                                         adcValHist->FindLastBinAbove(0,1) + 10);
+    hist->GetXaxis()->SetRangeUser(hist->FindFirstBinAbove(0,1) - 10,
+                                   hist->FindLastBinAbove(0,1) + 10);
 
-    adcValHist->GetXaxis()->SetLabelSize(HIST_LABEL_SIZE);
-    adcValHist->GetYaxis()->SetLabelSize(HIST_LABEL_SIZE);
+    hist->GetXaxis()->SetLabelSize(HIST_LABEL_SIZE);
+    hist->GetYaxis()->SetLabelSize(HIST_LABEL_SIZE);
 
-    // try to fit out pedestal with given ped information
-    double pedMin = ped_mean - 5*ped_sigma;
-    double pedMax = ped_mean + 5*ped_sigma;
-    if(adcValHist->Integral((int)pedMin, (int)pedMax + 1) > 0) {
-        TF1 *pedFit = new TF1("", "gaus", pedMin, pedMax);
-        pedFit->SetLineColor(kRed);
-        pedFit->SetLineWidth(2);
-        adcValHist->Fit(pedFit,"qlR");
+    // try to fit gaussian in certain range
+    if(range_max > range_min
+       && hist->Integral(range_min, range_max + 1) > 0)
+    {
+        TF1 *fit = new TF1("", "gaus", range_min, range_max);
+        fit->SetLineColor(kRed);
+        fit->SetLineWidth(2);
+        hist->Fit(fit,"qlR");
     }
 
-    adcValHist->SetFillColor(38);
-    adcValHist->Draw();
-    canvas1->Refresh();
-}
-
-// show the histogram in second slot
-void PRadHistCanvas::UpdateEnergyHist(TObject *hist)
-{
-    TCanvas *c2 = canvas2->GetCanvas();
-    c2->cd();
-    c2->SetGrid();
-    gPad->SetLogy();
-
-    TH1D *energyHist = (TH1D*)hist;
-
-    energyHist->GetXaxis()->SetLabelSize(HIST_LABEL_SIZE);
-    energyHist->GetYaxis()->SetLabelSize(HIST_LABEL_SIZE);
-
-    energyHist->SetFillColor(46);
-    energyHist->Draw();
-    canvas2->Refresh();
+    hist->SetFillColor(fillColors[index]);
+    hist->Draw();
+    canvases[index]->Refresh();
 }

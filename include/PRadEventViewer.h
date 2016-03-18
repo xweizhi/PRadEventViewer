@@ -86,6 +86,7 @@ private slots:
     void changeViewMode(int index);
     void changeSpectrumSetting();
     void changeCurrentEvent(int evt);
+    void eraseBufferAction();
     void onlineUpdate();
     void startOnlineMode();
     bool connectETClient();

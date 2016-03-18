@@ -38,6 +38,12 @@ public:
         unsigned char id;
     } HVCrateInfo;
 
+    enum ShowErrorType
+    {
+        ShowError,
+        ShowAnything,
+    };
+
     PRadHVChannel(PRadDataHandler *h);
     virtual ~PRadHVChannel();
     void AddCrate(const string name,
@@ -48,6 +54,7 @@ public:
                   const string &username = "admin",
                   const string &password = "admin");
     void Initialize();
+    void HeartBeat();
     void SetPowerOn(bool &val);
     void SetPowerOn(CrateConfig &config, bool &val);
     void SetVoltage(const char *name, CrateConfig &config, float &val);
@@ -55,9 +62,9 @@ public:
     void PrintOut();
 
 private:
-        PRadDataHandler *myHandler;
-        vector<HVCrateInfo> crateList;
-        string errorToString(const int &err);
+    PRadDataHandler *myHandler;
+    vector<HVCrateInfo> crateList;
+    void showError(const string &prefix, const int &err, ShowErrorType type = ShowError);
 };
 
 #endif
