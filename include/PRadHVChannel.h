@@ -6,7 +6,6 @@
 #include <string>
 #include <thread>
 #include <mutex>
-#include <map>
 #include "datastruct.h"
 
 using namespace std;

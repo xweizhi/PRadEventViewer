@@ -10,7 +10,6 @@
 #include <cstring>
 #include <iostream>
 #include <chrono>
-#include <thread>
 #include "PRadHVChannel.h"
 #include "PRadDataHandler.h"
 
