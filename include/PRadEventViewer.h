@@ -127,6 +127,7 @@ private:
     Spectrum *energySpectrum;
     //GEM *myGEM;
     PRadETChannel *etChannel;
+    PRadHVChannel *hvChannel;
     HyCalScene *HyCal;
     HyCalView *view;
     PRadHistCanvas *histCanvas;

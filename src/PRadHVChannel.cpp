@@ -9,6 +9,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include "PRadHVChannel.h"
 #include "PRadDataHandler.h"
 
@@ -29,12 +31,14 @@ ostream &operator<<(ostream &os, CAENHVData const &data)
 }
 
 PRadHVChannel::PRadHVChannel(PRadDataHandler *h)
-: myHandler(h)
+: myHandler(h), alive(false),loopCount(0)
 {}
 
 PRadHVChannel::~PRadHVChannel()
 {
-    crateList.clear();
+    StopMonitor();
+    if(queryThread->joinable())
+        queryThread->join();
 }
 
 void PRadHVChannel::AddCrate(const string name,
@@ -115,18 +119,41 @@ void PRadHVChannel::Initialize()
         free(serNumList);
         free(fmwMinList);
         free(fmwMaxList);
-     }
+    }
 
+    alive = true;
 }
 
-void PRadHVChannel::HeartBeat()
+void PRadHVChannel::StartMonitor()
 {
+    Initialize();
+    loopCount = 0;
+    queryThread = new thread(&PRadHVChannel::queryLoop, this);
+}
+
+void PRadHVChannel::queryLoop()
+{
+    while(alive)
+    {
+        if(!(loopCount%60))
+            ReadVoltage();
+        else if(!loopCount%20)
+            heartBeat();
+        ++loopCount;
+        this_thread::sleep_for(chrono::seconds(1));
+    }
+}
+
+void PRadHVChannel::heartBeat()
+{
+    locker.lock();
     for(size_t i = 0; i < crateList.size(); ++i)
     {
         char sw[30];
         int err = CAENHV_GetSysProp(crateList[i].handle, "SwRelease", sw);
         showError("HV Heartbeat", err);
     }
+    locker.unlock();
 }
 
 void PRadHVChannel::SetPowerOn(bool &val)
@@ -195,6 +222,7 @@ void PRadHVChannel::SetVoltage(const char *name, CrateConfig &config, float &val
 
 void PRadHVChannel::ReadVoltage()
 {
+    locker.lock();
     int err;
     CAENHVData hvData;
     for(size_t i = 0; i < crateList.size(); ++i)
@@ -268,6 +296,7 @@ void PRadHVChannel::ReadVoltage()
 
         }
     }
+    locker.unlock();
 }
 
 void PRadHVChannel::PrintOut()

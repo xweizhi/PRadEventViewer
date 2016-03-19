@@ -46,7 +46,7 @@
 // constructor                                                                //
 //============================================================================//
 PRadEventViewer::PRadEventViewer()
-: currentEvent(0), selection(NULL), etChannel(NULL)
+: currentEvent(0), selection(NULL), etChannel(NULL), hvChannel(NULL)
 {
     initView();
     setupUI();
@@ -199,7 +199,6 @@ void PRadEventViewer::createControlPanel()
     QPushButton *histCleanButton = new QPushButton("Erase Buffer");
     connect(histCleanButton, SIGNAL(clicked()),
             this, SLOT(eraseBufferAction()));
-    
 
     annoTypeBox = new QComboBox();
     annoTypeBox->addItem(tr("No Annotation"));
@@ -855,6 +854,8 @@ void PRadEventViewer::setupOnlineMode()
     etSetting = new ETSettingPanel(this);
     onlineTimer = new QTimer(this);
     connect(onlineTimer, SIGNAL(timeout()), this, SLOT(onlineUpdate()));
+
+    hvChannel = new PRadHVChannel(handler);
 }
 
 void PRadEventViewer::startOnlineMode()

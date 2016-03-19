@@ -4,6 +4,8 @@
 #include "CAENHVWrapper.h"
 #include <vector>
 #include <string>
+#include <thread>
+#include <mutex>
 #include <map>
 #include "datastruct.h"
 
@@ -48,13 +50,14 @@ public:
     virtual ~PRadHVChannel();
     void AddCrate(const string name,
                   const string &ip,
-                  const unsigned char &id, 
-                  const CAENHV_SYSTEM_TYPE_t &type = SY1527, 
+                  const unsigned char &id,
+                  const CAENHV_SYSTEM_TYPE_t &type = SY1527,
                   const int &linkType = LINKTYPE_TCPIP,
                   const string &username = "admin",
                   const string &password = "admin");
     void Initialize();
-    void HeartBeat();
+    void StartMonitor();
+    void StopMonitor() {alive = false;};
     void SetPowerOn(bool &val);
     void SetPowerOn(CrateConfig &config, bool &val);
     void SetVoltage(const char *name, CrateConfig &config, float &val);
@@ -64,6 +67,12 @@ public:
 private:
     PRadDataHandler *myHandler;
     vector<HVCrateInfo> crateList;
+    volatile bool alive;
+    thread *queryThread;
+    mutex locker;
+    int loopCount;
+    void heartBeat();
+    void queryLoop();
     void showError(const string &prefix, const int &err, ShowErrorType type = ShowError);
 };
 
