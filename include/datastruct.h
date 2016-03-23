@@ -107,6 +107,7 @@ enum PRadROCID
 enum PRadBankID
 {
     TI_BANK = 0x4,
+    TDC_BANK = 0x5,
     FASTBUS_BANK = 0x7,
     GEMDATA_BANK = 0x8,
     EVINFO_BANK = 0xc000,

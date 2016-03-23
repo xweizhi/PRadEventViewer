@@ -18,7 +18,7 @@ class PRadHistCanvas : public QWidget
 public:
     PRadHistCanvas(QWidget *parent = 0);
     virtual ~PRadHistCanvas() {}
-    void AddCanvas(int row, int column, int fillColor);
+    void AddCanvas(int row, int column, int fillColor = 38);
     void UpdateHist(int index, TObject *hist, int range_min = 0, int range_max = 0);
 
 protected:

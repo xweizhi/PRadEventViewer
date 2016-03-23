@@ -70,7 +70,7 @@ void PRadEventViewer::initView()
 
     // root timer to process root events
     QTimer *rootTimer = new QTimer(this);
-    QObject::connect( rootTimer, SIGNAL(timeout()), this, SLOT(handleRootEvents()) );
+    connect(rootTimer, SIGNAL(timeout()), this, SLOT(handleRootEvents()));
     rootTimer->start(50);
 
     // future watcher for online mode
@@ -297,12 +297,12 @@ void PRadEventViewer::setupInfoWindow()
         statusItem[i] = new QTreeWidgetItem(statusInfoWidget);
         for(int j = 0; j < 4; ++ j) // column iteration
         {
-            if(j%2) { // odd column
+            if(j&1) { // odd column
                 statusItem[i]->setFont(j, font);
             } else { // even column
                 statusItem[i]->setText(j, statusProperty.at(5*j/2 + i));
             }
-            if(!(i%2)) { // odd row
+            if(!(i&1)) { // even row
                 statusItem[i]->setBackgroundColor(j, QColor(255,255,208));
             }
         }
@@ -414,13 +414,13 @@ void PRadEventViewer::buildModuleMap()
         QString tdcGroupName = groupList[0]->GetTDCGroupName();
         QRectF groupBox = QRectF(xmin - HYCAL_SHIFT, ymin, xmax-xmin, ymax-ymin);
         QColor bkgColor;
-        if(tdcList[i] > 36) {
-             if(tdcList[i]%2)
+        if(tdcList[i] > 36) { // below is to make different color for adjacent groups
+             if(tdcList[i]&1)
                 bkgColor = QColor(255, 153, 153, 50);
              else
                 bkgColor = QColor(204, 204, 255, 50);
         } else {
-            if(tdcList[i]%2^(((tdcList[i]-1)/6)%2))
+            if((tdcList[i]&1)^(((tdcList[i]-1)/6)&1))
                 bkgColor = QColor(51, 204, 255, 50);
             else
                 bkgColor = QColor(0, 255, 153, 50);
@@ -560,7 +560,10 @@ void PRadEventViewer::openPedFile()
     if (codaData.isEmpty())
         codaData = QDir::currentPath();
 
-    fileName = getFileName(tr("Choose a data file to generate pedestal"), codaData, "Data files (*.dat)", "");
+    fileName = getFileName(tr("Choose a data file to generate pedestal"),
+                           codaData,
+                           "Data files (*.dat)",
+                           "");
 
     if (!fileName.isEmpty()) {
         readEventFromFile(fileName);
@@ -688,9 +691,8 @@ void PRadEventViewer::UpdateStatusInfo()
 
     HyCalModule::Pedestal ped = selection->GetPedestal();
     HyCalModule::Voltage volt = selection->GetVoltage();
-    QString temp = (volt.ON)? 
-                    (QString::number(volt.Vmon) + tr(" V/") + QString::number(volt.Vset) + tr(" V"))
-                   :(tr("OFF/") + QString::number(volt.Vset) + tr(" V"));
+    QString temp = (volt.ON)?(QString::number(volt.Vmon) + tr(" V / ")) : tr("OFF / ")
+                   + QString::number(volt.Vset) + tr(" V");
 
     // second value column
     valueList << QString::number(ped.mean) + " \261 "                // pedestal mean
@@ -856,6 +858,11 @@ void PRadEventViewer::setupOnlineMode()
     connect(onlineTimer, SIGNAL(timeout()), this, SLOT(onlineUpdate()));
 
     hvChannel = new PRadHVChannel(handler);
+    hvChannel->AddCrate("PRadHV_1", "129.57.160.67", 1);
+    hvChannel->AddCrate("PRadHV_2", "129.57.160.68", 2);
+    hvChannel->AddCrate("PRadHV_3", "129.57.160.69", 3);
+    hvChannel->AddCrate("PRadHV_4", "129.57.160.70", 4);
+    hvChannel->AddCrate("PRadHV_5", "129.57.160.71", 5);
 }
 
 void PRadEventViewer::startOnlineMode()
@@ -914,6 +921,9 @@ void PRadEventViewer::onlineMode()
         eventSpin->setEnabled(true);
         return;
     }
+
+    hvChannel->StartMonitor();
+
     QMessageBox::information(this,
                              tr("Online Mode"),
                              tr("Online Monitor Start!"));
@@ -936,6 +946,8 @@ void PRadEventViewer::stopOnlineMode()
 {
     // Stop timer
     onlineTimer->stop();
+
+    hvChannel->StopMonitor();
 
     if(etChannel != NULL) {
         delete etChannel;

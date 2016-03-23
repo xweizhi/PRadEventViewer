@@ -64,6 +64,7 @@ class PRadEventViewer : public QMainWindow
 
 public:
     PRadEventViewer();
+    virtual ~PRadEventViewer() {/*managed by qt*/};
     void ListBlockAction(void (HyCalModule::*act)());
     ViewMode GetViewMode() {return viewMode;};
     AnnoType GetAnnoType() {return annoType;};
@@ -131,7 +132,6 @@ private:
     HyCalScene *HyCal;
     HyCalView *view;
     PRadHistCanvas *histCanvas;
-    TH1D *energyHist;
 
     QString fileName;
     QTimer *onlineTimer;
@@ -162,6 +162,7 @@ private:
     ETSettingPanel *etSetting;
     SpectrumSettingPanel *specSetting;
     PRadLogBox *logBox;
+
     QFuture<bool> future;
     QFutureWatcher<void> watcher;
 };

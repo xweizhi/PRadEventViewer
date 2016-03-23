@@ -1,4 +1,4 @@
-source /apps/root/5.34.21/setroot_CUE.csh
+source /apps/root/6.02.00/setroot_CUE.csh
 
 setenv CODA /site/coda/3.02
 setenv CODA_OS Linux-x86_64
