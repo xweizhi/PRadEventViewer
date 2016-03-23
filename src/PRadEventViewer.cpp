@@ -858,11 +858,37 @@ void PRadEventViewer::setupOnlineMode()
     connect(onlineTimer, SIGNAL(timeout()), this, SLOT(onlineUpdate()));
 
     hvChannel = new PRadHVChannel(handler);
-    hvChannel->AddCrate("PRadHV_1", "129.57.160.67", 1);
-    hvChannel->AddCrate("PRadHV_2", "129.57.160.68", 2);
-    hvChannel->AddCrate("PRadHV_3", "129.57.160.69", 3);
-    hvChannel->AddCrate("PRadHV_4", "129.57.160.70", 4);
-    hvChannel->AddCrate("PRadHV_5", "129.57.160.71", 5);
+
+    QFile hvCrateList("config/hv_crate_list.txt");
+
+    if(!hvCrateList.open(QFile::ReadOnly | QFile::Text)) {
+        std::cout << "WARNING: Missing HV crate list"
+                  << "\" config/hv_crate_list.txt \", "
+                  << "no HV crate added!"
+                  << std::endl;
+        return;
+    }
+
+    std::string name, ip;
+    int id;
+
+    QTextStream in(&hvCrateList);
+
+    while(!in.atEnd())
+    {
+        QString line = in.readLine().simplified();
+        if(line.at(0) == '#')
+            continue;
+        QStringList fields = line.split(QRegExp("\\s+"));
+        if(fields.size() == 3) {
+            name = fields.takeFirst().toStdString();
+            ip = fields.takeFirst().toStdString();
+            id = fields.takeFirst().toInt();
+            hvChannel->AddCrate(name, ip, id);
+        }
+    }
+
+    hvCrateList.close();
 }
 
 void PRadEventViewer::startOnlineMode()
