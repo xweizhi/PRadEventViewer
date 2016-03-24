@@ -542,7 +542,12 @@ void PRadEventViewer::openFile()
     if (codaData.isEmpty())
         codaData = QDir::currentPath();
 
-    fileName = getFileName(tr("Choose a data file"), codaData, "Data files (*.dat)", "");
+    QStringList filters;
+    filters << "Data files (*.dat)"
+            << "Evio files (*.ev, *.evio)"
+            << "All files (*)";
+
+    fileName = getFileName(tr("Choose a data file"), codaData, filters, "");
 
     if (!fileName.isEmpty()) {
         //TODO, dialog to notice waiting
@@ -560,9 +565,14 @@ void PRadEventViewer::openPedFile()
     if (codaData.isEmpty())
         codaData = QDir::currentPath();
 
+    QStringList filters;
+    filters << "Data files (*.dat)"
+            << "Evio files (*.ev, *.evio)"
+            << "All files (*)";
+
     fileName = getFileName(tr("Choose a data file to generate pedestal"),
                            codaData,
-                           "Data files (*.dat)",
+                           filters,
                            "");
 
     if (!fileName.isEmpty()) {
@@ -751,14 +761,14 @@ void PRadEventViewer::readEventFromFile(const QString &filepath)
 
 QString PRadEventViewer::getFileName(const QString &title,
                                      const QString &dir,
-                                     const QString &filter,
+                                     const QStringList &filter,
                                      const QString &suffix,
                                      QFileDialog::AcceptMode mode)
 {
     QString filepath;
     fileDialog->setWindowTitle(title);
     fileDialog->setDirectory(dir);
-    fileDialog->setNameFilter(filter);
+    fileDialog->setNameFilters(filter);
     fileDialog->setDefaultSuffix(suffix);
     fileDialog->setAcceptMode(mode);
 
@@ -772,7 +782,7 @@ void PRadEventViewer::saveHistToFile()
 {
     QString rootFile = getFileName(tr("Save histograms to root file"),
                                    tr("rootfiles/"),
-                                   tr("root files (*.root)"),
+                                   {tr("root files (*.root)")},
                                    tr("root"),
                                    QFileDialog::AcceptSave);
 
