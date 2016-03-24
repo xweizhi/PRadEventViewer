@@ -1,9 +1,7 @@
 // this class is not implemented
 // Chao Peng
 
-#include <QtGui>
-#include <QObject>
-#include "gem.h"
+#include "PRadGEM.h"
 #include "TQtWidget.h"
 #include "TCanvas.h"
 #include "TList.h"
@@ -11,6 +9,12 @@
 #include "TF1.h"
 #include "TH2F.h"
 #include "TRandom3.h"
+
+#if QT_VERSION >= 0x050000
+#include <QtWigets>
+#else
+#include <QtGui>
+#endif
 
 GEM::GEM()
 {

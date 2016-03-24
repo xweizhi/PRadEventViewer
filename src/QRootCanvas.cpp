@@ -18,8 +18,10 @@ QRootCanvas::QRootCanvas(QWidget *parent)
 {
     // set options needed to properly update the canvas when resizing the widget
     // and to properly handle context menus and mouse move events
+#if QT_VERSION < 0x050000
     setAttribute(Qt::WA_PaintOnScreen, true);
     setAttribute(Qt::WA_OpaquePaintEvent, true);
+#endif
 //    setUpdatesEnabled(kFALSE);
     setMouseTracking(kTRUE);
 

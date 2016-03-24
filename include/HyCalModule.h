@@ -2,6 +2,7 @@
 #define PRAD_HYCAL_BLOCK_H
 
 #include <QGraphicsItem>
+#include <QStyleOptionGraphicsItem>
 #include <QFont>
 #include "TH1I.h"
 #include "datastruct.h"

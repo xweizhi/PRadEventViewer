@@ -6,8 +6,13 @@
 // 03/02/2016                                                                 //
 //============================================================================//
 
-#include <QtGui>
 #include "HtmlDelegate.h"
+
+#if QT_VERSION >= 0x050000
+#include <QtWidgets>
+#else
+#include <QtGui>
+#endif
 
 void HtmlDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {

@@ -5,8 +5,7 @@
 // 02/27/2016                                                                 //
 //============================================================================//
 
-#include <QtGui>
-#include <QTimer>
+#include "PRadEventViewer.h"
 
 #include "TApplication.h"
 #include "TSystem.h"
@@ -21,7 +20,13 @@
 #include <fstream>
 #include <iostream>
 
-#include "PRadEventViewer.h"
+#if QT_VERSION >= 0x050000
+#include <QtWidgets>
+#include <QtConcurrent>
+#else
+#include <QtGui>
+#endif
+
 #include "HyCalModule.h"
 #include "HyCalScene.h"
 #include "HyCalView.h"
@@ -29,11 +34,11 @@
 #include "SpectrumSettingPanel.h"
 #include "HtmlDelegate.h"
 #include "PRadETChannel.h"
+#include "PRadHVChannel.h"
 #include "ETSettingPanel.h"
 #include "PRadEvioParser.h"
 #include "PRadHistCanvas.h"
 #include "PRadDataHandler.h"
-#include "PRadHVChannel.h"
 #include "PRadLogBox.h"
 
 #include <sys/time.h>
@@ -278,7 +283,7 @@ void PRadEventViewer::setupInfoWindow()
     statusInfoWidget->setStyleSheet("QTreeWidget {background: #FFFFF8;}");
     statusInfoWidget->setSelectionMode(QAbstractItemView::NoSelection);
     QStringList statusInfoTitle;
-    QFont font("" , 9 , QFont::Bold );
+    QFont font("arial", 10 , QFont::Bold );
 
     statusInfoTitle << tr("  Module Property  ") << tr("  Value  ")
                     << tr("  Module Property  ") << tr("  Value  ");
@@ -289,7 +294,7 @@ void PRadEventViewer::setupInfoWindow()
 
     // add new items to status info
     QStringList statusProperty;
-    statusProperty << tr("  Module ID") << tr("  Module Type") << tr("  DAQ Configuration") << tr("  TDC Group") << tr("  HV Configuration")
+    statusProperty << tr("  Module ID") << tr("  Module Type") << tr("  DAQ Config") << tr("  TDC Group") << tr("  HV Config")
                    << tr("  Pedestal") << tr("  Event No.") << tr("  Energy") << tr("  Fired Count") << tr("  High Voltage");
 
     for(int i = 0; i < 5; ++i) // row iteration
@@ -309,7 +314,7 @@ void PRadEventViewer::setupInfoWindow()
     }
 
     // Spectial rule to enable html text support for subscript
-    statusItem[1]->useHtmlDelegate();
+    statusItem[1]->useHtmlDelegate(1);
 
     statusInfoWidget->resizeColumnToContents(0);
     statusInfoWidget->resizeColumnToContents(2);
@@ -705,7 +710,12 @@ void PRadEventViewer::UpdateStatusInfo()
                    + QString::number(volt.Vset) + tr(" V");
 
     // second value column
-    valueList << QString::number(ped.mean) + " \261 "                // pedestal mean
+    valueList << QString::number(ped.mean)                           // pedestal mean
+#if QT_VERSION >= 0x050000
+                 + tr(" \u00B1 ")
+#else
+                 + tr(" \261 ")
+#endif
                  + QString::number(ped.sigma,'f',2)                  // pedestal sigma
               << QString::number(currentEvent)                       // current event
               << QString::number(selection->GetEnergy())+ tr(" MeV") // energy
@@ -828,7 +838,12 @@ void PRadEventViewer::fitEventsForPedestal()
 
 void PRadEventViewer::takeSnapShot()
 {
+
+#if QT_VERSION >= 0x050000
+    QPixmap p = QGuiApplication::primaryScreen()->grabWindow(QApplication::activeWindow()->winId(), 0, 0);
+#else
     QPixmap p = QPixmap::grabWindow(QApplication::activeWindow()->winId());
+#endif
 
     // using date time as file name
     QString datetime = tr("snapshots/") + QDateTime::currentDateTime().toString();

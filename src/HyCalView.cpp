@@ -5,9 +5,10 @@
 // 02/27/2016                                                                 //
 //============================================================================//
 
-#include <QtGui>
-#include <cmath>
 #include "HyCalView.h"
+#include <cmath>
+#include <QWheelEvent>
+#include <QKeyEvent>
 
 HyCalView::HyCalView(QWidget *parent)
 : QGraphicsView(parent)

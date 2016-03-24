@@ -3,7 +3,7 @@
 
 #include <QStyledItemDelegate>
 
-#define useHtmlDelegate() setData(1, Qt::UserRole + 1, true)
+#define useHtmlDelegate(i) setData(i, Qt::UserRole + 1, true)
 
 class HtmlDelegate : public QStyledItemDelegate
 {

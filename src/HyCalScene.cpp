@@ -7,10 +7,15 @@
 // 02/27/2016                                                                 //
 //============================================================================//
 
-#include <QtGui>
-#include "PRadEventViewer.h"
 #include "HyCalScene.h"
+#include "PRadEventViewer.h"
 #include "HyCalModule.h"
+
+#if QT_VERSION >= 0x050000
+#include <QtWidgets>
+#else
+#include <QtGui>
+#endif
 
 void HyCalScene::drawForeground(QPainter *painter, const QRectF &rect)
 {
@@ -54,9 +59,9 @@ void HyCalScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
         return;
 //    QGraphicsScene::mousePressEvent(event);
     if(event->button() == Qt::LeftButton)
-        pModule = dynamic_cast<HyCalModule*>(itemAt(event->scenePos()));
+        pModule = dynamic_cast<HyCalModule*>(itemAt(event->scenePos(), QTransform()));
     else if(event->button() == Qt::RightButton)
-        rModule = dynamic_cast<HyCalModule*>(itemAt(event->scenePos()));
+        rModule = dynamic_cast<HyCalModule*>(itemAt(event->scenePos(), QTransform()));
 }
 
 // overload to change the default selection behavior
@@ -65,7 +70,7 @@ void HyCalScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     if(event->button() == Qt::LeftButton) {
         if(pModule &&
            !pModule->isSelected() &&
-           pModule == dynamic_cast<HyCalModule*>(itemAt(event->scenePos()))
+           pModule == dynamic_cast<HyCalModule*>(itemAt(event->scenePos(), QTransform()))
           ) {
             pModule->setSelected(true);
             if(sModule) {
@@ -76,7 +81,7 @@ void HyCalScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     } else if(event->button() == Qt::RightButton) {
         if(rModule &&
            rModule->isSelected() &&
-           rModule == dynamic_cast<HyCalModule*>(itemAt(event->scenePos()))
+           rModule == dynamic_cast<HyCalModule*>(itemAt(event->scenePos(), QTransform()))
           ) {
             rModule->setSelected(false);
             sModule = NULL;

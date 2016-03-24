@@ -53,7 +53,8 @@ SOURCES += src/main.cpp \
            src/PRadHistCanvas.cpp \
            src/QRootCanvas.cpp
 
-LIBS += -Lthirdparty/lib -lcaenhvwrapper \
+LIBS += -lexpat \
+        -Lthirdparty/lib -lcaenhvwrapper \
         -L$$(EVIO_LIB) -levio \
         -L$$(EVIO_LIB) -levioxx \
         -L$$(CODA_LIB) -let \

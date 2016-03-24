@@ -9,7 +9,7 @@ Compile:
 
 Depandencies:
     Qt
-        The basis of GUI, compatibility with version 4.6 - 4.8 is tested.
+        The basis of GUI, compatibility with version 4.6 - 5.6 is tested.
 
     root
         Dealing with histograms, fittings in the program, compatible with
