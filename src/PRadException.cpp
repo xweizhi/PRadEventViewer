@@ -36,8 +36,8 @@ string PRadException::FailureType(void) const throw()
 {
     string oss;
     switch(type) {
-    case ET_OPEN_ERROR:
-        oss = "ET OPEN ERROR";
+    case ET_CONNECT_ERROR:
+        oss = "ET CONNECT ERROR";
         break;
     case ET_CONFIG_ERROR:
         oss = "ET CONFIG ERROR";

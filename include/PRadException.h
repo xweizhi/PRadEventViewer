@@ -14,7 +14,7 @@ public:
     enum PRadExceptionType
     {
         UNKNOWN_ERROR,
-        ET_OPEN_ERROR,
+        ET_CONNECT_ERROR,
         ET_CONFIG_ERROR,
         ET_STATION_CONFIG_ERROR,
         ET_STATION_CREATE_ERROR,

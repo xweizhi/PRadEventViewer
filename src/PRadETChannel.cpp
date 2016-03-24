@@ -41,7 +41,7 @@ PRadETChannel::PRadETChannel(const char* ipAddr, int tcpPort, const char* etFile
     et_open_config_destroy(openconfig);
 
     if(status != ET_OK) {
-        throw(PRadException(PRadException::ET_OPEN_ERROR, "et_client: cannot open et client!"));
+        throw(PRadException(PRadException::ET_CONNECT_ERROR, "et_client: cannot open et client!"));
     }
 
     buffer = new uint32_t[bufferSize];

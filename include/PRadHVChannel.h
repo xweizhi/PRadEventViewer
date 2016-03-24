@@ -15,7 +15,7 @@ class PRadDataHandler;
 class PRadHVChannel
 {
 public:
-    typedef struct
+    struct CAEN_Board
     {
         string model;
         string desc;
@@ -24,20 +24,38 @@ public:
         unsigned short serNum;
         unsigned char fmwLSB;
         unsigned char fmwMSB;
-    } HVBoardInfo;
 
-    typedef struct
+        // constructor
+        CAEN_Board() {};
+        CAEN_Board(string m, string d, unsigned short s, unsigned short n,
+                   unsigned short ser, unsigned char lsb, unsigned char msb)
+        : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb)
+        {};
+        CAEN_Board(char* m, char* d, unsigned short s, unsigned short n,
+                   unsigned short ser, unsigned char lsb, unsigned char msb)
+        : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb)
+        {};
+     };
+
+    struct CAEN_Crate
     {
+        unsigned char id;
         string name;
         string ip;
         CAENHV_SYSTEM_TYPE_t sysType;
         int linkType;
         string username;
         string password;
-        vector<HVBoardInfo> boardList;
         int handle;
-        unsigned char id;
-    } HVCrateInfo;
+        vector<CAEN_Board> boardList;
+
+        // constructor
+        CAEN_Crate() {};
+        CAEN_Crate(unsigned char i, string n, string p, CAENHV_SYSTEM_TYPE_t type,
+                   int link, string user, string pwd)
+        : id(i), name(n), ip(p), sysType(type), linkType(link),
+          username(user), password(pwd), handle(0) {};
+    };
 
     enum ShowErrorType
     {
@@ -47,7 +65,7 @@ public:
 
     PRadHVChannel(PRadDataHandler *h);
     virtual ~PRadHVChannel();
-    void AddCrate(const string name,
+    void AddCrate(const string &name,
                   const string &ip,
                   const unsigned char &id,
                   const CAENHV_SYSTEM_TYPE_t &type = SY1527,
@@ -65,7 +83,7 @@ public:
 
 private:
     PRadDataHandler *myHandler;
-    vector<HVCrateInfo> crateList;
+    vector<CAEN_Crate> crateList;
     volatile bool alive;
     thread *queryThread;
     mutex locker;
