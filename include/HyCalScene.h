@@ -2,7 +2,6 @@
 #define PRAD_HYCAL_SCENE_H
 
 #include <QGraphicsScene>
-#include <QList>
 
 class PRadEventViewer;
 class HyCalModule;

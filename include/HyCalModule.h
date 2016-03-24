@@ -1,17 +1,14 @@
 #ifndef PRAD_HYCAL_BLOCK_H
 #define PRAD_HYCAL_BLOCK_H
 
-#include <QColor>
 #include <QGraphicsItem>
-#include <QPainterPath>
-#include <QGraphicsSceneMouseEvent>
 #include <QFont>
 #include "TH1I.h"
 #include "datastruct.h"
 
 #define HYCAL_SHIFT 50
 
-class QGradient;
+
 class PRadEventViewer;
 
 class HyCalModule : public QGraphicsItem

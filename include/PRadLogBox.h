@@ -3,9 +3,7 @@
 
 #include <QTextEdit>
 
-QT_BEGIN_NAMESPACE
 class QFileSystemWatcher;
-QT_END_NAMESPACE
 
 class PRadLogBox : public QTextEdit
 {

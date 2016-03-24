@@ -1,10 +1,8 @@
 #ifndef PRAD_SPECTRUM_H
 #define PRAD_SPECTRUM_H
 
-#include <QColor>
 #include <QGraphicsObject>
-#include <QObject>
-#include <QPainter>
+#include <QGradient>
 
 class Spectrum : public QGraphicsObject
 {
