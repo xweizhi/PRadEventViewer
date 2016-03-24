@@ -1,2 +1,2 @@
-et INFO: etr_open: try to connect to host prad.jlab.org on port 11111
-et ERROR: etr_open: cannot find or connect to ET system
+Reading data from file /home/cpeng/PRad_Data/pradrun_692.dat
+Parsed 103080 events, took 21919 ms.

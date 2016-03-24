@@ -1,27 +1,17 @@
 #ifndef PRAD_DATA_HANDLER_H
 #define PRAD_DATA_HANDLER_H
 
-// a hash map reduce nearly half of the time to process events data, 
-// unfortunately it is only supported by standard library in C++11
-// comment hash map definition if the compiler does not support C++11
-#define  USE_HASH_MAP
-
 // Multi threads to deal with several banks in an event simultaneously.
 // Depends on the running evironment, you may have greatly improved
 // performance to read large evio file.
 //#define MULTI_THREAD
-
-#ifdef USE_HASH_MAP
-#include <unordered_map>
-#else
-#include <map>
-#endif
 
 #ifdef MULTI_THREAD
 #include <thread>
 #include <mutex>
 #endif
 
+#include <unordered_map>
 #include <deque>
 #include <vector>
 #include "datastruct.h"
@@ -32,8 +22,6 @@ class PRadEvioParser;
 class HyCalModule;
 class TH1D;
 
-
-#ifdef USE_HASH_MAP
 // a simple hash function for DAQ configuration
 namespace std {
     template <>
@@ -55,11 +43,6 @@ namespace std {
 typedef unordered_map< CrateConfig, HyCalModule* >::iterator daq_iter;
 typedef unordered_map< string, HyCalModule* >::iterator name_iter;
 typedef unordered_map< int, vector< HyCalModule* > >::iterator tdc_iter;
-#else
-typedef map< CrateConfig, HyCalModule* >::iterator daq_iter;
-typedef map< string, HyCalModule* >::iterator name_iter;
-typedef map< int, vector< HyCalModule* > >::iterator tdc_iter;
-#endif
 
 class PRadDataHandler
 {
@@ -95,16 +78,9 @@ private:
 #ifdef MULTI_THREAD
     mutex myLock;
 #endif
-
-#ifdef USE_HASH_MAP
     unordered_map< CrateConfig, HyCalModule* > map_daq;
     unordered_map< string, HyCalModule* > map_name;
     unordered_map< int, vector< HyCalModule* > > map_tdc;
-#else
-    map< CrateConfig, HyCalModule* > map_daq;
-    map< string, HyCalModule* > map_name;
-    map< int, vector< HyCalModule* > > map_tdc;
-#endif
     vector< HyCalModule* > moduleList;
     deque< vector< ModuleEnergyData > > energyData;
     vector < ModuleEnergyData > newEvent, lastEvent;

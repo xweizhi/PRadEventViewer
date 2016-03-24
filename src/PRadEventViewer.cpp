@@ -484,8 +484,8 @@ void PRadEventViewer::readPedestalData(const QString &filename)
 void PRadEventViewer::ListBlockAction(void (HyCalModule::*act)())
 {
     vector<HyCalModule*> moduleList = handler->GetModuleList();
-    for(size_t i = 0; i < moduleList.size(); ++i) {
-        (moduleList[i]->*act)();
+    for(auto &module : moduleList) {
+        (module->*act)();
     }
 }
 
