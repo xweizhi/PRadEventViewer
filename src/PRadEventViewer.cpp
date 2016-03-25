@@ -964,7 +964,7 @@ void PRadEventViewer::onlineMode()
         return;
     }
 
-//    hvChannel->StartMonitor();
+    hvChannel->StartMonitor();
 
     QMessageBox::information(this,
                              tr("Online Mode"),

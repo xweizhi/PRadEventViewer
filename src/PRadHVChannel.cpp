@@ -130,7 +130,7 @@ void PRadHVChannel::queryLoop()
     {
         if(!(loopCount%60))
             ReadVoltage();
-        else if(!loopCount%20)
+        else if(!(loopCount%15))
             heartBeat();
         ++loopCount;
         sleep(1);
