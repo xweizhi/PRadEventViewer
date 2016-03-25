@@ -4,13 +4,21 @@
 
 #source /home/chao/root-6.06.00/bin/thisroot.sh
 
-export CODA=/home/chao/PRad/coda/Linux-x86_64
+
+if [ `uname -m` == 'x86_64' ]; then
+    export OS_TYPE=Linux-x86_64
+    export THIRD_LIB=$PWD/thirdparty/lib64
+else
+    export OS_TYPE=Linux
+    export THIRD_LIB=$PWD/thirdparty/lib
+fi
+
+export CODA=/home/chao/PRad/coda/$OS_TYPE
 export CODA_LIB=$CODA/lib
 export CODA_INC=$CODA/include
 
 export EVIO=/home/chao/PRad/evio
-export EVIO_OS=Linux-x86_64
-export EVIO_LIB=$EVIO/$EVIO_OS/lib
-export EVIO_INC=$EVIO/$EVIO_OS/include
+export EVIO_LIB=$EVIO/$OS_TYPE/lib
+export EVIO_INC=$EVIO/$OS_TYPE/include
 
-export LD_LIBRARY_PATH=$PWD/thirdparty/$SYSTEM/lib:$EVIO_LIB:$CODA_LIB:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$THIRD_LIB:$EVIO_LIB:$CODA_LIB:$LD_LIBRARY_PATH

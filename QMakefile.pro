@@ -54,7 +54,7 @@ SOURCES += src/main.cpp \
            src/QRootCanvas.cpp
 
 LIBS += -lexpat \
-        -Lthirdparty/lib -lcaenhvwrapper \
+        -L$$(THIRD_LIB) -lcaenhvwrapper \
         -L$$(EVIO_LIB) -levio \
         -L$$(EVIO_LIB) -levioxx \
         -L$$(CODA_LIB) -let \
