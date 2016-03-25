@@ -29,7 +29,7 @@ PRadETChannel::PRadETChannel(const char* ipAddr, int tcpPort, const char* etFile
     et_open_config_setcast(openconfig, ET_DIRECT);
 
     int status;
-    etID = NULL;
+    etID = nullptr;
 
     int charSize = strlen(etFile)+1;
     char *fileName = new char[charSize];
@@ -49,16 +49,16 @@ PRadETChannel::PRadETChannel(const char* ipAddr, int tcpPort, const char* etFile
 
 PRadETChannel::~PRadETChannel()
 {
-    if(buffer != NULL)
-        delete[](buffer), buffer=NULL;
+    if(buffer != nullptr)
+        delete[](buffer), buffer=nullptr;
     // force close ET
-    if(etID != NULL)
+    if(etID != nullptr)
         et_forcedclose(etID);
 }
 
 void PRadETChannel::CreateStation(std::string stName, int mode) throw(PRadException)
 {
-    if (etID == NULL) {
+    if (etID == nullptr) {
         throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: cannot create station without opening a ET client!"));
     }
 
@@ -159,11 +159,11 @@ bool PRadETChannel::Read() throw(PRadException)
     // read the event in ET
 
     // check if et is opened or alive
-    if (etID == NULL || !et_alive(etID))
+    if (etID == nullptr || !et_alive(etID))
         throw(PRadException(PRadException::ET_READ_ERROR,"et_client: et is not opened or dead!"));
 
     // get the event
-    int status = et_event_get(etID, attachID, &etEvent, ET_ASYNC, NULL);
+    int status = et_event_get(etID, attachID, &etEvent, ET_ASYNC, nullptr);
 
     switch(status)
     {

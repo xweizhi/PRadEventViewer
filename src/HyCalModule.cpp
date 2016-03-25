@@ -100,7 +100,7 @@ void HyCalModule::paint(QPainter *painter,
     }
 
     // get the current display settings from console
-    if(console != NULL){
+    if(console != nullptr){
         switch(console->GetAnnoType())
         {
         case NoAnnotation: // show nothing

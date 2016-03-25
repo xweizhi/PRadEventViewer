@@ -17,7 +17,7 @@
 #include <QLabel>
 
 SpectrumSettingPanel::SpectrumSettingPanel(QWidget *parent)
-: QDialog(parent), spectrum(NULL)
+: QDialog(parent), spectrum(nullptr)
 {
     QGridLayout *grid = new QGridLayout;
     grid->addWidget(createScaleGroup(), 0, 0);

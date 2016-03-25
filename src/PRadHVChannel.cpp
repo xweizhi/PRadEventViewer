@@ -30,7 +30,7 @@ ostream &operator<<(ostream &os, CAENHVData const &data)
 }
 
 PRadHVChannel::PRadHVChannel(PRadDataHandler *h)
-: myHandler(h), alive(false),loopCount(0)
+: myHandler(h), alive(false)
 {}
 
 PRadHVChannel::~PRadHVChannel()
@@ -55,6 +55,7 @@ void PRadHVChannel::AddCrate(const string &name,
 
 void PRadHVChannel::Initialize()
 {
+    locker.lock();
     for(auto &crate : crateList)
     {
         int err;
@@ -70,6 +71,8 @@ void PRadHVChannel::Initialize()
             cout << "Connected to high voltage system "
                  << crate.name << "@" << crate.ip
                  << endl;
+            if(!crate.mapped) // fist time initialize, does not have crate map
+                getCrateMap(crate);
         }
         else {
             cerr << "Cannot connect to "
@@ -77,48 +80,59 @@ void PRadHVChannel::Initialize()
                  << endl;
             showError("HV Initialize", err);
         }
+    }
+    locker.unlock();
+}
 
-        if(crate.boardList.size())
-            crate.boardList.clear();
-
-        unsigned short NbofSlot;
-        unsigned short *NbofChList;
-        char *modelList, *descList;
-        unsigned short *serNumList;
-        unsigned char *fmwMinList, *fmwMaxList;
-
-        // looks like this function only return the first model name rather than a list
-        err = CAENHV_GetCrateMap(crate.handle, &NbofSlot, &NbofChList, &modelList, &descList, &serNumList, &fmwMinList, &fmwMaxList);
-
-        char *m = modelList, *d = descList;
-        if(err == CAENHV_OK) {
-            for(int slot = 0; slot < NbofSlot; ++slot, m += strlen(m) + 1, d += strlen(d) + 1) {
-                if(!NbofChList[slot])
-                    continue;
-                CAEN_Board newBoard(m, d, slot, NbofChList[slot], serNumList[slot], fmwMinList[slot], fmwMaxList[slot]);
-                crate.boardList.push_back(newBoard);
-            }
-        }
-        free(NbofChList);
-        free(modelList);
-        free(descList);
-        free(serNumList);
-        free(fmwMinList);
-        free(fmwMaxList);
+void PRadHVChannel::getCrateMap(CAEN_Crate &crate)
+{
+    if(crate.handle < 0) {
+        cerr << "HV Channel Get Crate Map Error: crate "
+             << crate.name << " is not initialized!"
+             << endl;
+        return;
     }
 
-    alive = true;
+    locker.lock();
+    unsigned short NbofSlot;
+    unsigned short *NbofChList;
+    char *modelList, *descList;
+    unsigned short *serNumList;
+    unsigned char *fmwMinList, *fmwMaxList;
+
+    // looks like this function only return the first model name rather than a list
+    int err = CAENHV_GetCrateMap(crate.handle, &NbofSlot, &NbofChList, &modelList, &descList, &serNumList, &fmwMinList, &fmwMaxList);
+
+    char *m = modelList, *d = descList;
+    if(err == CAENHV_OK) {
+        for(int slot = 0; slot < NbofSlot; ++slot, m += strlen(m) + 1, d += strlen(d) + 1) {
+            if(!NbofChList[slot])
+                continue;
+            CAEN_Board newBoard(m, d, slot, NbofChList[slot], serNumList[slot], fmwMinList[slot], fmwMaxList[slot]);
+            crate.boardList.push_back(newBoard);
+        }
+    }
+    free(NbofChList);
+    free(modelList);
+    free(descList);
+    free(serNumList);
+    free(fmwMinList);
+    free(fmwMaxList);
+
+    crate.mapped = true;
+
+    locker.unlock();
 }
 
 void PRadHVChannel::StartMonitor()
 {
-    Initialize();
-    loopCount = 0;
+    alive = true;
     queryThread = new thread(&PRadHVChannel::queryLoop, this);
 }
 
 void PRadHVChannel::queryLoop()
 {
+    unsigned int loopCount = 0;
     while(alive)
     {
         if(!(loopCount%60))
@@ -135,6 +149,9 @@ void PRadHVChannel::heartBeat()
     locker.lock();
     for(auto &crate : crateList)
     {
+        if(crate.handle < 0)
+            continue;
+
         char sw[30];
         int err = CAENHV_GetSysProp(crate.handle, "SwRelease", sw);
         showError("HV Heartbeat", err);
@@ -209,6 +226,9 @@ void PRadHVChannel::ReadVoltage()
     CAENHVData hvData;
     for(auto &crate : crateList)
     {
+        if(crate.handle < 0)
+            continue;
+
         hvData.config.crate = crate.id;
         for(auto &board : crate.boardList)
         {

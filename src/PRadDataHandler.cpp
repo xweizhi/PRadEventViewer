@@ -171,14 +171,14 @@ HyCalModule* PRadDataHandler::FindModule(CrateConfig &daqInfo)
 {
     daq_iter it = map_daq.find(daqInfo);
     if(it == map_daq.end())
-        return NULL;
+        return nullptr;
     return it->second;
 }
 
 HyCalModule* PRadDataHandler::FindModule(const unsigned short &id)
 {
     if(id >= moduleList.size())
-        return NULL;
+        return nullptr;
     return moduleList[id];
 }
 

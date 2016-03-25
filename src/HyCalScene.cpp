@@ -84,7 +84,7 @@ void HyCalScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
            rModule == dynamic_cast<HyCalModule*>(itemAt(event->scenePos(), QTransform()))
           ) {
             rModule->setSelected(false);
-            sModule = NULL;
+            sModule = nullptr;
         }
     }
 }

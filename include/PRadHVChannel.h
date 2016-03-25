@@ -47,6 +47,7 @@ public:
         string username;
         string password;
         int handle;
+        bool mapped;
         vector<CAEN_Board> boardList;
 
         // constructor
@@ -54,7 +55,7 @@ public:
         CAEN_Crate(unsigned char i, string n, string p, CAENHV_SYSTEM_TYPE_t type,
                    int link, string user, string pwd)
         : id(i), name(n), ip(p), sysType(type), linkType(link),
-          username(user), password(pwd), handle(0) {};
+          username(user), password(pwd), handle(-1), mapped(false) {};
     };
 
     enum ShowErrorType
@@ -87,7 +88,7 @@ private:
     volatile bool alive;
     thread *queryThread;
     mutex locker;
-    int loopCount;
+    void getCrateMap(CAEN_Crate &crate);
     void heartBeat();
     void queryLoop();
     void showError(const string &prefix, const int &err, ShowErrorType type = ShowError);

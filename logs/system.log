@@ -1,0 +1,7 @@
+et INFO: et_station_attach, done
+Successfully attached to ET!
+Trying connect to HV crates...
+et INFO: et_forcedclose, detach 0
+et INFO: et_station_detach, make station "online monitor" (0x7f21a3196458) idle
+et INFO: et_restore_events, no events found belonging to attachment 0 
+et INFO: et_station_detach, done

@@ -51,7 +51,7 @@
 // constructor                                                                //
 //============================================================================//
 PRadEventViewer::PRadEventViewer()
-: currentEvent(0), selection(NULL), etChannel(NULL), hvChannel(NULL)
+: currentEvent(0), selection(nullptr), etChannel(nullptr), hvChannel(nullptr)
 {
     initView();
     setupUI();
@@ -468,7 +468,7 @@ void PRadEventViewer::readPedestalData(const QString &filename)
             daqInfo.crate = crate;
             daqInfo.slot = slot;
             daqInfo.channel = channel;
-            if((tmp = handler->FindModule(daqInfo)) != NULL)
+            if((tmp = handler->FindModule(daqInfo)) != nullptr)
                 tmp->UpdatePedestal(val, sigma);
         }
     }
@@ -659,7 +659,7 @@ void PRadEventViewer::updateEventRange()
 void PRadEventViewer::UpdateHistCanvas()
 {
     gSystem->ProcessEvents();
-    if(selection != NULL) {
+    if(selection != nullptr) {
         HyCalModule::Pedestal ped = selection->GetPedestal();
         int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
         int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
@@ -677,7 +677,7 @@ void PRadEventViewer::SelectModule(HyCalModule* module)
 
 void PRadEventViewer::UpdateStatusInfo()
 {
-    if(selection == NULL)
+    if(selection == nullptr)
         return;
 
     QStringList valueList;
@@ -735,7 +735,7 @@ void PRadEventViewer::readEventFromFile(const QString &filepath)
     std::cout << "Reading data from file " << filepath.toStdString() << std::endl;
 
     struct timeval timeStart, timeEnd;
-    gettimeofday(&timeStart, NULL);
+    gettimeofday(&timeStart, nullptr);
 
     try {
         evio::evioFileChannel *chan = new evio::evioFileChannel(filepath.toStdString().c_str(),"r");
@@ -762,7 +762,7 @@ void PRadEventViewer::readEventFromFile(const QString &filepath)
         std::cerr << "?unknown exception" << endl;
     }
 
-    gettimeofday(&timeEnd, NULL);
+    gettimeofday(&timeEnd, nullptr);
 
     std::cout << "Parsed " << handler->GetEventCount() << " events, took "
               << ((timeEnd.tv_sec - timeStart.tv_sec)*1000 + (timeEnd.tv_usec - timeStart.tv_usec)/1000)
@@ -926,10 +926,8 @@ void PRadEventViewer::startOnlineMode()
     openDataAction->setEnabled(false);
     openPedAction->setEnabled(false);
     eventSpin->setEnabled(false);
-    QProgressBar bar(this);
     future = QtConcurrent::run(this, &PRadEventViewer::connectETClient);
     watcher.setFuture(future);
-    bar.show();
 }
 
 bool PRadEventViewer::connectETClient()
@@ -949,12 +947,15 @@ bool PRadEventViewer::connectETClient()
         etChannel->AttachStation();
     } catch(PRadException e) {
         delete etChannel;
-        etChannel = NULL;
+        etChannel = nullptr;
         std::cerr << e.FailureType() << ": "
                   << e.FailureDesc() << std::endl;
         return false;
     }
-    std::cout << "Successfully attach to ET!" << std::endl;
+    std::cout << "Successfully attached to ET!" << std::endl
+              << "Trying connect to HV crates..." << std::endl;
+
+    hvChannel->Initialize();
     return true;
 }
 
@@ -1000,9 +1001,9 @@ void PRadEventViewer::stopOnlineMode()
 
     hvChannel->StopMonitor();
 
-    if(etChannel != NULL) {
+    if(etChannel != nullptr) {
         delete etChannel;
-        etChannel = NULL;
+        etChannel = nullptr;
         QMessageBox::information(this,
                                  tr("Online Monitor"),
                                  tr("Dettached from ET!"));
