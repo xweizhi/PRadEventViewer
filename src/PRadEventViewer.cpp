@@ -549,7 +549,7 @@ void PRadEventViewer::openFile()
 
     QStringList filters;
     filters << "Data files (*.dat)"
-            << "Evio files (*.ev, *.evio)"
+            << "Evio files (*.ev *.evio)"
             << "All files (*)";
 
     fileName = getFileName(tr("Choose a data file"), codaData, filters, "");
