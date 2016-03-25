@@ -21,8 +21,8 @@ PRadLogBox::PRadLogBox(QWidget *parent)
     fileWatcher = new QFileSystemWatcher(this);
     connect(fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(showLogs(QString)));
 
-    outRedir = freopen("logs/system.log", "w", stdout);
-    errRedir = freopen("logs/error.log", "w", stderr);
+    outRedir = freopen("logs/system.log", "a", stdout);
+    errRedir = freopen("logs/error.log", "a", stderr);
 
     if(outRedir) {
         setvbuf(stdout,NULL,_IONBF,0);

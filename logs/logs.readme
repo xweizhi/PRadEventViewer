@@ -1,0 +1,2 @@
+redirect stdout to system.log
+redirect stderr to error.log

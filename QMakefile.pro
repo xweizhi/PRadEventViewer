@@ -5,8 +5,8 @@
 greaterThan(4, QT_MAJOR_VERSION):
     QT += widgets concurrent
 
-CONFIG += c++0x
-QMAKE_CXXFLAGS += -std=c++0x
+CONFIG += c++11
+QMAKE_CXXFLAGS += -std=c++11
 
 TEMPLATE = app
 TARGET = PRadEventViewer
@@ -53,8 +53,7 @@ SOURCES += src/main.cpp \
            src/PRadHistCanvas.cpp \
            src/QRootCanvas.cpp
 
-LIBS += -lexpat \
-        -L$$(THIRD_LIB) -lcaenhvwrapper \
+LIBS += -L$$(THIRD_LIB) -lcaenhvwrapper \
         -L$$(EVIO_LIB) -levio \
         -L$$(EVIO_LIB) -levioxx \
         -L$$(CODA_LIB) -let \
