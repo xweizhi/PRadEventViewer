@@ -65,7 +65,8 @@ class PRadEventViewer : public QMainWindow
 public:
     PRadEventViewer();
     virtual ~PRadEventViewer() {/*managed by qt*/};
-    void ListBlockAction(void (HyCalModule::*act)());
+    void ModuleAction(void (HyCalModule::*act)());
+    void ListModules();
     ViewMode GetViewMode() {return viewMode;};
     AnnoType GetAnnoType() {return annoType;};
     QColor GetColor(const double &val);

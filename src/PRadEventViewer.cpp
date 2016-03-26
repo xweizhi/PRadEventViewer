@@ -16,9 +16,9 @@
 #include "evioUtil.hxx"
 #include "evioFileChannel.hxx"
 
-#include <stdio.h>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
@@ -481,11 +481,35 @@ void PRadEventViewer::readPedestalData(const QString &filename)
 //============================================================================//
 
 // do the action for all modules
-void PRadEventViewer::ListBlockAction(void (HyCalModule::*act)())
+void PRadEventViewer::ModuleAction(void (HyCalModule::*act)())
 {
-    vector<HyCalModule*> moduleList = handler->GetModuleList();
-    for(auto &module : moduleList) {
+    std::vector<HyCalModule*> moduleList = handler->GetModuleList();
+    for(auto &module : moduleList)
+    {
         (module->*act)();
+    }
+}
+
+void PRadEventViewer::ListModules()
+{
+    std::vector<HyCalModule*> moduleList = handler->GetModuleList();
+    std::ofstream outf("config/current_list.txt");
+
+    for(auto &module : moduleList)
+    {
+        outf << std::setw(6)  << module->GetReadID().toStdString()
+             << std::setw(6)  << module->GetDAQInfo().crate
+             << std::setw(6)  << module->GetDAQInfo().slot
+             << std::setw(6)  << module->GetDAQInfo().channel
+             << std::setw(6)  << module->GetTDCID()
+             << std::setw(10) << (int)module->GetGeometry().type
+             << std::setw(6)  << module->GetGeometry().cellSize
+             << std::setw(8)  << module->GetGeometry().x
+             << std::setw(8)  << module->GetGeometry().y
+             << std::setw(10) << module->GetHVInfo().crate
+             << std::setw(6)  << module->GetHVInfo().slot
+             << std::setw(6)  << module->GetHVInfo().channel
+             << std::endl;
     }
 }
 
@@ -505,16 +529,16 @@ void PRadEventViewer::Refresh()
     switch(viewMode)
     {
     case PedestalView:
-        ListBlockAction(&HyCalModule::ShowPedestal);
+        ModuleAction(&HyCalModule::ShowPedestal);
         break;
     case SigmaView:
-        ListBlockAction(&HyCalModule::ShowPedSigma);
+        ModuleAction(&HyCalModule::ShowPedSigma);
         break;
     case OccupancyView:
-        ListBlockAction(&HyCalModule::ShowOccupancy);
+        ModuleAction(&HyCalModule::ShowOccupancy);
         break;
     case HighVoltageView:
-        ListBlockAction(&HyCalModule::ShowVoltage);
+        ModuleAction(&HyCalModule::ShowVoltage);
         break;
     case EnergyView:
         handler->ShowEvent(event_index); // fetch data from handler
@@ -531,7 +555,7 @@ void PRadEventViewer::Refresh()
 void PRadEventViewer::eraseModuleBuffer()
 {
     handler->Clear();
-    ListBlockAction(&HyCalModule::CleanBuffer);
+    ModuleAction(&HyCalModule::CleanBuffer);
     updateEventRange();
 }
 
