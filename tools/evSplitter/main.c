@@ -51,5 +51,8 @@ int main(int argc, char *argv[])
         evWrite(outHandle, buffer);
     }
 
+    evClose(inHandle);
+    evClose(outHandle);
+
     return 0;
 }

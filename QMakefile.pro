@@ -2,16 +2,12 @@
 # PRad Event Viewer, project file for qmake
 ######################################################################
 
-greaterThan(4, QT_MAJOR_VERSION):
-    QT += widgets concurrent
-
 TEMPLATE = app
 TARGET = PRadEventViewer
 DEPENDPATH += 
 INCLUDEPATH += include \
                thirdparty/include \
-               $$(EVIO_INC) \
-               $$(CODA_INC) \
+               $$(ET_INC) \
                $$(ROOTSYS)/include
 
 # Input
@@ -50,10 +46,8 @@ SOURCES += src/main.cpp \
            src/PRadHistCanvas.cpp \
            src/QRootCanvas.cpp
 
-LIBS += -L$$(THIRD_LIB) -lcaenhvwrapper \
-        -L$$(EVIO_LIB) -levio \
-        -L$$(EVIO_LIB) -levioxx \
-        -L$$(CODA_LIB) -let \
+LIBS += -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx \
+        -L$$(ET_LIB) -let \
         -L$$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist \
                           -lGraf -lGraf3d -lGpad -lTree \
                           -lPostscript -lMatrix -lPhysics \

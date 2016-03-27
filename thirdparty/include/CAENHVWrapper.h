@@ -45,19 +45,18 @@ extern void Sleep(unsigned int x);
 #define HV_DEPRECATED(func) func
 #endif
 
-#ifndef uchar 
+#ifndef uchar
 #define uchar unsigned char
 #endif
-#ifndef ushort 
+#ifndef ushort
 #define ushort unsigned short
 #endif
 #ifndef ulong
 #define ulong unsigned int
 #endif
 
-
 #define MAX_CH_NAME                12
- 
+
 #define MAX_PARAM_NAME             10
 
 #define MAX_CRATES                             8
