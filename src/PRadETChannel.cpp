@@ -15,6 +15,7 @@
 #include <time.h>
 #include <pthread.h>
 
+using namespace std;
 
 PRadETChannel::PRadETChannel(size_t size)
 : etID(nullptr), bufferSize(size)
@@ -62,7 +63,7 @@ void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) th
     }
 }
 
-void PRadETChannel::CreateStation(std::string stName, int mode) throw(PRadException)
+void PRadETChannel::CreateStation(string stName, int mode) throw(PRadException)
 {
     if (etID == nullptr) {
         throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: cannot create station without opening a ET client!"));
@@ -158,7 +159,7 @@ void PRadETChannel::AttachStation() throw(PRadException)
     if (et_station_attach(etID, stationID, &attachID) < 0) {
         throw(PRadException(PRadException::ET_STATION_ATTACH_ERROR, "et_client: error in station attach!"));
     }
-    std::cout << "Successfully attached to ET!" << std::endl;
+    cout << "Successfully attached to ET!" << endl;
 }
 
 bool PRadETChannel::Read() throw(PRadException)

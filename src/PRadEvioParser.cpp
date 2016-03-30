@@ -111,9 +111,9 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
 
 #ifdef MULTI_THREAD
     // wait for all threads finished
-    for(size_t i = 0; i < bank_threads.size(); ++i)
+    for(auto &thread : bank_threads)
     {
-        if(bank_threads[i].joinable()) bank_threads[i].join();
+        if(thread.joinable()) thread.join();
     }
 #endif
 

@@ -37,19 +37,19 @@ void PRadDataHandler::BuildModuleMap()
 {
     // build unordered maps separately improves its access speed
     // module name map
-    for(size_t i = 0; i < moduleList.size(); ++i)
-        map_name[moduleList[i]->GetReadID().toStdString()] = moduleList[i];
+    for(auto &module : moduleList)
+        map_name[module->GetReadID().toStdString()] = module;
 
     // module DAQ configuration map
-    for(size_t i = 0; i < moduleList.size(); ++i)
-        map_daq[moduleList[i]->GetDAQInfo()] = moduleList[i];
+    for(auto &module : moduleList)
+        map_daq[module->GetDAQInfo()] = module;
 
     // module TDC groups
-    for(size_t i = 0; i < moduleList.size(); ++i)
+    for(auto &module : moduleList)
     {
-        int id = moduleList[i]->GetTDCID();
+        int id = module->GetTDCID();
         vector< HyCalModule* > tdcGroup = GetTDCGroup(id);
-        tdcGroup.push_back(moduleList[i]);
+        tdcGroup.push_back(module);
         map_tdc[id] = tdcGroup;
     }
 }
@@ -147,9 +147,9 @@ void PRadDataHandler::ShowEvent(int idx)
     vector< ModuleEnergyData > event;
 
     // != avoids operator definition for non-standard map
-    for(size_t i = 0; i < moduleList.size(); ++i)
+    for(auto &module : moduleList)
     {
-        moduleList[i]->DeEnergize();
+        module->DeEnergize();
     }
 
     if(onlineMode) { // online mode only show the last event
@@ -160,9 +160,9 @@ void PRadDataHandler::ShowEvent(int idx)
         event = energyData[idx];
     }
 
-    for(size_t i = 0; i < event.size(); ++i)
+    for(auto &hit : event)
     {
-        moduleList[event[i].id]->Energize(event[i].adcValue);
+        moduleList[hit.id]->Energize(hit.adcValue);
     }
 }
 

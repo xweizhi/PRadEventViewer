@@ -397,19 +397,37 @@ void PRadEventViewer::buildModuleMap()
 
     // tdc maps
     std::vector< int > tdcList = handler->GetTDCGroupIDList();
-    for(size_t i = 0; i < tdcList.size(); ++i)
+    for(auto &tdc_id : tdcList)
     {
-        std::vector< HyCalModule* > groupList = handler->GetTDCGroup(tdcList[i]);
+        std::vector< HyCalModule* > groupList = handler->GetTDCGroup(tdc_id);
 
         if(!groupList.size())
             continue;
 
-        // start from a large enough number
-        double xmax = -10000, ymax = -10000;
-        double xmin = +10000, ymin = +10000;
-        for(size_t j = 0; j < groupList.size(); ++j)
+        // get id and set background color
+        QString tdcGroupName = groupList[0]->GetTDCGroupName();
+        QColor bkgColor;
+        if(tdc_id > 36) { // below is to make different color for adjacent groups
+             if(tdc_id&1)
+                bkgColor = QColor(255, 153, 153, 50);
+             else
+                bkgColor = QColor(204, 204, 255, 50);
+        } else {
+            if((tdc_id&1)^(((tdc_id-1)/6)&1))
+                bkgColor = QColor(51, 204, 255, 50);
+            else
+                bkgColor = QColor(0, 255, 153, 50);
+        }
+
+        // get the tdc group box size
+        HyCalModule::GeoInfo geo = groupList[0]->GetGeometry();
+        double xmax = geo.x + geo.cellSize/2.;
+        double ymax = geo.y + geo.cellSize/2.;
+        double xmin = geo.x - geo.cellSize/2.;
+        double ymin = geo.y - geo.cellSize/2.;
+        for(auto &module : groupList)
         {
-            HyCalModule::GeoInfo geo = groupList[j]->GetGeometry();
+            HyCalModule::GeoInfo geo = module->GetGeometry();
             if((geo.x + geo.cellSize/2.) > xmax)
                 xmax = geo.x + geo.cellSize/2.;
             if((geo.x - geo.cellSize/2.) < xmin)
@@ -420,20 +438,7 @@ void PRadEventViewer::buildModuleMap()
             if((geo.y - geo.cellSize/2.) < ymin)
                 ymin = geo.y - geo.cellSize/2.;
         }
-        QString tdcGroupName = groupList[0]->GetTDCGroupName();
         QRectF groupBox = QRectF(xmin - HYCAL_SHIFT, ymin, xmax-xmin, ymax-ymin);
-        QColor bkgColor;
-        if(tdcList[i] > 36) { // below is to make different color for adjacent groups
-             if(tdcList[i]&1)
-                bkgColor = QColor(255, 153, 153, 50);
-             else
-                bkgColor = QColor(204, 204, 255, 50);
-        } else {
-            if((tdcList[i]&1)^(((tdcList[i]-1)/6)&1))
-                bkgColor = QColor(51, 204, 255, 50);
-            else
-                bkgColor = QColor(0, 255, 153, 50);
-        }
 
         HyCal->AddTextBox(tdcGroupName, groupBox, bkgColor);
     }
@@ -833,9 +838,9 @@ void PRadEventViewer::saveHistToFile()
     handler->GetEnergyHist()->Write();
 
     vector<HyCalModule*> moduleList = handler->GetModuleList();
-    for(size_t i = 0; i < moduleList.size(); ++i)
+    for(auto &module : moduleList)
     {
-        moduleList[i]->adcHist->Write();
+        module->adcHist->Write();
     }
     f->Close();
     rStatusLabel->setText(tr("All histograms are saved to ") + rootFile);
@@ -846,15 +851,14 @@ void PRadEventViewer::fitEventsForPedestal()
     ofstream pedestalmap("config/pedestal.dat");
 
     vector<HyCalModule*> moduleList = handler->GetModuleList();
-    for(size_t i = 0; i < moduleList.size(); ++i)
+    for(auto &module : moduleList)
     {
-        HyCalModule *tmp = moduleList[i];
-        tmp->adcHist->Fit("gaus");
-        TF1 *myfit = (TF1*) tmp->adcHist->GetFunction("gaus");
+        module->adcHist->Fit("gaus");
+        TF1 *myfit = (TF1*) module->adcHist->GetFunction("gaus");
         double p0 = myfit->GetParameter(1);
         double p1 = myfit->GetParameter(2);
-        tmp->UpdatePedestal(p0, p1);
-        CrateConfig daqInfo = tmp->GetDAQInfo();
+        module->UpdatePedestal(p0, p1);
+        CrateConfig daqInfo = module->GetDAQInfo();
         pedestalmap << daqInfo.crate << "  "
                     << daqInfo.slot << "  "
                     << daqInfo.channel << "  "
