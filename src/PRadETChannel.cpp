@@ -42,11 +42,12 @@ void PRadETChannel::ForceClose()
 
 void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) throw(PRadException)
 {
-    // ET is on 129.57.167.225 (prad.jlab.org)
-    et_open_config_sethost(openConf.config, ipAddr);
-    et_open_config_setserverport(openConf.config, tcpPort);
     // Use a direct connection to the ET system
-    et_open_config_setcast(openConf.config, ET_DIRECT);
+    openConf.SetCast(ET_DIRECT);
+
+    // Set the ip address and tcp port
+    openConf.SetHost(ipAddr);
+    openConf.SetServerPort(tcpPort);
 
     int charSize = strlen(etFile)+1;
     char *fileName = new char[charSize];
@@ -60,7 +61,6 @@ void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) th
         throw(PRadException(PRadException::ET_CONNECT_ERROR, "et_client: cannot open et client!"));
     }
 }
-
 
 void PRadETChannel::CreateStation(std::string stName, int mode) throw(PRadException)
 {
@@ -215,9 +215,10 @@ bool PRadETChannel::Read() throw(PRadException)
 
 
 // nested config classes
+// et_openconfig
 PRadETChannel::OpenConfig::OpenConfig()
 {
-    et_open_config_init(&config);
+    Initialize();
 }
 
 PRadETChannel::OpenConfig::~OpenConfig()
@@ -225,10 +226,101 @@ PRadETChannel::OpenConfig::~OpenConfig()
     et_open_config_destroy(config);
 }
 
+// wrapper functions
+void PRadETChannel::OpenConfig::Initialize()
+{
+    et_open_config_init(&config);
+}
 
+void PRadETChannel::OpenConfig::SetWait(int val)
+{
+    et_open_config_setwait(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetTimeOut(struct timespec val)
+{
+   et_open_config_settimeout(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetHost(const char *val)
+{
+    et_open_config_sethost(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetCast(int val)
+{
+    et_open_config_setcast(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetTTL(int val)
+{
+    et_open_config_setTTL(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetPort(unsigned short val)
+{
+    et_open_config_setport(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetMultiPort(unsigned short val)
+{
+    et_open_config_setmultiport(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetServerPort(unsigned short val)
+{
+    et_open_config_setserverport(config, val);
+}
+
+void PRadETChannel::OpenConfig::AddBroadCast(const char *val)
+{
+    et_open_config_addbroadcast(config, val);
+}
+
+void PRadETChannel::OpenConfig::RemoveBroadCast(const char *val)
+{
+    et_open_config_removebroadcast(config, val);
+}
+
+void PRadETChannel::OpenConfig::AddMultiCast(const char *val)
+{
+    et_open_config_addmulticast(config, val);
+}
+
+void PRadETChannel::OpenConfig::RemoveMultiCast(const char *val)
+{
+    et_open_config_removemulticast(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetPolicy(int val)
+{
+    et_open_config_setpolicy(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetMode(int val)
+{
+    et_open_config_setmode(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetDebugDefault(int val)
+{
+    et_open_config_setdebugdefault(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetInterface(const char *val)
+{
+    et_open_config_setinterface(config, val);
+}
+
+void PRadETChannel::OpenConfig::SetTCP(int rBufSize, int sBufSize, int noDelay)
+{
+    et_open_config_settcp(config, rBufSize, sBufSize, noDelay);
+}
+
+// et_station_config
 PRadETChannel::StationConfig::StationConfig()
 {
-    et_station_config_init(&config);
+    Initialize();
 }
 
 PRadETChannel::StationConfig::~StationConfig()
@@ -236,3 +328,9 @@ PRadETChannel::StationConfig::~StationConfig()
     et_station_config_destroy(config);
 }
 
+void PRadETChannel::StationConfig::Initialize()
+{
+    et_station_config_init(&config);
+}
+
+// wrapper functions
