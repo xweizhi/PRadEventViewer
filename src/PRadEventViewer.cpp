@@ -57,6 +57,13 @@ PRadEventViewer::PRadEventViewer()
     setupUI();
 }
 
+PRadEventViewer::~PRadEventViewer()
+{
+    delete hvChannel;
+    delete etChannel;
+    delete handler;
+}
+
 // set up the view for HyCal
 void PRadEventViewer::initView()
 {
@@ -77,9 +84,6 @@ void PRadEventViewer::initView()
     QTimer *rootTimer = new QTimer(this);
     connect(rootTimer, SIGNAL(timeout()), this, SLOT(handleRootEvents()));
     rootTimer->start(50);
-
-    // future watcher for online mode
-    connect(&watcher, SIGNAL(finished()), this, SLOT(onlineMode()));
 }
 
 // set up the UI
@@ -498,17 +502,20 @@ void PRadEventViewer::ListModules()
     for(auto &module : moduleList)
     {
         outf << std::setw(6)  << module->GetReadID().toStdString()
-             << std::setw(6)  << module->GetDAQInfo().crate
+             << std::setw(10) << module->GetGeometry().cellSize
+             << std::setw(8)  << module->GetGeometry().x
+             << std::setw(8)  << module->GetGeometry().y
+             << std::setw(10) << module->GetDAQInfo().crate
              << std::setw(6)  << module->GetDAQInfo().slot
              << std::setw(6)  << module->GetDAQInfo().channel
              << std::setw(6)  << module->GetTDCID()
-             << std::setw(10) << (int)module->GetGeometry().type
-             << std::setw(6)  << module->GetGeometry().cellSize
-             << std::setw(8)  << module->GetGeometry().x
-             << std::setw(8)  << module->GetGeometry().y
+             << std::setw(10) << module->GetPedestal().mean
+             << std::setw(8)  << module->GetPedestal().sigma
+             /*
              << std::setw(10) << module->GetHVInfo().crate
              << std::setw(6)  << module->GetHVInfo().slot
              << std::setw(6)  << module->GetHVInfo().channel
+             */
              << std::endl;
     }
 }
@@ -904,6 +911,10 @@ void PRadEventViewer::setupOnlineMode()
     onlineTimer = new QTimer(this);
     connect(onlineTimer, SIGNAL(timeout()), this, SLOT(onlineUpdate()));
 
+    // future watcher for online mode
+    connect(&watcher, SIGNAL(finished()), this, SLOT(onlineMode()));
+
+    etChannel = new PRadETChannel();
     hvChannel = new PRadHVChannel(handler);
 
     QFile hvCrateList("config/hv_crate_list.txt");
@@ -955,27 +966,17 @@ void PRadEventViewer::startOnlineMode()
 bool PRadEventViewer::connectETClient()
 {
     try {
-        etChannel = new PRadETChannel(etSetting->GetETHost().toStdString().c_str(),
-                                      etSetting->GetETPort(),
-                                      etSetting->GetETFilePath().toStdString().c_str());
-    } catch(PRadException e) {
-        std::cerr << e.FailureType() << ": "
-                  << e.FailureDesc() << std::endl;
-        return false;
-    }
-
-    try {
+        etChannel->Open(etSetting->GetETHost().toStdString().c_str(),
+                        etSetting->GetETPort(),
+                        etSetting->GetETFilePath().toStdString().c_str());
         etChannel->CreateStation(etSetting->GetStationName().toStdString().c_str(), 2);
         etChannel->AttachStation();
     } catch(PRadException e) {
-        delete etChannel;
-        etChannel = nullptr;
+        etChannel->ForceClose();
         std::cerr << e.FailureType() << ": "
                   << e.FailureDesc() << std::endl;
         return false;
     }
-    std::cout << "Successfully attached to ET!" << std::endl
-              << "Trying connect to HV crates..." << std::endl;
 
     hvChannel->Initialize();
     return true;
@@ -1006,7 +1007,7 @@ void PRadEventViewer::onlineMode()
     // Successfully attach to ET, change to online mode
     handler->OnlineMode();
 
-   // Clean buffer
+    // Clean buffer
     eraseModuleBuffer();
 
     // Update to status bar
@@ -1023,13 +1024,10 @@ void PRadEventViewer::stopOnlineMode()
 
     hvChannel->StopMonitor();
 
-    if(etChannel != nullptr) {
-        delete etChannel;
-        etChannel = nullptr;
-        QMessageBox::information(this,
-                                 tr("Online Monitor"),
-                                 tr("Dettached from ET!"));
-    }
+    etChannel->ForceClose();
+    QMessageBox::information(this,
+                             tr("Online Monitor"),
+                             tr("Dettached from ET!"));
 
     handler->OfflineMode();
 

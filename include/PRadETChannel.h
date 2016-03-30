@@ -10,16 +10,37 @@
 class PRadETChannel
 {
 public:
-    PRadETChannel(const char* ipAddr, int tcpPort, const char* etFile, size_t size = 1048576) throw(PRadException);
+    PRadETChannel(size_t size = 1048576);
     virtual ~PRadETChannel();
+    void Open(const char* ipAddr, int tcpPort, const char* etFile) throw(PRadException);
     void CreateStation(std::string stName, int mode) throw(PRadException);
     void AttachStation() throw(PRadException);
     void DetachStation();
+    void ForceClose();
     bool Read() throw(PRadException);
     void *GetBuffer() {return (void*) buffer;};
     size_t GetBufferLength() {return bufferSize;};
 
+public:
+    class OpenConfig
+    {
+    public:
+        OpenConfig();
+        virtual ~OpenConfig();
+        et_openconfig config;
+    };
+
+    class StationConfig
+    {
+    public:
+        StationConfig();
+        virtual ~StationConfig();
+        et_statconfig config;
+    };
+
 private:
+    OpenConfig openConf;
+    StationConfig stationConf;
     et_att_id attachID;
     et_stat_id stationID;
     et_sys_id etID;

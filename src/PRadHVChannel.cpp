@@ -56,8 +56,13 @@ void PRadHVChannel::AddCrate(const string &name,
 void PRadHVChannel::Initialize()
 {
     locker.lock();
+    int try_cnt = 0, fail_cnt = 0;
+
+    cout << "Trying to initialize all HV crates" << endl;
+
     for(auto &crate : crateList)
     {
+        ++ try_cnt;
         int err;
         char arg[32];
         strcpy(arg, crate.ip.c_str());
@@ -75,12 +80,18 @@ void PRadHVChannel::Initialize()
                 getCrateMap(crate);
         }
         else {
+            ++fail_cnt;
             cerr << "Cannot connect to "
                  << crate.name << "@" << crate.ip
                  << endl;
             showError("HV Initialize", err);
         }
     }
+
+    cout << "HV crates initialize DONE, tried "
+         << try_cnt << " crates, failed for "
+         << fail_cnt << " crates" << endl;
+
     locker.unlock();
 }
 

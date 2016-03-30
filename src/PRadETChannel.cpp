@@ -6,6 +6,7 @@
 //============================================================================//
 
 #include "PRadETChannel.h"
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -15,35 +16,9 @@
 #include <pthread.h>
 
 
-PRadETChannel::PRadETChannel(const char* ipAddr, int tcpPort, const char* etFile, size_t size) throw(PRadException)
-: bufferSize(size)
+PRadETChannel::PRadETChannel(size_t size)
+: etID(nullptr), bufferSize(size)
 {
-    // Initialize
-    et_openconfig openconfig;
-    et_open_config_init(&openconfig);
-
-    // ET is on 129.57.167.225 (prad.jlab.org)
-    et_open_config_sethost(openconfig, ipAddr);
-    et_open_config_setserverport(openconfig, tcpPort);
-    // Use a direct connection to the ET system
-    et_open_config_setcast(openconfig, ET_DIRECT);
-
-    int status;
-    etID = nullptr;
-
-    int charSize = strlen(etFile)+1;
-    char *fileName = new char[charSize];
-    strncpy(fileName, etFile, charSize);
-
-    // Open et client
-    status = et_open(&etID, fileName, openconfig);
-    delete fileName;
-    et_open_config_destroy(openconfig);
-
-    if(status != ET_OK) {
-        throw(PRadException(PRadException::ET_CONNECT_ERROR, "et_client: cannot open et client!"));
-    }
-
     buffer = new uint32_t[bufferSize];
 }
 
@@ -51,10 +26,41 @@ PRadETChannel::~PRadETChannel()
 {
     if(buffer != nullptr)
         delete[](buffer), buffer=nullptr;
+
     // force close ET
-    if(etID != nullptr)
-        et_forcedclose(etID);
+    ForceClose();
 }
+
+void PRadETChannel::ForceClose()
+{
+    if(etID != nullptr && et_alive(etID))
+    {
+        et_forcedclose(etID);
+        etID = nullptr;
+    }
+}
+
+void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) throw(PRadException)
+{
+    // ET is on 129.57.167.225 (prad.jlab.org)
+    et_open_config_sethost(openConf.config, ipAddr);
+    et_open_config_setserverport(openConf.config, tcpPort);
+    // Use a direct connection to the ET system
+    et_open_config_setcast(openConf.config, ET_DIRECT);
+
+    int charSize = strlen(etFile)+1;
+    char *fileName = new char[charSize];
+    strncpy(fileName, etFile, charSize);
+
+    // Open et client
+    int status = et_open(&etID, fileName, openConf.config);
+    delete fileName;
+
+    if(status != ET_OK) {
+        throw(PRadException(PRadException::ET_CONNECT_ERROR, "et_client: cannot open et client!"));
+    }
+}
+
 
 void PRadETChannel::CreateStation(std::string stName, int mode) throw(PRadException)
 {
@@ -152,6 +158,7 @@ void PRadETChannel::AttachStation() throw(PRadException)
     if (et_station_attach(etID, stationID, &attachID) < 0) {
         throw(PRadException(PRadException::ET_STATION_ATTACH_ERROR, "et_client: error in station attach!"));
     }
+    std::cout << "Successfully attached to ET!" << std::endl;
 }
 
 bool PRadETChannel::Read() throw(PRadException)
@@ -204,5 +211,28 @@ bool PRadETChannel::Read() throw(PRadException)
     }
 
     return true;
+}
+
+
+// nested config classes
+PRadETChannel::OpenConfig::OpenConfig()
+{
+    et_open_config_init(&config);
+}
+
+PRadETChannel::OpenConfig::~OpenConfig()
+{
+    et_open_config_destroy(config);
+}
+
+
+PRadETChannel::StationConfig::StationConfig()
+{
+    et_station_config_init(&config);
+}
+
+PRadETChannel::StationConfig::~StationConfig()
+{
+    et_station_config_destroy(config);
 }
 

@@ -64,7 +64,7 @@ class PRadEventViewer : public QMainWindow
 
 public:
     PRadEventViewer();
-    virtual ~PRadEventViewer() {/*managed by qt*/};
+    virtual ~PRadEventViewer();
     void ModuleAction(void (HyCalModule::*act)());
     void ListModules();
     ViewMode GetViewMode() {return viewMode;};
