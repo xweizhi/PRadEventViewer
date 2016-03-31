@@ -973,7 +973,7 @@ bool PRadEventViewer::connectETClient()
         etChannel->Open(etSetting->GetETHost().toStdString().c_str(),
                         etSetting->GetETPort(),
                         etSetting->GetETFilePath().toStdString().c_str());
-        etChannel->CreateStation(etSetting->GetStationName().toStdString().c_str(), 2);
+        etChannel->CreateStation(etSetting->GetStationName().toStdString().c_str());
         etChannel->AttachStation();
     } catch(PRadException e) {
         etChannel->ForceClose();

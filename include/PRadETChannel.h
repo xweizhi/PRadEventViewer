@@ -69,8 +69,9 @@ public:
 public:
     PRadETChannel(size_t size = 1048576);
     virtual ~PRadETChannel();
-    void Open(const char* ipAddr, int tcpPort, const char* etFile) throw(PRadException);
-    void CreateStation(std::string stName, int mode) throw(PRadException);
+    void Open(const char *ipAddr, int tcpPort, const char *etFile) throw(PRadException);
+    void CreateStation(const char *name) throw(PRadException);
+    void StationPreSetting(int mode) throw(PRadException);
     void AttachStation() throw(PRadException);
     void DetachStation();
     void ForceClose();
@@ -83,9 +84,9 @@ public:
 private:
     OpenConfig openConf;
     StationConfig stationConf;
-    et_att_id attachID;
-    et_stat_id stationID;
-    et_sys_id etID;
+    et_att_id attach_id;
+    et_stat_id station_id;
+    et_sys_id et_id;
     et_event *etEvent;
     uint32_t *buffer;
     size_t bufferSize;

@@ -18,7 +18,7 @@
 using namespace std;
 
 PRadETChannel::PRadETChannel(size_t size)
-: etID(nullptr), bufferSize(size)
+: et_id(nullptr), bufferSize(size)
 {
     buffer = new uint32_t[bufferSize];
 }
@@ -35,10 +35,10 @@ PRadETChannel::~PRadETChannel()
 // Close ET connection
 void PRadETChannel::ForceClose()
 {
-    if(etID != nullptr && et_alive(etID))
+    if(et_id != nullptr && et_alive(et_id))
     {
-        et_forcedclose(etID);
-        etID = nullptr;
+        et_forcedclose(et_id);
+        et_id = nullptr;
     }
 }
 
@@ -57,28 +57,25 @@ void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) th
     strncpy(fileName, etFile, charSize);
 
     // Open et client
-    int status = et_open(&etID, fileName, openConf.config);
+    int status = et_open(&et_id, fileName, openConf.config);
     delete fileName;
 
     if(status != ET_OK) {
         throw(PRadException(PRadException::ET_CONNECT_ERROR, "et_client: cannot open et client!"));
     }
+
+    /* set level of debug output */
+    et_system_setdebug(et_id, ET_DEBUG_INFO);
 }
 
 // Create station
-void PRadETChannel::CreateStation(string stName, int mode) throw(PRadException)
+void PRadETChannel::StationPreSetting(int mode) throw(PRadException)
 {
-    if (etID == nullptr) {
-        throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: cannot create station without opening a ET client!"));
-    }
-
     // Generic settings
-    et_statconfig sconfig;
-    et_station_config_init(&sconfig);
-    et_station_config_setuser(sconfig, ET_STATION_USER_MULTI);
-    et_station_config_setrestore(sconfig, ET_STATION_RESTORE_OUT);
-    et_station_config_setprescale(sconfig, 1);
-    et_station_config_setcue(sconfig, ET_CHUNK_SIZE);
+    stationConf.SetUser(ET_STATION_USER_MULTI);
+    stationConf.SetRestore(ET_STATION_RESTORE_OUT);
+    stationConf.SetPrescale(1);
+    stationConf.SetCUE(ET_CHUNK_SIZE);
 
     // TODO, change to meaningful settings
     int selections[] = {17,15,-1,-1};
@@ -90,63 +87,61 @@ void PRadETChannel::CreateStation(string stName, int mode) throw(PRadException)
     switch(mode)
     {
     case 1:
-        et_station_config_setselect(sconfig, ET_STATION_SELECT_ALL);
-        et_station_config_setblock(sconfig, ET_STATION_BLOCKING);
+        stationConf.SetSelect(ET_STATION_SELECT_ALL);
+        stationConf.SetBlock(ET_STATION_BLOCKING);
         break;
     case 2:
-        et_station_config_setselect(sconfig, ET_STATION_SELECT_ALL);
-        et_station_config_setblock(sconfig, ET_STATION_NONBLOCKING);
+        stationConf.SetSelect(ET_STATION_SELECT_ALL);
+        stationConf.SetBlock(ET_STATION_NONBLOCKING);
         break;
     case 3:
-        et_station_config_setselect(sconfig, ET_STATION_SELECT_MATCH);
-        et_station_config_setblock(sconfig, ET_STATION_BLOCKING);
-        et_station_config_setselectwords(sconfig, selections);
+        stationConf.SetSelect(ET_STATION_SELECT_MATCH);
+        stationConf.SetBlock(ET_STATION_BLOCKING);
+        stationConf.SetSelectWords(selections);
         break;
     case 4:
-        et_station_config_setselect(sconfig, ET_STATION_SELECT_MATCH);
-        et_station_config_setblock(sconfig, ET_STATION_NONBLOCKING);
-        et_station_config_setselectwords(sconfig, selections);
+        stationConf.SetSelect(ET_STATION_SELECT_MATCH);
+        stationConf.SetBlock(ET_STATION_NONBLOCKING);
+        stationConf.SetSelectWords(selections);
         break;
     case 5:
-        et_station_config_setselect(sconfig, ET_STATION_SELECT_USER);
-        et_station_config_setblock(sconfig, ET_STATION_BLOCKING);
-        et_station_config_setselectwords(sconfig, selections);
-        if (et_station_config_setfunction(sconfig, fName) == ET_ERROR) {
-            throw(PRadException(PRadException::ET_STATION_CONFIG_ERROR, "et_client: cannot set function!"));
-        }
-        if (et_station_config_setlib(sconfig, libName) == ET_ERROR) {
-            throw(PRadException(PRadException::ET_STATION_CONFIG_ERROR, "et_client: cannot set library!"));
-        }
+        stationConf.SetSelect(ET_STATION_SELECT_USER);
+        stationConf.SetBlock(ET_STATION_BLOCKING);
+        stationConf.SetSelectWords(selections);
+        stationConf.SetFunction(fName);
+        stationConf.SetLib(libName);
         break;
     case 6:
-        et_station_config_setselect(sconfig, ET_STATION_SELECT_USER);
-        et_station_config_setblock(sconfig, ET_STATION_NONBLOCKING);
-        et_station_config_setselectwords(sconfig, selections);
-        if (et_station_config_setfunction(sconfig, fName) == ET_ERROR) {
-            throw(PRadException(PRadException::ET_STATION_CONFIG_ERROR, "et_client: cannot set function!"));
-        }
-        if (et_station_config_setlib(sconfig, libName) == ET_ERROR) {
-            throw(PRadException(PRadException::ET_STATION_CONFIG_ERROR, "et_client: cannot set library!"));
-        }
+        stationConf.SetSelect(ET_STATION_SELECT_USER);
+        stationConf.SetBlock(ET_STATION_NONBLOCKING);
+        stationConf.SetSelectWords(selections);
+        stationConf.SetFunction(fName);
+        stationConf.SetLib(libName);
         break;
     }
+}
 
-    /* set level of debug output */
-    et_system_setdebug(etID, ET_DEBUG_INFO);
+// Create a station
+void PRadETChannel::CreateStation(const char *name) throw(PRadException)
+{
+    if (et_id == nullptr) {
+        throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: cannot create station without opening a ET client!"));
+    }
 
-    int status;
-    char *stationName = new char[stName.size()+1];
-    strcpy(stationName,stName.c_str());
+    StationPreSetting(2);
+
+    int size = strlen(name) +1;
+    char *stationName = new char[size];
+    strcpy(stationName, name);
 
     /* create the station */
-    status = et_station_create(etID, &stationID, stationName,sconfig);
+    int status = et_station_create(et_id, &station_id, stationName, stationConf.config);
 
-    delete stationName;
-    et_station_config_destroy(sconfig);
+    delete[] stationName;
 
     if (status < ET_OK) {
         if (status == ET_ERROR_EXISTS) {
-            /* stationID contains pointer to existing station */;
+            /* station_id contains pointer to existing station */;
             throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: station already exists!"));
         } else if (status == ET_ERROR_TOOMANY) {
             throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: too many stations created!"));
@@ -160,7 +155,7 @@ void PRadETChannel::CreateStation(string stName, int mode) throw(PRadException)
 void PRadETChannel::AttachStation() throw(PRadException)
 {
     /* attach to the newly created station */
-    if (et_station_attach(etID, stationID, &attachID) < 0) {
+    if (et_station_attach(et_id, station_id, &attach_id) < 0) {
         throw(PRadException(PRadException::ET_STATION_ATTACH_ERROR, "et_client: error in station attach!"));
     }
     cout << "Successfully attached to ET!" << endl;
@@ -171,11 +166,11 @@ void PRadETChannel::AttachStation() throw(PRadException)
 bool PRadETChannel::Read() throw(PRadException)
 {
     // check if et is opened or alive
-    if (etID == nullptr || !et_alive(etID))
+    if (et_id == nullptr || !et_alive(et_id))
         throw(PRadException(PRadException::ET_READ_ERROR,"et_client: et is not opened or dead!"));
 
     // get the event
-    int status = et_event_get(etID, attachID, &etEvent, ET_ASYNC, nullptr);
+    int status = et_event_get(et_id, attach_id, &etEvent, ET_ASYNC, nullptr);
 
     switch(status)
     {
@@ -203,7 +198,7 @@ bool PRadETChannel::Read() throw(PRadException)
     memcpy(buffer,(uint32_t*)data,bufferSize);
 
     // put back the event
-    status = et_event_put(etID, attachID, etEvent);
+    status = et_event_put(et_id, attach_id, etEvent);
 
     switch(status)
     {

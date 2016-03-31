@@ -3,6 +3,44 @@
 
 #include <string>
 
+enum PRadEventType
+{
+    PhysicsType1 = 0x01,
+    PhysicsType2 = 0x02,
+    PreStartEvent = 0x11,
+    GoEvent = 0x12,
+    EndEvent = 0x20,
+};
+
+enum PRadHeaderType
+{
+    UnsignedInt32bit = 0x01,
+    EvioBank = 0x10
+};
+
+enum PRadROCID
+{
+// test data at early stage using different IDs for coda components
+// PRadTS = 1,
+// PRadROC_4 = 14,
+// PRadROC_5 = 12,
+// PRadROC_6 = 11,
+    PRadTS = 2,
+    PRadROC_4 = 4,
+    PRadROC_5 = 5,
+    PRadROC_6 = 6,
+};
+
+enum PRadBankID
+{
+    TI_BANK = 0x4,
+    TDC_BANK = 0x5,
+    FASTBUS_BANK = 0x7,
+    GEMDATA_BANK = 0x8,
+    EVINFO_BANK = 0xc000,
+};
+
+
 struct CrateConfig
 {
     size_t crate;
@@ -43,21 +81,21 @@ struct CrateConfig
  * |  tag  |type| num|
  * -------------------
  */
-typedef struct
+struct PRadEventHeader
 {
     unsigned int length;
     unsigned char num;
     unsigned char type;
     unsigned short tag;
-} PRadEventHeader;
+};
 
-typedef struct
+struct ADC1881MData
 {
     CrateConfig config;
     unsigned short val;
-} ADC1881MData;
+};
 
-typedef struct
+struct GEMAPVData
 {
     unsigned char FEC;
     unsigned char APV;
@@ -65,52 +103,15 @@ typedef struct
         unsigned short first;
         unsigned short second;
     } val;
-} GEMAPVData;
+};
 
-typedef struct
+struct CAENHVData
 {
     CrateConfig config;
     std::string name;
     bool ON;
     float Vmon;
     float Vset;
-} CAENHVData;
-
-enum PRadEventType
-{
-    PhysicsType1 = 0x01,
-    PhysicsType2 = 0x02,
-    PreStartEvent = 0x11,
-    GoEvent = 0x12,
-    EndEvent = 0x20,
-};
-
-enum PRadHeaderType
-{
-    UnsignedInt32bit = 0x01,
-    EvioBank = 0x10
-};
-
-enum PRadROCID
-{
-// test data at early stage using different IDs for coda components
-// PRadTS = 1,
-// PRadROC_4 = 14,
-// PRadROC_5 = 12,
-// PRadROC_6 = 11,
-    PRadTS = 2,
-    PRadROC_4 = 4,
-    PRadROC_5 = 5,
-    PRadROC_6 = 6,
-};
-
-enum PRadBankID
-{
-    TI_BANK = 0x4,
-    TDC_BANK = 0x5,
-    FASTBUS_BANK = 0x7,
-    GEMDATA_BANK = 0x8,
-    EVINFO_BANK = 0xc000,
 };
 
 #endif

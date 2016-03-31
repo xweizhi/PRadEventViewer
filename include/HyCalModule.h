@@ -20,34 +20,51 @@ public:
         LeadGlass,
         LeadTungstate,
     };
+
     struct Pedestal
     {
         double mean;
         double sigma;
+        Pedestal() {};
+        Pedestal(double m, double s) : mean(m), sigma(s) {};
     };
+
     struct GeoInfo
     {
         ModuleType type;
         double cellSize;
         double x;
         double y;
+        GeoInfo() {};
+        GeoInfo(ModuleType t, double s, double xx, double yy)
+        : type(t), cellSize(s), x(xx), y(yy) {};
     };
+
     struct Voltage
     {
        float Vmon;
        float Vset;
        bool ON;
+       Voltage() {};
+       Voltage(float vm, float vs, bool o = false) : Vmon(vm), Vset(vs), ON(o) {};
     };
+
     struct DAQSetup
     {
         CrateConfig config;
         Pedestal pedestal;
         unsigned char tdcGroup;
+        DAQSetup() {};
+        DAQSetup(CrateConfig c, Pedestal p, unsigned char tdc_id)
+        : config(c), pedestal(p), tdcGroup(tdc_id) {};
     };
+
     struct HVSetup
     {
         CrateConfig config;
         Voltage volt;
+        HVSetup() {};
+        HVSetup(CrateConfig c, Voltage v) : config(c), volt(v) {};
     };
 
 public:
