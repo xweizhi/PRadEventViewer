@@ -298,7 +298,7 @@ void PRadEventViewer::setupInfoWindow()
 
     // add new items to status info
     QStringList statusProperty;
-    statusProperty << tr("  Module ID") << tr("  Module Type") << tr("  DAQ Config") << tr("  TDC Group") << tr("  HV Config")
+    statusProperty << tr("  Module ID") << tr("  Module Type") << tr("  DAQ Address") << tr("  TDC Group") << tr("  HV Address")
                    << tr("  Pedestal") << tr("  Event No.") << tr("  Energy") << tr("  Fired Count") << tr("  High Voltage");
 
     for(int i = 0; i < 5; ++i) // row iteration
@@ -457,7 +457,7 @@ void PRadEventViewer::readPedestalData(const QString &filename)
 
     int crate, slot, channel;
     double val, sigma;
-    CrateConfig daqInfo;
+    ChannelAddress daqInfo;
     HyCalModule *tmp;
 
     QTextStream in(&pedData);
@@ -717,8 +717,8 @@ void PRadEventViewer::UpdateStatusInfo()
     QStringList valueList;
     QString typeInfo;
 
-    CrateConfig daqInfo = selection->GetDAQInfo();
-    CrateConfig hvInfo = selection->GetHVInfo();
+    ChannelAddress daqInfo = selection->GetDAQInfo();
+    ChannelAddress hvInfo = selection->GetHVInfo();
     HyCalModule::GeoInfo geoInfo = selection->GetGeometry();
 
     if(geoInfo.type == HyCalModule::LeadTungstate) {
@@ -858,7 +858,7 @@ void PRadEventViewer::fitEventsForPedestal()
         double p0 = myfit->GetParameter(1);
         double p1 = myfit->GetParameter(2);
         module->UpdatePedestal(p0, p1);
-        CrateConfig daqInfo = module->GetDAQInfo();
+        ChannelAddress daqInfo = module->GetDAQInfo();
         pedestalmap << daqInfo.crate << "  "
                     << daqInfo.slot << "  "
                     << daqInfo.channel << "  "

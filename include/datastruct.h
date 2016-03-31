@@ -41,13 +41,13 @@ enum PRadBankID
 };
 
 
-struct CrateConfig
+struct ChannelAddress
 {
     size_t crate;
     size_t slot;
     size_t channel;
 
-    bool operator < (const CrateConfig &rhs) const {
+    bool operator < (const ChannelAddress &rhs) const {
         if( crate != rhs.crate )
             return crate < rhs.crate ;
         else if( slot != rhs.slot )
@@ -58,7 +58,7 @@ struct CrateConfig
         return false ;
     }
 
-    bool operator == (const CrateConfig &rhs) const {
+    bool operator == (const ChannelAddress &rhs) const {
         if( (crate != rhs.crate) ||
             (slot != rhs.slot)   ||
             (channel != rhs.channel) )
@@ -91,7 +91,7 @@ struct PRadEventHeader
 
 struct ADC1881MData
 {
-    CrateConfig config;
+    ChannelAddress config;
     unsigned short val;
 };
 
@@ -107,7 +107,7 @@ struct GEMAPVData
 
 struct CAENHVData
 {
-    CrateConfig config;
+    ChannelAddress config;
     std::string name;
     bool ON;
     float Vmon;

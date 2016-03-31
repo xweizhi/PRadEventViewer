@@ -25,9 +25,9 @@ class TH1D;
 // a simple hash function for DAQ configuration
 namespace std {
     template <>
-    struct hash<CrateConfig>
+    struct hash<ChannelAddress>
     {
-        size_t operator()(const CrateConfig& cfg) const
+        size_t operator()(const ChannelAddress& cfg) const
         {
             // crate id is 1-6, slot is 1-26, channel is 0-63
             // thus they can be filled in a 16 bit word
@@ -40,7 +40,7 @@ namespace std {
    };
 }
 
-typedef unordered_map< CrateConfig, HyCalModule* >::iterator daq_iter;
+typedef unordered_map< ChannelAddress, HyCalModule* >::iterator daq_iter;
 typedef unordered_map< string, HyCalModule* >::iterator name_iter;
 typedef unordered_map< int, vector< HyCalModule* > >::iterator tdc_iter;
 
@@ -66,7 +66,7 @@ public:
     void OnlineMode() {onlineMode = true;};
     void OfflineMode() {onlineMode = false;};
     void BuildModuleMap();
-    HyCalModule *FindModule(CrateConfig &daqInfo);
+    HyCalModule *FindModule(ChannelAddress &daqInfo);
     HyCalModule *FindModule(const unsigned short &id);
     vector< HyCalModule* > GetTDCGroup(int &id);
     vector< int > GetTDCGroupIDList();
@@ -78,7 +78,7 @@ private:
 #ifdef MULTI_THREAD
     mutex myLock;
 #endif
-    unordered_map< CrateConfig, HyCalModule* > map_daq;
+    unordered_map< ChannelAddress, HyCalModule* > map_daq;
     unordered_map< string, HyCalModule* > map_name;
     unordered_map< int, vector< HyCalModule* > > map_tdc;
     vector< HyCalModule* > moduleList;

@@ -167,7 +167,7 @@ void PRadDataHandler::ShowEvent(int idx)
 }
 
 // find modules
-HyCalModule* PRadDataHandler::FindModule(CrateConfig &daqInfo)
+HyCalModule* PRadDataHandler::FindModule(ChannelAddress &daqInfo)
 {
     daq_iter it = map_daq.find(daqInfo);
     if(it == map_daq.end())

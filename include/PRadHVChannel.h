@@ -77,8 +77,8 @@ public:
     void StartMonitor();
     void StopMonitor() {alive = false;};
     void SetPowerOn(bool &val);
-    void SetPowerOn(CrateConfig &config, bool &val);
-    void SetVoltage(const char *name, CrateConfig &config, float &val);
+    void SetPowerOn(ChannelAddress &config, bool &val);
+    void SetVoltage(const char *name, ChannelAddress &config, float &val);
     void ReadVoltage();
     void PrintOut();
 

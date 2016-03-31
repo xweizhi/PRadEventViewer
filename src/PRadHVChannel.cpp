@@ -192,7 +192,7 @@ void PRadHVChannel::SetPowerOn(bool &val)
     }
 }
 
-void PRadHVChannel::SetPowerOn(CrateConfig &config, bool &val)
+void PRadHVChannel::SetPowerOn(ChannelAddress &config, bool &val)
 {
     for(auto &crate : crateList)
     {
@@ -207,7 +207,7 @@ void PRadHVChannel::SetPowerOn(CrateConfig &config, bool &val)
     }
 }
 
-void PRadHVChannel::SetVoltage(const char *name, CrateConfig &config, float &val)
+void PRadHVChannel::SetVoltage(const char *name, ChannelAddress &config, float &val)
 {
     // set voltage limit
     float limit = (name[0] == 'G')?1900:1300;

@@ -51,20 +51,20 @@ public:
 
     struct DAQSetup
     {
-        CrateConfig config;
+        ChannelAddress config;
         Pedestal pedestal;
         unsigned char tdcGroup;
         DAQSetup() {};
-        DAQSetup(CrateConfig c, Pedestal p, unsigned char tdc_id)
+        DAQSetup(ChannelAddress c, Pedestal p, unsigned char tdc_id)
         : config(c), pedestal(p), tdcGroup(tdc_id) {};
     };
 
     struct HVSetup
     {
-        CrateConfig config;
+        ChannelAddress config;
         Voltage volt;
         HVSetup() {};
-        HVSetup(CrateConfig c, Voltage v) : config(c), volt(v) {};
+        HVSetup(ChannelAddress c, Voltage v) : config(c), volt(v) {};
     };
 
 public:
@@ -85,7 +85,7 @@ public:
     void ShowOccupancy() {SetColor(occupancy);};
     void ShowVoltage();
     void UpdateHV(const float &Vmon, const float &Vset, const bool &ON) {hvSetup.volt.Vmon = Vmon; hvSetup.volt.Vset = Vset; hvSetup.volt.ON = ON;};
-    void UpdateHVSetup(CrateConfig &set) {hvSetup.config = set;};
+    void UpdateHVSetup(ChannelAddress &set) {hvSetup.config = set;};
     void DeEnergize() {color = Qt::white; energy = 0;};
     void Energize(const unsigned short &adcVal);
     unsigned short Sparsification(unsigned short &adcVal);
@@ -98,8 +98,8 @@ public:
     Voltage GetVoltage() {return hvSetup.volt;};
     double GetEnergy() {return energy;};
     double Calibration(const unsigned short &val); 
-    CrateConfig GetDAQInfo() {return daqSetup.config;};
-    CrateConfig GetHVInfo() {return hvSetup.config;};
+    ChannelAddress GetDAQInfo() {return daqSetup.config;};
+    ChannelAddress GetHVInfo() {return hvSetup.config;};
     GeoInfo GetGeometry() {return geometry;};
     Pedestal GetPedestal() {return daqSetup.pedestal;};
 
