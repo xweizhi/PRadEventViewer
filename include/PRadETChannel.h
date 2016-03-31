@@ -50,6 +50,17 @@ public:
 
         //wrapper functions
         void Initialize();
+        void SetBlock(int val);
+        void SetFlow(int val);
+        void SetSelect(int val);
+        void SetUser(int val);
+        void SetRestore(int val);
+        void SetCUE(int val);
+        void SetPrescale(int val);
+        void SetSelectWords(int val[]);
+        void SetFunction(const char *val);
+        void SetLib(const char *val);
+        void SetClass(const char *val);
 
     public:
         et_statconfig config;

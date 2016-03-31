@@ -32,6 +32,7 @@ PRadETChannel::~PRadETChannel()
     ForceClose();
 }
 
+// Close ET connection
 void PRadETChannel::ForceClose()
 {
     if(etID != nullptr && et_alive(etID))
@@ -41,6 +42,7 @@ void PRadETChannel::ForceClose()
     }
 }
 
+// Open ET
 void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) throw(PRadException)
 {
     // Use a direct connection to the ET system
@@ -63,6 +65,7 @@ void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) th
     }
 }
 
+// Create station
 void PRadETChannel::CreateStation(string stName, int mode) throw(PRadException)
 {
     if (etID == nullptr) {
@@ -153,6 +156,7 @@ void PRadETChannel::CreateStation(string stName, int mode) throw(PRadException)
     }
 }
 
+// Attach station
 void PRadETChannel::AttachStation() throw(PRadException)
 {
     /* attach to the newly created station */
@@ -162,10 +166,10 @@ void PRadETChannel::AttachStation() throw(PRadException)
     cout << "Successfully attached to ET!" << endl;
 }
 
+
+// Read one event from ET station, return true if success
 bool PRadETChannel::Read() throw(PRadException)
 {
-    // read the event in ET
-
     // check if et is opened or alive
     if (etID == nullptr || !et_alive(etID))
         throw(PRadException(PRadException::ET_READ_ERROR,"et_client: et is not opened or dead!"));
@@ -329,9 +333,63 @@ PRadETChannel::StationConfig::~StationConfig()
     et_station_config_destroy(config);
 }
 
+// wrapper functions
 void PRadETChannel::StationConfig::Initialize()
 {
     et_station_config_init(&config);
 }
 
-// wrapper functions
+void PRadETChannel::StationConfig::SetBlock(int val)
+{
+    et_station_config_setblock(config, val);
+}
+
+void PRadETChannel::StationConfig::SetFlow(int val)
+{
+    et_station_config_setflow(config, val);
+}
+
+void PRadETChannel::StationConfig::SetSelect(int val)
+{
+    et_station_config_setselect(config, val);
+}
+
+void PRadETChannel::StationConfig::SetUser(int val)
+{
+    et_station_config_setuser(config, val);
+}
+
+void PRadETChannel::StationConfig::SetRestore(int val)
+{
+    et_station_config_setrestore(config, val);
+}
+
+void PRadETChannel::StationConfig::SetCUE(int val)
+{
+    et_station_config_setcue(config, val);
+}
+
+void PRadETChannel::StationConfig::SetPrescale(int val)
+{
+    et_station_config_setprescale(config, val);
+}
+
+void PRadETChannel::StationConfig::SetSelectWords(int val[])
+{
+    et_station_config_setselectwords(config, val);
+}
+
+void PRadETChannel::StationConfig::SetFunction(const char *val)
+{
+    et_station_config_setfunction(config, val);
+}
+
+void PRadETChannel::StationConfig::SetLib(const char *val)
+{
+    et_station_config_setlib(config, val);
+}
+
+void PRadETChannel::StationConfig::SetClass(const char *val)
+{
+    et_station_config_setclass(config, val);
+}
