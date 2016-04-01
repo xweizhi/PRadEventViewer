@@ -27,6 +27,7 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadEvioParser.h \
            include/PRadDataHandler.h \
            include/PRadETChannel.h \
+           include/PRadETStation.h \
            include/ETSettingPanel.h \
            include/PRadLogBox.h \
            include/PRadHVChannel.h \
@@ -44,7 +45,8 @@ SOURCES += src/main.cpp \
            src/HtmlDelegate.cpp \
            src/PRadEvioParser.cpp \
            src/PRadDataHandler.cpp \
-           src/PRadETchannel.cpp \
+           src/PRadETChannel.cpp \
+           src/PRadETStation.cpp\
            src/ETSettingPanel.cpp \
            src/PRadLogBox.cpp \
            src/PRadHVChannel.cpp \

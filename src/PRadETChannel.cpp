@@ -6,6 +6,7 @@
 //============================================================================//
 
 #include "PRadETChannel.h"
+#include "PRadETStation.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +19,7 @@
 using namespace std;
 
 PRadETChannel::PRadETChannel(size_t size)
-: et_id(nullptr), bufferSize(size)
+: curr_stat(nullptr), et_id(nullptr), bufferSize(size)
 {
     buffer = new uint32_t[bufferSize];
 }
@@ -26,7 +27,7 @@ PRadETChannel::PRadETChannel(size_t size)
 PRadETChannel::~PRadETChannel()
 {
     if(buffer != nullptr)
-        delete[](buffer), buffer=nullptr;
+        delete[](buffer), buffer = nullptr;
 
     // force close ET
     ForceClose();
@@ -46,18 +47,18 @@ void PRadETChannel::ForceClose()
 void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) throw(PRadException)
 {
     // Use a direct connection to the ET system
-    openConf.SetCast(ET_DIRECT);
+    config.SetCast(ET_DIRECT);
 
     // Set the ip address and tcp port
-    openConf.SetHost(ipAddr);
-    openConf.SetServerPort(tcpPort);
+    config.SetHost(ipAddr);
+    config.SetServerPort(tcpPort);
 
     int charSize = strlen(etFile)+1;
     char *fileName = new char[charSize];
     strncpy(fileName, etFile, charSize);
 
     // Open et client
-    int status = et_open(&et_id, fileName, openConf.config);
+    int status = et_open(&et_id, fileName, config.Get());
     delete fileName;
 
     if(status != ET_OK) {
@@ -68,95 +69,52 @@ void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) th
     et_system_setdebug(et_id, ET_DEBUG_INFO);
 }
 
-// Create station
-void PRadETChannel::StationPreSetting(int mode) throw(PRadException)
+void PRadETChannel::NewStation(string name)
 {
-    // Generic settings
-    stationConf.SetUser(ET_STATION_USER_MULTI);
-    stationConf.SetRestore(ET_STATION_RESTORE_OUT);
-    stationConf.SetPrescale(1);
-    stationConf.SetCUE(ET_CHUNK_SIZE);
-
-    // TODO, change to meaningful settings
-    int selections[] = {17,15,-1,-1};
-    char fName[] = "et_my_function";
-    char libName[] = "libet_user.so";
-
-    // some pre-defined settings
-    // TODO, make these settings selectable
-    switch(mode)
-    {
-    case 1:
-        stationConf.SetSelect(ET_STATION_SELECT_ALL);
-        stationConf.SetBlock(ET_STATION_BLOCKING);
-        break;
-    case 2:
-        stationConf.SetSelect(ET_STATION_SELECT_ALL);
-        stationConf.SetBlock(ET_STATION_NONBLOCKING);
-        break;
-    case 3:
-        stationConf.SetSelect(ET_STATION_SELECT_MATCH);
-        stationConf.SetBlock(ET_STATION_BLOCKING);
-        stationConf.SetSelectWords(selections);
-        break;
-    case 4:
-        stationConf.SetSelect(ET_STATION_SELECT_MATCH);
-        stationConf.SetBlock(ET_STATION_NONBLOCKING);
-        stationConf.SetSelectWords(selections);
-        break;
-    case 5:
-        stationConf.SetSelect(ET_STATION_SELECT_USER);
-        stationConf.SetBlock(ET_STATION_BLOCKING);
-        stationConf.SetSelectWords(selections);
-        stationConf.SetFunction(fName);
-        stationConf.SetLib(libName);
-        break;
-    case 6:
-        stationConf.SetSelect(ET_STATION_SELECT_USER);
-        stationConf.SetBlock(ET_STATION_NONBLOCKING);
-        stationConf.SetSelectWords(selections);
-        stationConf.SetFunction(fName);
-        stationConf.SetLib(libName);
-        break;
+    auto it = stations.find(name);
+    if(it == stations.end()) {
+        curr_stat = new PRadETStation(this, name.c_str());
+        stations[string(name)] = curr_stat;
     }
 }
 
-// Create a station
-void PRadETChannel::CreateStation(const char *name) throw(PRadException)
+void PRadETChannel::SwitchStation(string name)
 {
-    if (et_id == nullptr) {
-        throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: cannot create station without opening a ET client!"));
+    auto it = stations.find(name);
+    if(it != stations.end()) {
+        curr_stat = it->second;
+    } else {
+        cout << "ET Channel Warning: station " << name << " does not exist!" << endl;
     }
+}
 
-    StationPreSetting(2);
-
-    int size = strlen(name) +1;
-    char *stationName = new char[size];
-    strcpy(stationName, name);
-
-    /* create the station */
-    int status = et_station_create(et_id, &station_id, stationName, stationConf.config);
-
-    delete[] stationName;
-
-    if (status < ET_OK) {
-        if (status == ET_ERROR_EXISTS) {
-            /* station_id contains pointer to existing station */;
-            throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: station already exists!"));
-        } else if (status == ET_ERROR_TOOMANY) {
-            throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: too many stations created!"));
+void PRadETChannel::RemoveStation(string name) throw(PRadException)
+{
+    try {
+        if(et_id != nullptr && et_alive(et_id)) {
+            auto it = stations.find(name);
+            if(it != stations.end()) {
+                it->second->Remove();
+                stations.erase(it);
+            } else {
+                cout << "ET Channel Warning: station " << name << " does not exist!" << endl;
+            }
         } else {
-            throw(PRadException(PRadException::ET_STATION_CREATE_ERROR, "et_client: error in station creation!"));
+            cout << "ET Channel Warning: cannot remove station while disconnected from ET!" << endl;
         }
+    } catch (PRadException e) {
+        throw e;
     }
 }
 
 // Attach station
 void PRadETChannel::AttachStation() throw(PRadException)
 {
-    /* attach to the newly created station */
-    if (et_station_attach(et_id, station_id, &attach_id) < 0) {
-        throw(PRadException(PRadException::ET_STATION_ATTACH_ERROR, "et_client: error in station attach!"));
+    try {
+        curr_stat->Create();
+        curr_stat->Attach();
+    } catch (PRadException e) {
+        throw(e);
     }
     cout << "Successfully attached to ET!" << endl;
 }
@@ -166,11 +124,13 @@ void PRadETChannel::AttachStation() throw(PRadException)
 bool PRadETChannel::Read() throw(PRadException)
 {
     // check if et is opened or alive
-    if (et_id == nullptr || !et_alive(et_id))
+    if(et_id == nullptr || !et_alive(et_id))
         throw(PRadException(PRadException::ET_READ_ERROR,"et_client: et is not opened or dead!"));
 
+    et_att_id att = curr_stat->GetAttachID();
+
     // get the event
-    int status = et_event_get(et_id, attach_id, &etEvent, ET_ASYNC, nullptr);
+    int status = et_event_get(et_id, att, &etEvent, ET_ASYNC, nullptr);
 
     switch(status)
     {
@@ -198,7 +158,7 @@ bool PRadETChannel::Read() throw(PRadException)
     memcpy(buffer,(uint32_t*)data,bufferSize);
 
     // put back the event
-    status = et_event_put(et_id, attach_id, etEvent);
+    status = et_event_put(et_id, att, etEvent);
 
     switch(status)
     {
@@ -216,175 +176,104 @@ bool PRadETChannel::Read() throw(PRadException)
 
 // nested config classes
 // et_openconfig
-PRadETChannel::OpenConfig::OpenConfig()
+PRadETChannel::Configuration::Configuration()
 {
     Initialize();
 }
 
-PRadETChannel::OpenConfig::~OpenConfig()
+PRadETChannel::Configuration::~Configuration()
 {
     et_open_config_destroy(config);
 }
 
 // wrapper functions
-void PRadETChannel::OpenConfig::Initialize()
+void PRadETChannel::Configuration::Initialize()
 {
     et_open_config_init(&config);
 }
 
-void PRadETChannel::OpenConfig::SetWait(int val)
+void PRadETChannel::Configuration::SetWait(int val)
 {
     et_open_config_setwait(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetTimeOut(struct timespec val)
+void PRadETChannel::Configuration::SetTimeOut(struct timespec val)
 {
    et_open_config_settimeout(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetHost(const char *val)
+void PRadETChannel::Configuration::SetHost(const char *val)
 {
     et_open_config_sethost(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetCast(int val)
+void PRadETChannel::Configuration::SetCast(int val)
 {
     et_open_config_setcast(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetTTL(int val)
+void PRadETChannel::Configuration::SetTTL(int val)
 {
     et_open_config_setTTL(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetPort(unsigned short val)
+void PRadETChannel::Configuration::SetPort(unsigned short val)
 {
     et_open_config_setport(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetMultiPort(unsigned short val)
+void PRadETChannel::Configuration::SetMultiPort(unsigned short val)
 {
     et_open_config_setmultiport(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetServerPort(unsigned short val)
+void PRadETChannel::Configuration::SetServerPort(unsigned short val)
 {
     et_open_config_setserverport(config, val);
 }
 
-void PRadETChannel::OpenConfig::AddBroadCast(const char *val)
+void PRadETChannel::Configuration::AddBroadCast(const char *val)
 {
     et_open_config_addbroadcast(config, val);
 }
 
-void PRadETChannel::OpenConfig::RemoveBroadCast(const char *val)
+void PRadETChannel::Configuration::RemoveBroadCast(const char *val)
 {
     et_open_config_removebroadcast(config, val);
 }
 
-void PRadETChannel::OpenConfig::AddMultiCast(const char *val)
+void PRadETChannel::Configuration::AddMultiCast(const char *val)
 {
     et_open_config_addmulticast(config, val);
 }
 
-void PRadETChannel::OpenConfig::RemoveMultiCast(const char *val)
+void PRadETChannel::Configuration::RemoveMultiCast(const char *val)
 {
     et_open_config_removemulticast(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetPolicy(int val)
+void PRadETChannel::Configuration::SetPolicy(int val)
 {
     et_open_config_setpolicy(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetMode(int val)
+void PRadETChannel::Configuration::SetMode(int val)
 {
     et_open_config_setmode(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetDebugDefault(int val)
+void PRadETChannel::Configuration::SetDebugDefault(int val)
 {
     et_open_config_setdebugdefault(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetInterface(const char *val)
+void PRadETChannel::Configuration::SetInterface(const char *val)
 {
     et_open_config_setinterface(config, val);
 }
 
-void PRadETChannel::OpenConfig::SetTCP(int rBufSize, int sBufSize, int noDelay)
+void PRadETChannel::Configuration::SetTCP(int rBufSize, int sBufSize, int noDelay)
 {
     et_open_config_settcp(config, rBufSize, sBufSize, noDelay);
 }
 
-// et_station_config
-PRadETChannel::StationConfig::StationConfig()
-{
-    Initialize();
-}
-
-PRadETChannel::StationConfig::~StationConfig()
-{
-    et_station_config_destroy(config);
-}
-
-// wrapper functions
-void PRadETChannel::StationConfig::Initialize()
-{
-    et_station_config_init(&config);
-}
-
-void PRadETChannel::StationConfig::SetBlock(int val)
-{
-    et_station_config_setblock(config, val);
-}
-
-void PRadETChannel::StationConfig::SetFlow(int val)
-{
-    et_station_config_setflow(config, val);
-}
-
-void PRadETChannel::StationConfig::SetSelect(int val)
-{
-    et_station_config_setselect(config, val);
-}
-
-void PRadETChannel::StationConfig::SetUser(int val)
-{
-    et_station_config_setuser(config, val);
-}
-
-void PRadETChannel::StationConfig::SetRestore(int val)
-{
-    et_station_config_setrestore(config, val);
-}
-
-void PRadETChannel::StationConfig::SetCUE(int val)
-{
-    et_station_config_setcue(config, val);
-}
-
-void PRadETChannel::StationConfig::SetPrescale(int val)
-{
-    et_station_config_setprescale(config, val);
-}
-
-void PRadETChannel::StationConfig::SetSelectWords(int val[])
-{
-    et_station_config_setselectwords(config, val);
-}
-
-void PRadETChannel::StationConfig::SetFunction(const char *val)
-{
-    et_station_config_setfunction(config, val);
-}
-
-void PRadETChannel::StationConfig::SetLib(const char *val)
-{
-    et_station_config_setlib(config, val);
-}
-
-void PRadETChannel::StationConfig::SetClass(const char *val)
-{
-    et_station_config_setclass(config, val);
-}

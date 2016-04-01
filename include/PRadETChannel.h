@@ -1,9 +1,12 @@
 #ifndef PRAD_ET_CHANNEL_H
 #define PRAD_ET_CHANNEL_H
 
+#include <unordered_map>
+#include <string>
 #include <stdint.h>
 #include "et.h"
 #include "PRadException.h"
+#include "PRadETStation.h"
 
 #define ET_CHUNK_SIZE 10
 
@@ -11,12 +14,13 @@ class PRadETChannel
 {
 
 public:
-    // nested classes for configurations
-    class OpenConfig
+    class Configuration
     {
     public:
-        OpenConfig();
-        virtual ~OpenConfig();
+        Configuration();
+        virtual ~Configuration();
+
+        et_openconfig &Get() {return config;};
 
         // wrapper functions
         void Initialize();
@@ -38,54 +42,31 @@ public:
         void SetInterface(const char *val);
         void SetTCP(int rBufSize, int sBufSize, int noDelay);
 
-    public:
+    private:
         et_openconfig config;
     };
 
-    class StationConfig
-    {
-    public:
-        StationConfig();
-        virtual ~StationConfig();
-
-        //wrapper functions
-        void Initialize();
-        void SetBlock(int val);
-        void SetFlow(int val);
-        void SetSelect(int val);
-        void SetUser(int val);
-        void SetRestore(int val);
-        void SetCUE(int val);
-        void SetPrescale(int val);
-        void SetSelectWords(int val[]);
-        void SetFunction(const char *val);
-        void SetLib(const char *val);
-        void SetClass(const char *val);
-
-    public:
-        et_statconfig config;
-    };
 
 public:
     PRadETChannel(size_t size = 1048576);
     virtual ~PRadETChannel();
     void Open(const char *ipAddr, int tcpPort, const char *etFile) throw(PRadException);
-    void CreateStation(const char *name) throw(PRadException);
-    void StationPreSetting(int mode) throw(PRadException);
+    void NewStation(std::string name);
+    void SwitchStation(std::string name);
+    void RemoveStation(std::string name) throw(PRadException);
     void AttachStation() throw(PRadException);
     void DetachStation();
     void ForceClose();
     bool Read() throw(PRadException);
     void *GetBuffer() {return (void*) buffer;};
     size_t GetBufferLength() {return bufferSize;};
-    OpenConfig &GetOpenConfig() {return openConf;};
-    StationConfig &GetStationConfig() {return stationConf;};
+    Configuration &GetConfig() {return config;};
+    et_sys_id &GetID() {return et_id;};
 
 private:
-    OpenConfig openConf;
-    StationConfig stationConf;
-    et_att_id attach_id;
-    et_stat_id station_id;
+    Configuration config;
+    PRadETStation *curr_stat;
+    std::unordered_map<std::string, PRadETStation*> stations;
     et_sys_id et_id;
     et_event *etEvent;
     uint32_t *buffer;
