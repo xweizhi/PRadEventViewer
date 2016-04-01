@@ -3,6 +3,7 @@
 
 #include "et.h"
 #include "PRadException.h"
+#include <string>
 
 class PRadETChannel;
 
@@ -36,12 +37,12 @@ public:
     };
 
 public:
-    PRadETStation(PRadETChannel *p, const char *n, int mode = 2);
+    PRadETStation(PRadETChannel *p, std::string n, int mode = 2);
     virtual ~PRadETStation();
     Configuration &GetConfig() {return config;};
     et_stat_id &GetID() {return station_id;};
     et_att_id &GetAttachID() {return attach_id;};
-    const char *GetName() {return name;};
+    std::string GetName() {return name;};
     void PreSetting(int mode) throw(PRadException);
     void Create() throw(PRadException);
     void Attach() throw(PRadException);
@@ -50,7 +51,7 @@ public:
 
 private:
     PRadETChannel *et_system;
-    const char *name;
+    std::string name;
     et_att_id attach_id;
     et_stat_id station_id;
     Configuration config;

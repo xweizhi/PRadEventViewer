@@ -8,7 +8,7 @@
 #include "PRadETStation.h"
 #include "PRadETChannel.h"
 
-PRadETStation::PRadETStation(PRadETChannel *p, const char *n, int mode)
+PRadETStation::PRadETStation(PRadETChannel *p, std::string n, int mode)
 : et_system(p), name(n)
 {
     PreSetting(mode);
@@ -74,14 +74,11 @@ void PRadETStation::PreSetting(int mode) throw(PRadException)
 // Create station
 void PRadETStation::Create() throw(PRadException)
 {
-    int size = strlen(name) +1;
-    char *stationName = new char[size];
-    strcpy(stationName, name);
+    char s_name[256];
+    strcpy(s_name, name.c_str());
 
     /* create the station */
-    int status = et_station_create(et_system->GetID(), &station_id, stationName, config.Get());
-
-    delete[] stationName;
+    int status = et_station_create(et_system->GetID(), &station_id, s_name, config.Get());
 
     if(status < ET_OK) {
         if(status == ET_ERROR_EXISTS) {

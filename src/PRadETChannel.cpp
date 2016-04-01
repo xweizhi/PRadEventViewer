@@ -73,7 +73,7 @@ void PRadETChannel::NewStation(string name)
 {
     auto it = stations.find(name);
     if(it == stations.end()) {
-        curr_stat = new PRadETStation(this, name.c_str());
+        curr_stat = new PRadETStation(this, name);
         stations[string(name)] = curr_stat;
     }
 }
