@@ -12,9 +12,13 @@ class PRadLogBox : public QTextEdit
 public:
     PRadLogBox(QWidget *parent = NULL);
     virtual ~PRadLogBox();
+    void ShowStdOut();
+    void ShowStdErr();
+    void TurnOnLog();
+    void TurnOffLog();
 
-public slots:
-    void showLogs(QString path);
+private slots:
+    void handleFileChange(QString path);
 
 private:
     qint64 outpos;
@@ -22,6 +26,7 @@ private:
     QFileSystemWatcher *fileWatcher;
     FILE *outRedir;
     FILE *errRedir;
+    bool logOn;
 };
 
 #endif

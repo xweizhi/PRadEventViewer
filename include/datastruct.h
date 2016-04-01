@@ -35,9 +35,17 @@ enum PRadBankID
 {
     TI_BANK = 0x4,
     TDC_BANK = 0x5,
+    DSC_BANK = 0x6,
     FASTBUS_BANK = 0x7,
-    GEMDATA_BANK = 0x8,
-    EVINFO_BANK = 0xc000,
+    GEM_FEC1_BANK = 0x8,
+    GEM_FEC2_BANK = 0x9,
+    GEM_FEC3_BANK = 0xA,
+    GEM_FEC4_BANK = 0xB,
+    GEM_FEC5_BANK = 0xC,
+    GEM_FEC6_BANK = 0xD,
+    GEM_FEC7_BANK = 0xE,
+    GEM_FEC8_BANK = 0xF,
+    EVINFO_BANK = 0xC000,
 };
 
 

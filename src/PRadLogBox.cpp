@@ -16,68 +16,76 @@
 #include <unistd.h>
 
 PRadLogBox::PRadLogBox(QWidget *parent)
-: QTextEdit(parent)
+: QTextEdit(parent), fileWatcher(new QFileSystemWatcher(this)), logOn(false)
 {
-    fileWatcher = new QFileSystemWatcher(this);
-    connect(fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(showLogs(QString)));
+    connect(fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(handleFileChange(QString)));
 
     outRedir = freopen("logs/system.log", "a", stdout);
+    setvbuf(stdout,NULL,_IONBF,0);
+
     errRedir = freopen("logs/error.log", "a", stderr);
+    setvbuf(stderr,NULL,_IONBF,0);
 
-    if(outRedir) {
-        setvbuf(stdout,NULL,_IONBF,0);
-
-        fileWatcher->addPath("logs/system.log");
-
-        QFile file("logs/system.log");
-        outpos = file.size();
-    }
-
-    if(errRedir) {
-        setvbuf(stderr,NULL,_IONBF,0);
-
-        fileWatcher->addPath("logs/error.log");
-
-        QFile file("logs/error.log");
-        errpos = file.size();
-    }
+    TurnOnLog();
 
     QTextEdit::setReadOnly(true);
 }
 
+
 PRadLogBox::~PRadLogBox()
 {
-    if(outRedir) {
-        fclose(outRedir);
-        stdout = fdopen(STDOUT_FILENO, "w");
-    }
-
-    if(errRedir) {
-        fclose(errRedir);
-        stderr = fdopen(STDERR_FILENO, "w");
-    }
-
+    stdout = fdopen(STDOUT_FILENO, "w");
+    stderr = fdopen(STDERR_FILENO, "w");
+    fclose(outRedir);
+    fclose(errRedir);
     delete fileWatcher;
 }
 
-void PRadLogBox::showLogs(QString path)
-{
-    QFile file(path);
-    file.open(QFile::ReadOnly | QFile::Text);
-    QString alertHtml = "<font color=\"Red\">";
-    QString infoHtml = "<font color=\"Black\">";
-    QString endHtml = "</font><br>";
-    QString type;
 
-    if(path.contains("system.log")) {
-        type = infoHtml;
-        file.seek(outpos);
-        outpos = file.size();
-    } else {
-        type = alertHtml;
-        file.seek(errpos);
-        errpos = file.size();
-    }
+void PRadLogBox::TurnOnLog()
+{
+    fileWatcher->addPath("logs/system.log");
+    QFile out_file("logs/system.log");
+    outpos = out_file.size();
+
+    fileWatcher->addPath("logs/error.log");
+    QFile err_file("logs/error.log");
+    errpos = err_file.size();
+
+    logOn = true;
+}
+
+
+void PRadLogBox::TurnOffLog()
+{
+    if(!logOn)
+        return;
+
+    fileWatcher->removePath("logs/system.log");
+    fileWatcher->removePath("logs/error.log");
+    logOn = false;
+}
+
+
+void PRadLogBox::handleFileChange(QString path)
+{
+    if(path.contains("system"))
+        ShowStdOut();
+
+    if(path.contains("error"))
+        ShowStdErr();
+}
+
+
+void PRadLogBox::ShowStdOut()
+{
+    QFile file("logs/system.log");
+    file.open(QFile::ReadOnly | QFile::Text);
+    file.seek(outpos);
+    outpos = file.size();
+
+    QString header = "<font color=\"Black\">";
+    QString end = "</font><br>";
 
     QTextStream in(&file);
 
@@ -85,7 +93,27 @@ void PRadLogBox::showLogs(QString path)
     {
         QString line = in.readLine();
         QTextEdit::moveCursor(QTextCursor::End);
-        QTextEdit::insertHtml(type+line+endHtml);
+        QTextEdit::insertHtml(header+line+end);
     }
+}
 
+
+void PRadLogBox::ShowStdErr()
+{
+    QFile file("logs/error.log");
+    file.open(QFile::ReadOnly | QFile::Text);
+    file.seek(errpos);
+    errpos = file.size();
+
+    QString header = "<font color=\"Red\">";
+    QString end = "</font><br>";
+
+    QTextStream in(&file);
+
+    while(!in.atEnd())
+    {
+        QString line = in.readLine();
+        QTextEdit::moveCursor(QTextCursor::End);
+        QTextEdit::insertHtml(header+line+end);
+    }
 }

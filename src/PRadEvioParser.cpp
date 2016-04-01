@@ -78,6 +78,12 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             case TI_BANK: // Bank 0x4, TI data, not interested
                 // skip the whole segment
                 break;
+            case TDC_BANK:
+                parseTDCData(&buffer[index]);
+                break;
+            case DSC_BANK:
+                parseDSCData(&buffer[index]);
+                break;
             case FASTBUS_BANK: // Bank 0x7, Fastbus data
                 // Self defined crate data header
                 if((buffer[index]&0xff0fff00) == ADC1881M_DATABEG) {
@@ -95,8 +101,15 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                     cerr << "Incorrect Fastbus bank header!" << endl;
                 }
                 break;
-            case GEMDATA_BANK: // Bank 0x8, gem data, single FEC right now
-                parseGEMData(&buffer[index], dataSize);
+            case GEM_FEC1_BANK: // Bank 0x8, gem data, single FEC right now
+            case GEM_FEC2_BANK:
+            case GEM_FEC3_BANK:
+            case GEM_FEC4_BANK:
+            case GEM_FEC5_BANK:
+            case GEM_FEC6_BANK:
+            case GEM_FEC7_BANK:
+            case GEM_FEC8_BANK:
+                parseGEMData(&buffer[index], dataSize, (int)(evtHeader->tag - GEM_FEC1_BANK));
                 break;
             }
             break;
@@ -163,7 +176,7 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
 }
 
 // temporary decoder for gem data, not finished
-void PRadEvioParser::parseGEMData(const uint32_t *data, unsigned int size)
+void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id)
 {
 #define GEMDATA_APVBEG 0x00434441 //&0x00ffffff
 #define GEMDATA_SECTION_BEG 0x00002000
@@ -182,9 +195,9 @@ void PRadEvioParser::parseGEMData(const uint32_t *data, unsigned int size)
 // data  |  data
 
     GEMAPVData gemData;
-    gemData.FEC = 0;
+    gemData.FEC = fec_id;
 
-    for(unsigned int i = 0; i < size; ++i)
+    for(size_t i = 0; i < size; ++i)
     {
         if((data[i]&0xffffff) == GEMDATA_APVBEG) {
             gemData.APV = (data[i]>>24)&0xff;
@@ -201,4 +214,14 @@ void PRadEvioParser::parseGEMData(const uint32_t *data, unsigned int size)
             // APV ends
         }
     }
+}
+
+void PRadEvioParser::parseTDCData(const uint32_t * /*data*/)
+{
+    // place holder
+}
+
+void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
+{
+    // place holder
 }

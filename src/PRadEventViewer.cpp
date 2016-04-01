@@ -233,7 +233,7 @@ void PRadEventViewer::createControlPanel()
     connect(spectrumSettingButton, SIGNAL(clicked()),
             this, SLOT(changeSpectrumSetting()));
 
-    PRadLogBox *logBox = new PRadLogBox();
+    logBox = new PRadLogBox();
 
     QGridLayout *layout = new QGridLayout();
 
@@ -617,7 +617,6 @@ void PRadEventViewer::openPedFile()
     if (!fileName.isEmpty()) {
         readEventFromFile(fileName);
         fitEventsForPedestal();
-        eraseModuleBuffer();
         UpdateStatusBar(NO_INPUT);
     }
 }
@@ -848,6 +847,8 @@ void PRadEventViewer::saveHistToFile()
 
 void PRadEventViewer::fitEventsForPedestal()
 {
+    logBox->TurnOffLog();
+
     ofstream pedestalmap("config/pedestal.dat");
 
     vector<HyCalModule*> moduleList = handler->GetModuleList();
@@ -867,6 +868,8 @@ void PRadEventViewer::fitEventsForPedestal()
     }
 
     pedestalmap.close();
+
+    logBox->TurnOnLog();
 }
 
 void PRadEventViewer::takeSnapShot()
