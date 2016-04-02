@@ -69,7 +69,7 @@ void PRadETChannel::Open(const char* ipAddr, int tcpPort, const char* etFile) th
     et_system_setdebug(et_id, ET_DEBUG_INFO);
 }
 
-void PRadETChannel::NewStation(string name)
+void PRadETChannel::NewStation(const string &name)
 {
     auto it = stations.find(name);
     if(it == stations.end()) {
@@ -78,7 +78,7 @@ void PRadETChannel::NewStation(string name)
     }
 }
 
-void PRadETChannel::SwitchStation(string name)
+void PRadETChannel::SwitchStation(const string &name)
 {
     auto it = stations.find(name);
     if(it != stations.end()) {
@@ -88,7 +88,7 @@ void PRadETChannel::SwitchStation(string name)
     }
 }
 
-void PRadETChannel::RemoveStation(string name) throw(PRadException)
+void PRadETChannel::RemoveStation(const string &name) throw(PRadException)
 {
     try {
         if(et_id != nullptr && et_alive(et_id)) {
@@ -104,6 +104,16 @@ void PRadETChannel::RemoveStation(string name) throw(PRadException)
         }
     } catch (PRadException e) {
         throw e;
+    }
+}
+
+PRadETStation* PRadETChannel::GetStation(const string &name)
+{
+    auto it = stations.find(name);
+    if(it != stations.end()) {
+        return it->second;
+    } else {
+        return nullptr;
     }
 }
 

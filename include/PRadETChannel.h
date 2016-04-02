@@ -51,9 +51,9 @@ public:
     PRadETChannel(size_t size = 1048576);
     virtual ~PRadETChannel();
     void Open(const char *ipAddr, int tcpPort, const char *etFile) throw(PRadException);
-    void NewStation(std::string name);
-    void SwitchStation(std::string name);
-    void RemoveStation(std::string name) throw(PRadException);
+    void NewStation(const std::string &name);
+    void SwitchStation(const std::string &name);
+    void RemoveStation(const std::string &name) throw(PRadException);
     void AttachStation() throw(PRadException);
     void DetachStation();
     void ForceClose();
@@ -62,6 +62,8 @@ public:
     size_t GetBufferLength() {return bufferSize;};
     Configuration &GetConfig() {return config;};
     et_sys_id &GetID() {return et_id;};
+    PRadETStation *GetCurrentStation() {return curr_stat;};
+    PRadETStation *GetStation(const std::string &name);
 
 private:
     Configuration config;
