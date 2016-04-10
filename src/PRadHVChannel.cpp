@@ -279,7 +279,7 @@ void PRadHVChannel::ReadVoltage()
                              << hvData << endl;
                     }
 
-                    float limit = (nameList[k][0] == 'G')?1900:1300;
+                    float limit = (nameList[k][0] == 'W')?1200:1700;
                     if(hvData.Vmon > limit) {
                         cerr << "WARNING: voltage exceeds safe limit!" << endl
                              << hvData << endl;
