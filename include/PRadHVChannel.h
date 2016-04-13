@@ -61,7 +61,7 @@ public:
     enum ShowErrorType
     {
         ShowError,
-        ShowAnything,
+        ShowAnyThing,
     };
 
     PRadHVChannel(PRadDataHandler *h);

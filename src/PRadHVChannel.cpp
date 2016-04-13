@@ -223,7 +223,7 @@ void PRadHVChannel::SetVoltage(const char *name, ChannelAddress &config, float &
             float value = val;
             unsigned short slot = (unsigned short) config.slot;
             unsigned short channel = (unsigned short) config.channel;
-            int err = CAENHV_SetChParam(crate.handle, slot, "Pw", 1, &channel, &value);
+            int err = CAENHV_SetChParam(crate.handle, slot, "V0Set", 1, &channel, &value);
             showError("HV Set Voltage", err);
             return;
         }
@@ -313,7 +313,7 @@ void PRadHVChannel::PrintOut()
 
 void PRadHVChannel::showError(const string &prefix, const int &err, ShowErrorType type)
 {
-    if(err == CAENHV_OK && type != ShowAnything)
+    if(err == CAENHV_OK && type != ShowAnyThing)
         return;
 
     string result = prefix + " ERROR: ";
