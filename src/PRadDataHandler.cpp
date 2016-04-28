@@ -12,6 +12,7 @@
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
 #include "HyCalModule.h"
+#include "HyCalClusters.h"
 #include "TH1D.h"
 
 PRadDataHandler::PRadDataHandler()
