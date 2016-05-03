@@ -28,6 +28,8 @@ public:
     void CleanBuffer();
     unsigned short Sparsification(unsigned short &adcVal);
     int GetOccupancy() {return occupancy;};
+    virtual double Calibration(const unsigned short &) {return 0;}; // will be implemented by the derivative class
+
     TH1I *adcHist;
 
 protected:
