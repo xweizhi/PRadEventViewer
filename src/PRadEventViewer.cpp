@@ -342,14 +342,13 @@ void PRadEventViewer::readModuleList()
 
     QTextStream in(&list);
     QString moduleName;
-    HyCalModule::DAQSetup daqInfo;
+    ChannelAddress daqAddr;
+    int tdcGroup;
     HyCalModule::HVSetup hvInfo;
     HyCalModule::GeoInfo geometry;
 
     // some info that is not read from list
     // initialize first
-    daqInfo.pedestal.mean = 0;
-    daqInfo.pedestal.sigma = 0;
     hvInfo.volt.Vmon = 0;
     hvInfo.volt.Vset = 0;
     hvInfo.volt.ON = false;
@@ -362,10 +361,10 @@ void PRadEventViewer::readModuleList()
         QStringList fields = line.split(QRegExp("\\s+"));
         if(fields.size() == 12) {
             moduleName = fields.takeFirst();
-            daqInfo.config.crate = (unsigned char)fields.takeFirst().toInt();
-            daqInfo.config.slot = (unsigned char)fields.takeFirst().toInt();
-            daqInfo.config.channel = (unsigned char)fields.takeFirst().toInt();
-            daqInfo.tdcGroup = (unsigned char)fields.takeFirst().toInt();
+            daqAddr.crate = (unsigned char)fields.takeFirst().toInt();
+            daqAddr.slot = (unsigned char)fields.takeFirst().toInt();
+            daqAddr.channel = (unsigned char)fields.takeFirst().toInt();
+            tdcGroup = (unsigned char)fields.takeFirst().toInt();
  
             geometry.type = (HyCalModule::ModuleType)fields.takeFirst().toInt();
             geometry.cellSize = fields.takeFirst().toDouble();
@@ -376,7 +375,7 @@ void PRadEventViewer::readModuleList()
             hvInfo.config.slot = (unsigned char)fields.takeFirst().toInt();
             hvInfo.config.channel = (unsigned char)fields.takeFirst().toInt();
 
-            HyCalModule* newModule = new HyCalModule(this, moduleName, daqInfo, hvInfo, geometry);
+            HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, hvInfo, geometry);
             HyCal->addItem(newModule);
             handler->RegisterModule(newModule);
         } else {
@@ -693,7 +692,7 @@ void PRadEventViewer::UpdateHistCanvas()
 {
     gSystem->ProcessEvents();
     if(selection != nullptr) {
-        HyCalModule::Pedestal ped = selection->GetPedestal();
+        PRadDAQUnit::Pedestal ped = selection->GetPedestal();
         int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
         int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
         histCanvas->UpdateHist(1, selection->adcHist, fit_min, fit_max);
@@ -737,7 +736,7 @@ void PRadEventViewer::UpdateStatusInfo()
                  + tr(", S") + QString::number(hvInfo.slot)          // hv slot
                  + tr(", Ch") + QString::number(hvInfo.channel);     // hv channel
 
-    HyCalModule::Pedestal ped = selection->GetPedestal();
+    PRadDAQUnit::Pedestal ped = selection->GetPedestal();
     HyCalModule::Voltage volt = selection->GetVoltage();
     QString temp = (volt.ON)?(QString::number(volt.Vmon) + tr(" V / ")) : tr("OFF / ")
                    + QString::number(volt.Vset) + tr(" V");

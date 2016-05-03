@@ -18,11 +18,13 @@
 
 HyCalModule::HyCalModule(PRadEventViewer* const p,
                          const QString &rid,
-                         const DAQSetup &daqInfo,
+                         const ChannelAddress &daqAddr,
+                         const int &tdc,
                          const HVSetup &hvInfo,
                          const GeoInfo &geo)
-: console(p), name(rid), daqSetup(daqInfo), hvSetup(hvInfo), geometry(geo),
-  occupancy(0), energy(0), m_hover(false), m_selected(false), color(Qt::white), font(QFont("times",10))
+: PRadDAQUnit(rid.toStdString().c_str(), daqAddr, tdc),
+  console(p), name(rid), hvSetup(hvInfo), geometry(geo),
+  energy(0), m_hover(false), m_selected(false), color(Qt::white), font(QFont("times",10))
 {
     // initialize the item
     Initialize();
@@ -34,21 +36,17 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
 
 HyCalModule::~HyCalModule()
 {
-    delete adcHist;
 }
 
 // initialize the module
 void HyCalModule::Initialize()
 {
-    // allocate memory for histogram
-    adcHist = new TH1I(name.toStdString().c_str(),"ADC Value", 8192, 0, 8191);
-
     // calculate position of this module
     // CalcGeometry(); no longer needed since we read everything from list
 
     setPos(geometry.x - HYCAL_SHIFT, geometry.y);
 
-    sparsify = (unsigned short)(daqSetup.pedestal.mean + 5*daqSetup.pedestal.sigma);
+    sparsify = (unsigned short)(pedestal.mean + 5*pedestal.sigma);
 
     if(geometry.type == LeadTungstate)
         font.setPixelSize(9);
@@ -117,10 +115,10 @@ void HyCalModule::paint(QPainter *painter,
             painter->setFont(font);
             painter->setPen(fontColor);
             painter->drawText(boundingRect(),
-                              QString::number(daqSetup.config.crate) + "," + QString::number(daqSetup.config.slot),
+                              QString::number(address.crate) + "," + QString::number(address.slot),
                               QTextOption(Qt::AlignTop | Qt::AlignHCenter));
             painter->drawText(boundingRect(),
-                              "Ch" + QString::number(daqSetup.config.channel+1),
+                              "Ch" + QString::number(address.channel+1),
                               QTextOption(Qt::AlignBottom | Qt::AlignHCenter));
             break;
         case ShowTDC: // this will be handled in HyCalScene
@@ -150,18 +148,26 @@ void HyCalModule::setSelected(bool selected)
         console->SelectModule(this);
 }
 
-// erase current data
-void HyCalModule::CleanBuffer()
+// return TDC group name
+QString HyCalModule::GetTDCGroupName()
 {
-    occupancy = 0;
-    adcHist->Reset();
+    if(tdcGroup > 36)
+        return "TG" + QString::number(tdcGroup-36);
+    else
+        return "TW" + QString::number(tdcGroup);
 }
 
-void HyCalModule::UpdatePedestal(const double &mean, const double &sig)
+// Get color from the spectrum
+void HyCalModule::SetColor(const double &val)
 {
-    daqSetup.pedestal.mean = mean;
-    daqSetup.pedestal.sigma = sig;
-    sparsify = (unsigned short)(daqSetup.pedestal.mean + 5*daqSetup.pedestal.sigma + 0.5); // round
+    color = console->GetColor(val);
+}
+
+// calibration and show energy
+void HyCalModule::Energize(const unsigned short &adcVal)
+{
+    energy =  Calibration(adcVal);
+    SetColor(energy);
 }
 
 // convert ADC value after sparsification to energy
@@ -171,39 +177,6 @@ double HyCalModule::Calibration(const unsigned short &val)
     return (double) val;
 }
 
-// zero suppression, triggered when adc value is statistically
-// above pedestal (5 sigma)
-unsigned short HyCalModule::Sparsification(unsigned short &adcVal)
-{
-    if(adcVal < sparsify)
-        return 0;
-    else {
-        ++occupancy;
-        return adcVal - sparsify;
-    }
-}
-
-// Get color from the spectrum
-void HyCalModule::SetColor(const double &val)
-{
-    color = console->GetColor(val);
-}
-
-// return TDC group name
-QString HyCalModule::GetTDCGroupName()
-{
-    if(daqSetup.tdcGroup > 36)
-        return "TG" + QString::number(daqSetup.tdcGroup-36);
-    else
-        return "TW" + QString::number(daqSetup.tdcGroup);
-}
-
-// calibration and show energy
-void HyCalModule::Energize(const unsigned short &adcVal)
-{
-    energy =  Calibration(adcVal);
-    SetColor(energy);
-}
 // update high voltage
 void HyCalModule::ShowVoltage()
 {
@@ -248,7 +221,7 @@ void HyCalModule::CalcGeometry()
                 yTrg = i + 1;
             }
         }
-        daqSetup.tdcGroup = xTrg + yTrg*6 + 1;
+        tdcGroup = xTrg + yTrg*6 + 1;
     } else {
         int groupID;
         double xShift = 0., yShift = 0.;
@@ -306,7 +279,7 @@ void HyCalModule::CalcGeometry()
                 yTrg = i + 1;
             }
         }
-        daqSetup.tdcGroup = 36 + xTrg + yTrg*5 + 1;
+        tdcGroup = 36 + xTrg + yTrg*5 + 1;
     }
 }
 
