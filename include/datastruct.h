@@ -5,11 +5,13 @@
 
 enum PRadEventType
 {
-    PhysicsType1 = 0x01,
-    PhysicsType2 = 0x02,
-    PreStartEvent = 0x11,
-    GoEvent = 0x12,
-    EndEvent = 0x20,
+    LMS_Led = 0x01,
+    LMS_Alpha = 0x02,
+    PHYS_Pedestal = 0x03,
+    PHYS_TotalSum = 0x04,
+    CODA_Prestart = 0x11,
+    CODA_Go = 0x12,
+    CODA_End = 0x20,
 };
 
 enum PRadHeaderType

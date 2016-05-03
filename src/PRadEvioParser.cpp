@@ -24,12 +24,14 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
     // first check event type
     switch(header->tag)
     {
-    case PhysicsType1:
-    case PhysicsType2:
+    case LMS_Led:
+    case LMS_Alpha:
+    case PHYS_Pedestal:
+    case PHYS_TotalSum:
         break; // go on to process
-    case PreStartEvent:
-    case GoEvent:
-    case EndEvent:
+    case CODA_Prestart:
+    case CODA_Go:
+    case CODA_End:
     default:
         return; // not interested event type
     }

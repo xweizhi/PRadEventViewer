@@ -20,6 +20,7 @@ using namespace std;
 
 class PRadEvioParser;
 class HyCalModule;
+class TH1I;
 class TH1D;
 
 // a simple hash function for DAQ configuration

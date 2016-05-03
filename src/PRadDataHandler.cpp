@@ -13,7 +13,7 @@
 #include "PRadEvioParser.h"
 #include "HyCalModule.h"
 #include "HyCalClusters.h"
-#include "TH1D.h"
+#include "TH1.h"
 
 PRadDataHandler::PRadDataHandler()
 : totalE(0), onlineMode(false)
@@ -71,9 +71,10 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // find the module with this DAQ configuration
     daq_iter it = map_daq.find(adcData.config);
 
-    // did not find it
-    if(it == map_daq.end())
+    // did not find any module
+    if(it == map_daq.end()) {
         return;
+    }
 
     // get the module pointer
     HyCalModule *module = it->second;
