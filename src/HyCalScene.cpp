@@ -43,6 +43,11 @@ void HyCalScene::drawForeground(QPainter *painter, const QRectF &rect)
     }
 }
 
+void HyCalScene::addItem(QGraphicsItem *item)
+{
+    QGraphicsScene::addItem(item);
+}
+
 void HyCalScene::AddTextBox(QString &name, QRectF &textBox, QColor &bkgColor)
 {
     TextBox newBox;

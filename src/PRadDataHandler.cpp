@@ -49,6 +49,7 @@ void PRadDataHandler::BuildModuleMap()
     for(auto &module : moduleList)
     {
         int id = module->GetTDCID();
+        if(id <= 0) continue; // no tdc group
         vector< HyCalModule* > tdcGroup = GetTDCGroup(id);
         tdcGroup.push_back(module);
         map_tdc[id] = tdcGroup;
@@ -72,9 +73,8 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     daq_iter it = map_daq.find(adcData.config);
 
     // did not find any module
-    if(it == map_daq.end()) {
+    if(it == map_daq.end())
         return;
-    }
 
     // get the module pointer
     HyCalModule *module = it->second;

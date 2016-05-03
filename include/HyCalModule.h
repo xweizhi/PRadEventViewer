@@ -19,7 +19,7 @@ public:
     {
         LeadGlass,
         LeadTungstate,
-        SpecialChannel,
+        SpecialModule,
     };
 
     struct Pedestal

@@ -32,9 +32,9 @@ public:
     HyCalScene(PRadEventViewer*p, qreal x, qreal y, qreal width, qreal height, QObject *parent = 0)
     : QGraphicsScene(x, y, width, height, parent), console(p),
       pModule(NULL), sModule(NULL), rModule(NULL) {};
-    
-    void AddTextBox(QString &name, QRectF &textBox, QColor &bkgColor);
 
+    void AddTextBox(QString &name, QRectF &textBox, QColor &bkgColor);
+    void addItem(QGraphicsItem *item);
 
 protected:
     void drawForeground(QPainter *painter, const QRectF &rect);
