@@ -23,7 +23,7 @@ void HyCalScene::drawForeground(QPainter *painter, const QRectF &rect)
     // this to be impelmented to show the tdc groups and cluster reconstruction
     if(console->GetAnnoType() == ShowTDC && !tdcBoxList.empty()) {
         painter->save();
-        painter->setFont(QFont("times", 22, QFont::Bold));
+        painter->setFont(QFont("times", 24, QFont::Bold));
         QPen pen(Qt::black);
         pen.setWidth(2);
         pen.setCosmetic(true);

@@ -1,5 +1,5 @@
-#ifndef PRAD_DAQ_UNIT
-#define PRAD_DAQ_UNIT
+#ifndef PRAD_DAQ_UNIT_H
+#define PRAD_DAQ_UNIT_H
 
 #include <string>
 #include "datastruct.h"
@@ -19,11 +19,11 @@ public:
     };
 
 public:
-    PRadDAQUnit(const char *name, const ChannelAddress &daqAddr, const int &tdc = 0);
+    PRadDAQUnit(const char *name, const ChannelAddress &daqAddr, const std::string &tdc = "");
     virtual ~PRadDAQUnit();
     ChannelAddress GetDAQInfo() {return address;};
     Pedestal GetPedestal() {return pedestal;};
-    int GetTDCID() {return tdcGroup;};
+    std::string GetTDCName() {return tdcGroup;};
     void UpdatePedestal(const double &m, const double &s);
     void CleanBuffer();
     unsigned short Sparsification(unsigned short &adcVal);
@@ -33,7 +33,7 @@ public:
 protected:
     ChannelAddress address;
     Pedestal pedestal;
-    int tdcGroup;
+    std::string tdcGroup;
     int occupancy;
     unsigned short sparsify;
 };

@@ -43,7 +43,7 @@ namespace std {
 
 typedef unordered_map< ChannelAddress, HyCalModule* >::iterator daq_iter;
 typedef unordered_map< string, HyCalModule* >::iterator name_iter;
-typedef unordered_map< int, vector< HyCalModule* > >::iterator tdc_iter;
+typedef unordered_map< string, vector< HyCalModule* > >::iterator tdc_iter;
 
 class PRadDataHandler
 {
@@ -67,10 +67,11 @@ public:
     void OnlineMode() {onlineMode = true;};
     void OfflineMode() {onlineMode = false;};
     void BuildModuleMap();
-    HyCalModule *FindModule(ChannelAddress &daqInfo);
+    HyCalModule *FindModule(const ChannelAddress &daqInfo);
+    HyCalModule *FindModule(const string &name);
     HyCalModule *FindModule(const unsigned short &id);
-    vector< HyCalModule* > GetTDCGroup(int &id);
-    vector< int > GetTDCGroupIDList();
+    vector< HyCalModule* > GetTDCGroup(string &name);
+    vector< string > GetTDCGroupList();
     const vector< HyCalModule* > &GetModuleList() {return moduleList;};
 
 private:
@@ -81,7 +82,7 @@ private:
 #endif
     unordered_map< ChannelAddress, HyCalModule* > map_daq;
     unordered_map< string, HyCalModule* > map_name;
-    unordered_map< int, vector< HyCalModule* > > map_tdc;
+    unordered_map< string, vector< HyCalModule* > > map_tdc;
     vector< HyCalModule* > moduleList;
     deque< vector< ModuleEnergyData > > energyData;
     vector < ModuleEnergyData > newEvent, lastEvent;

@@ -19,10 +19,10 @@
 HyCalModule::HyCalModule(PRadEventViewer* const p,
                          const QString &rid,
                          const ChannelAddress &daqAddr,
-                         const int &tdc,
+                         const QString &tdc,
                          const HVSetup &hvInfo,
                          const GeoInfo &geo)
-: PRadDAQUnit(rid.toStdString().c_str(), daqAddr, tdc),
+: PRadDAQUnit(rid.toStdString().c_str(), daqAddr, tdc.toStdString()),
   console(p), name(rid), hvSetup(hvInfo), geometry(geo),
   energy(0), m_hover(false), m_selected(false), color(Qt::white), font(QFont("times",10))
 {
@@ -148,15 +148,6 @@ void HyCalModule::setSelected(bool selected)
         console->SelectModule(this);
 }
 
-// return TDC group name
-QString HyCalModule::GetTDCGroupName()
-{
-    if(tdcGroup > 36)
-        return "TG" + QString::number(tdcGroup-36);
-    else
-        return "TW" + QString::number(tdcGroup);
-}
-
 // Get color from the spectrum
 void HyCalModule::SetColor(const double &val)
 {
@@ -195,8 +186,6 @@ void HyCalModule::ShowVoltage()
 void HyCalModule::CalcGeometry()
 {
     int xIndex, yIndex;
-    int xTrg = 0;
-    int yTrg = 0;
     double size;
 
     int copyNo = name.mid(1,-1).toInt() - 1;
@@ -209,19 +198,6 @@ void HyCalModule::CalcGeometry()
         geometry.cellSize = size;
         geometry.x = (double)(xIndex - 16)*size - size/2.;
         geometry.y = (double)(yIndex - 17)*size + size/2.;
-
-        // tdc part
-        int trg[6] = {6, 12, 17, 22, 28, 34};
-        for(int i = 0; i < 6; ++i)
-        {
-            if(xIndex >= trg[i] && xIndex < trg[i+1]) {
-                xTrg = i + 1;
-            }
-            if(yIndex >= trg[i] && yIndex < trg[i+1]) {
-                yTrg = i + 1;
-            }
-        }
-        tdcGroup = xTrg + yTrg*6 + 1;
     } else {
         int groupID;
         double xShift = 0., yShift = 0.;
@@ -267,19 +243,6 @@ void HyCalModule::CalcGeometry()
         }
         geometry.x = -17.*20.5 - 5.5*size + xIndex*size + xShift;
         geometry.y = -17.*20.5 - 5.5*size + yIndex*size + yShift;
-
-        // tdc part
-        int trg[5] = {6, 12, 18, 24, 30};
-        for(int i = 0; i < 5; ++i)
-        {
-            if(xIndex >= trg[i] && xIndex < trg[i+1]) {
-                xTrg = i + 1;
-            }
-            if(yIndex >= trg[i] && yIndex < trg[i+1]) {
-                yTrg = i + 1;
-            }
-        }
-        tdcGroup = 36 + xTrg + yTrg*5 + 1;
     }
 }
 

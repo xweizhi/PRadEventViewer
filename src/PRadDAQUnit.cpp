@@ -3,7 +3,7 @@
 
 PRadDAQUnit::PRadDAQUnit(const char *name,
                          const ChannelAddress &daqAddr,
-                         const int &tdc)
+                         const std::string &tdc)
 : address(daqAddr), pedestal(Pedestal(0, 0)), tdcGroup(tdc),
   occupancy(0), sparsify(0)
 {

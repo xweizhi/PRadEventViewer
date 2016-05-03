@@ -5,7 +5,6 @@
 #include <QStyleOptionGraphicsItem>
 #include <QFont>
 #include "PRadDAQUnit.h"
-#include "datastruct.h"
 
 #define HYCAL_SHIFT 50
 
@@ -52,7 +51,7 @@ public:
     HyCalModule(PRadEventViewer* const p,
                 const QString &rid,
                 const ChannelAddress &daqAddr,
-                const int &tdc,
+                const QString &tdc,
                 const HVSetup &hvInfo,
                 const GeoInfo &geo);
     virtual ~HyCalModule();
@@ -73,7 +72,6 @@ public:
     double GetEnergy() {return energy;};
     double Calibration(const unsigned short &val);
     QString GetReadID() {return name;};
-    QString GetTDCGroupName();
     Voltage GetVoltage() {return hvSetup.volt;};
     ChannelAddress GetHVInfo() {return hvSetup.config;};
     GeoInfo GetGeometry() {return geometry;};

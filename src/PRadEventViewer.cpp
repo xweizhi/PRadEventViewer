@@ -343,7 +343,7 @@ void PRadEventViewer::readModuleList()
     QTextStream in(&list);
     QString moduleName;
     ChannelAddress daqAddr;
-    int tdcGroup;
+    QString tdcGroup;
     HyCalModule::HVSetup hvInfo;
     HyCalModule::GeoInfo geometry;
 
@@ -364,8 +364,8 @@ void PRadEventViewer::readModuleList()
             daqAddr.crate = (unsigned char)fields.takeFirst().toInt();
             daqAddr.slot = (unsigned char)fields.takeFirst().toInt();
             daqAddr.channel = (unsigned char)fields.takeFirst().toInt();
-            tdcGroup = (unsigned char)fields.takeFirst().toInt();
- 
+            tdcGroup = fields.takeFirst();
+
             geometry.type = (HyCalModule::ModuleType)fields.takeFirst().toInt();
             geometry.cellSize = fields.takeFirst().toDouble();
             geometry.x = fields.takeFirst().toDouble();
@@ -395,24 +395,25 @@ void PRadEventViewer::buildModuleMap()
     handler->BuildModuleMap();
 
     // tdc maps
-    std::vector< int > tdcList = handler->GetTDCGroupIDList();
-    for(auto &tdc_id : tdcList)
+    std::vector< std::string > tdcList = handler->GetTDCGroupList();
+    for(auto &tdc_name : tdcList)
     {
-        std::vector< HyCalModule* > groupList = handler->GetTDCGroup(tdc_id);
+        std::vector< HyCalModule* > groupList = handler->GetTDCGroup(tdc_name);
 
         if(!groupList.size())
             continue;
 
         // get id and set background color
-        QString tdcGroupName = groupList[0]->GetTDCGroupName();
+        QString tdcGroupName = QString::fromStdString(tdc_name);
         QColor bkgColor;
-        if(tdc_id > 36) { // below is to make different color for adjacent groups
-             if(tdc_id&1)
+        int tdc = tdcGroupName.mid(1).toInt();
+        if(tdcGroupName.at(0) == 'G') { // below is to make different color for adjacent groups
+             if(tdc&1)
                 bkgColor = QColor(255, 153, 153, 50);
              else
                 bkgColor = QColor(204, 204, 255, 50);
         } else {
-            if((tdc_id&1)^(((tdc_id-1)/6)&1))
+            if((tdc&1)^(((tdc-1)/6)&1))
                 bkgColor = QColor(51, 204, 255, 50);
             else
                 bkgColor = QColor(0, 255, 153, 50);
@@ -506,20 +507,19 @@ void PRadEventViewer::ListModules()
     for(auto &module : moduleList)
     {
         outf << std::setw(6)  << module->GetReadID().toStdString()
-             << std::setw(10) << module->GetGeometry().cellSize
-             << std::setw(8)  << module->GetGeometry().x
-             << std::setw(8)  << module->GetGeometry().y
              << std::setw(10) << module->GetDAQInfo().crate
              << std::setw(6)  << module->GetDAQInfo().slot
              << std::setw(6)  << module->GetDAQInfo().channel
-             << std::setw(6)  << module->GetTDCID()
-             << std::setw(10) << module->GetPedestal().mean
-             << std::setw(8)  << module->GetPedestal().sigma
-             /*
+             << std::setw(6)  << module->GetTDCName()
+             << std::setw(10) << (int)module->GetGeometry().type
+             << std::setw(10) << module->GetGeometry().cellSize
+             << std::setw(8)  << module->GetGeometry().x
+             << std::setw(8)  << module->GetGeometry().y
+//             << std::setw(10) << module->GetPedestal().mean
+//             << std::setw(8)  << module->GetPedestal().sigma
              << std::setw(10) << module->GetHVInfo().crate
              << std::setw(6)  << module->GetHVInfo().slot
              << std::setw(6)  << module->GetHVInfo().channel
-             */
              << std::endl;
     }
 }
@@ -731,7 +731,7 @@ void PRadEventViewer::UpdateStatusInfo()
               << tr("C") + QString::number(daqInfo.crate)            // daq crate
                  + tr(", S") + QString::number(daqInfo.slot)         // daq slot
                  + tr(", Ch") + QString::number(daqInfo.channel + 1) // daq channel
-              << selection->GetTDCGroupName()                        // tdc group
+              << QString::fromStdString(selection->GetTDCName())     // tdc group
               << tr("C") + QString::number(hvInfo.crate)             // hv crate
                  + tr(", S") + QString::number(hvInfo.slot)          // hv slot
                  + tr(", Ch") + QString::number(hvInfo.channel);     // hv channel

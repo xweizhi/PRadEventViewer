@@ -48,11 +48,11 @@ void PRadDataHandler::BuildModuleMap()
     // module TDC groups
     for(auto &module : moduleList)
     {
-        int id = module->GetTDCID();
-        if(id <= 0) continue; // no tdc group
-        vector< HyCalModule* > tdcGroup = GetTDCGroup(id);
+        string tdcName = module->GetTDCName();
+        if(tdcName.empty()) continue; // not belongs to any tdc group
+        vector< HyCalModule* > tdcGroup = GetTDCGroup(tdcName);
         tdcGroup.push_back(module);
-        map_tdc[id] = tdcGroup;
+        map_tdc[tdcName] = tdcGroup;
     }
 }
 
@@ -169,10 +169,18 @@ void PRadDataHandler::ShowEvent(int idx)
 }
 
 // find modules
-HyCalModule* PRadDataHandler::FindModule(ChannelAddress &daqInfo)
+HyCalModule* PRadDataHandler::FindModule(const ChannelAddress &daqInfo)
 {
     daq_iter it = map_daq.find(daqInfo);
     if(it == map_daq.end())
+        return nullptr;
+    return it->second;
+}
+
+HyCalModule* PRadDataHandler::FindModule(const string &name)
+{
+    name_iter it = map_name.find(name);
+    if(it == map_name.end())
         return nullptr;
     return it->second;
 }
@@ -184,17 +192,17 @@ HyCalModule* PRadDataHandler::FindModule(const unsigned short &id)
     return moduleList[id];
 }
 
-vector< HyCalModule* > PRadDataHandler::GetTDCGroup(int &id)
+vector< HyCalModule* > PRadDataHandler::GetTDCGroup(string &name)
 {
-    tdc_iter it = map_tdc.find(id);
+    tdc_iter it = map_tdc.find(name);
     if(it == map_tdc.end())
         return vector< HyCalModule* >(); // return empty vector
     return it->second;
 }
 
-vector< int > PRadDataHandler::GetTDCGroupIDList()
+vector< string > PRadDataHandler::GetTDCGroupList()
 {
-    vector< int > list;
+    vector< string > list;
     for(tdc_iter it = map_tdc.begin(); it != map_tdc.end(); ++it)
     {
         list.push_back(it->first);
