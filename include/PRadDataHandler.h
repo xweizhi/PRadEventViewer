@@ -11,6 +11,7 @@ using namespace std;
 class PRadEvioParser;
 class HyCalModule;
 class TH1D;
+class TH1I;
 
 typedef map< CrateConfig, HyCalModule* >::iterator daq_iter;
 typedef map< string, HyCalModule* >::iterator name_iter;
@@ -43,9 +44,13 @@ public:
     vector< HyCalModule* > GetTDCGroup(int &id);
     vector< int > GetTDCGroupIDList();
     const vector< HyCalModule* > &GetModuleList() {return moduleList;};
+    TH1I *GetLMSHist(int i = 0) {if(i < 0 || i >= 3) return NULL; else return lmsHist[i];};
+    TH1I *GetDynodeSum() {return dynodeSum;};
+    TH1I *GetAnodeSum() {return anodeSum;};
 
 private:
     double totalE;
+    int totalAnode;
     bool onlineMode;
     map< CrateConfig, HyCalModule* > map_daq;
     map< string, HyCalModule* > map_name;
@@ -54,6 +59,9 @@ private:
     deque< vector< ModuleEnergyData > > energyData;
     vector < ModuleEnergyData > newEvent, lastEvent;
     TH1D *energyHist;
+    TH1I *lmsHist[3];
+    TH1I *dynodeSum;
+    TH1I *anodeSum;
 };
 
 #endif

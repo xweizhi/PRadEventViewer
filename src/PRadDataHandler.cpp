@@ -12,18 +12,28 @@
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
 #include "HyCalModule.h"
-#include "TH1D.h"
+#include "TH1.h"
 
 PRadDataHandler::PRadDataHandler()
-: totalE(0), onlineMode(false)
+: totalE(0), totalAnode(0), onlineMode(false)
 {
     // total energy histogram
     energyHist = new TH1D("HyCalEnergy", "Total Energy (MeV)", 2500, 0, 2500);
+    anodeSum = new TH1I("HyCalAnodeSum", "Anode Sum", 8192, 0, 8191);
+    dynodeSum = new TH1I("HyCalDynodeSum", "Dynode Sum", 8192, 0, 8191);
+    lmsHist[0] = new TH1I("HyCalLMSPMT1", "LMS PMT 1", 8192, 0, 8191);
+    lmsHist[1] = new TH1I("HyCalLMSPMT2", "LMS PMT 2", 8192, 0, 8191);
+    lmsHist[2] = new TH1I("HyCalLMSPMT3", "LMS PMT 3", 8192, 0, 8191);
 }
 
 PRadDataHandler::~PRadDataHandler()
 {
     delete energyHist;
+    delete lmsHist[0];
+    delete lmsHist[1];
+    delete lmsHist[2];
+    delete anodeSum;
+    delete dynodeSum;
 }
 
 // register HyCal modules
@@ -71,8 +81,19 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     daq_iter it = map_daq.find(adcData.config);
 
     // did not find it
-    if(it == map_daq.end())
+    if(it == map_daq.end()) {
+        if(adcData.config.crate == 6 && adcData.config.slot == 4) { // special channels
+            switch(adcData.config.channel)
+            {
+                default: break;
+                case 0: dynodeSum->Fill(adcData.val); break;
+                case 1: lmsHist[0]->Fill(adcData.val); break;
+                case 2: lmsHist[1]->Fill(adcData.val); break;
+                case 3: lmsHist[2]->Fill(adcData.val); break;
+            }
+        }
         return;
+    }
 
     // get the module pointer
     HyCalModule *module = it->second;
@@ -86,6 +107,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     if(sparVal) // only store events above pedestal in memory
     {
         ModuleEnergyData word = { module->GetID(), sparVal }; // save id because it saves memory
+        totalAnode += sparVal;
 #ifdef MULTI_THREAD
         // unfortunately, we have some non-local variable to deal with
         // so lock the thread to prevent concurrent access
@@ -135,10 +157,12 @@ void PRadDataHandler::EndofThisEvent()
     }
 
     energyHist->Fill(totalE); // fill energy histogram
+    anodeSum->Fill(totalAnode);
 
     // clear buffer for next event
     newEvent.clear();
     totalE = 0;
+    totalAnode = 0;
 }
 
 // show the event to event viewer
