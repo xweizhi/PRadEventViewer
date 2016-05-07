@@ -209,7 +209,7 @@ void PRadHVChannel::SetVoltage(const char *name, CrateConfig &config, float &val
             float value = val;
             unsigned short slot = (unsigned short) config.slot;
             unsigned short channel = (unsigned short) config.channel;
-            int err = CAENHV_SetChParam(crateList[i].handle, slot, "Pw", 1, &channel, &value);
+            int err = CAENHV_SetChParam(crateList[i].handle, slot, "V0Set", 1, &channel, &value);
             showError("HV Set Voltage", err);
             return;
         }
