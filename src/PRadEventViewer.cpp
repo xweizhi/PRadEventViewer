@@ -139,6 +139,7 @@ void PRadEventViewer::generateSpectrum()
 // crate HyCal modules from module list
 void PRadEventViewer::generateHyCalModules()
 {
+    readTDCList();
     readModuleList();
     readPedestalData("config/pedestal.dat");
 
@@ -277,6 +278,7 @@ void PRadEventViewer::createStatusWindow()
     histCanvas = new PRadHistCanvas(this);
     histCanvas->AddCanvas(0, 0, 38);
     histCanvas->AddCanvas(1, 0, 46);
+    histCanvas->AddCanvas(2, 0, 46);
 
     statusWindow->addWidget(statusInfoWidget);
     statusWindow->addWidget(histCanvas);
@@ -331,12 +333,45 @@ void PRadEventViewer::setupInfoWindow()
 // read information from configuration files                                  //
 //============================================================================//
 
+// read tdc groups from file
+void PRadEventViewer::readTDCList()
+{
+    QFile list("config/tdc_group_list.txt");
+    if(!list.open(QFile::ReadOnly | QFile::Text)) {
+        std::cout << "WARNING: Missing configuration file \"config/tdc_group_list.txt\""
+                  << ", cannot create tdc groups!"
+                  << std::endl;
+    }
+
+    QTextStream in(&list);
+    QString name;
+    ChannelAddress addr;
+
+    while (!in.atEnd())
+    {
+        QString line = in.readLine().simplified();
+        if(line.at(0) == '#')
+            continue;
+        QStringList fields = line.split(QRegExp("\\s+"));
+        if(fields.size() == 4) {
+            name = fields.takeFirst();
+            addr.crate = (unsigned char)fields.takeFirst().toInt();
+            addr.slot = (unsigned char)fields.takeFirst().toInt();
+            addr.channel = (unsigned char)fields.takeFirst().toInt();
+            handler->RegisterTDCGroup(new PRadTDCGroup(name.toStdString(), addr));
+        } else {
+            std::cout << "Unrecognized input format in configuration file, skipped one line!"
+                      << std::endl;
+        }
+    }
+}
+
 // read module list from file
 void PRadEventViewer::readModuleList()
 {
     QFile list("config/module_list.txt");
     if(!list.open(QFile::ReadOnly | QFile::Text)) {
-        std::cout << "ERROR: Missing configuration file \"config/module_list.txt\""
+        std::cerr << "ERROR: Missing configuration file \"config/module_list.txt\""
                   << ", cannot generate HyCal channels!"
                   << std::endl;
         exit(1);
@@ -701,8 +736,11 @@ void PRadEventViewer::UpdateHistCanvas()
         int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
         int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
         histCanvas->UpdateHist(1, selection->adcHist, fit_min, fit_max);
+        PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
+        if(tdc)
+            histCanvas->UpdateHist(2, tdc->GetHist());
     }
-    histCanvas->UpdateHist(2, handler->GetEnergyHist());
+    histCanvas->UpdateHist(3, handler->GetEnergyHist());
 }
 
 void PRadEventViewer::SelectModule(HyCalModule* module)

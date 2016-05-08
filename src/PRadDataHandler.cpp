@@ -35,6 +35,12 @@ void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
     channelList.push_back(channel);
 }
 
+void PRadDataHandler::RegisterTDCGroup(PRadTDCGroup *group)
+{
+    map_name_tdc[group->GetName()] = group;
+    map_daq_tdc[group->GetAddress()] = group;
+}
+
 void PRadDataHandler::BuildChannelMap()
 {
     // build unordered maps separately improves its access speed
@@ -54,8 +60,10 @@ void PRadDataHandler::BuildChannelMap()
             continue; // not belongs to any tdc group
         PRadTDCGroup *tdcGroup = GetTDCGroup(tdcName);
         if(tdcGroup == nullptr) {
-            tdcGroup = new PRadTDCGroup(tdcName);
-            map_tdc[tdcName] = tdcGroup;
+            cerr << "Cannot find TDC group: " << tdcName
+                 << " make sure you added all the tdc groups"
+                 << endl;
+            continue;
         }
         tdcGroup->AddChannel(channel);
     }
@@ -203,11 +211,18 @@ PRadDAQUnit *PRadDataHandler::FindChannel(const unsigned short &id)
     return channelList[id];
 }
 
-PRadTDCGroup *PRadDataHandler::GetTDCGroup(string &name)
+PRadTDCGroup *PRadDataHandler::GetTDCGroup(const string &name)
 {
-    tdc_iter it = map_tdc.find(name);
-    if(it == map_tdc.end())
+    tdc_name_iter it = map_name_tdc.find(name);
+    if(it == map_name_tdc.end())
         return nullptr; // return empty vector
     return it->second;
 }
 
+PRadTDCGroup *PRadDataHandler::GetTDCGroup(const ChannelAddress &addr)
+{
+    tdc_daq_iter it = map_daq_tdc.find(addr);
+    if(it == map_daq_tdc.end())
+        return nullptr;
+    return it->second;
+}

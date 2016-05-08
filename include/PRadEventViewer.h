@@ -104,6 +104,7 @@ private:
     void buildModuleMap();
     void setupOnlineMode();
     void readModuleList();
+    void readTDCList();
     void readPedestalData(const QString &filename);
     void eraseModuleBuffer();
     void createMainMenu();

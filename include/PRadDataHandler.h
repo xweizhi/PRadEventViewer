@@ -44,7 +44,8 @@ namespace std {
 
 typedef unordered_map< ChannelAddress, PRadDAQUnit* >::iterator daq_iter;
 typedef unordered_map< string, PRadDAQUnit* >::iterator name_iter;
-typedef unordered_map< string, PRadTDCGroup* >::iterator tdc_iter;
+typedef unordered_map< string, PRadTDCGroup* >::iterator tdc_name_iter;
+typedef unordered_map< ChannelAddress, PRadTDCGroup* >::iterator tdc_daq_iter;
 
 class PRadDataHandler
 {
@@ -57,6 +58,7 @@ public:
     PRadDataHandler();
     virtual ~PRadDataHandler();
     void RegisterChannel(PRadDAQUnit *channel);
+    void RegisterTDCGroup(PRadTDCGroup *group);
     void FeedData(ADC1881MData &adcData);
     void FeedData(GEMAPVData &gemData);
     void FeedData(CAENHVData &hvData);
@@ -71,8 +73,9 @@ public:
     PRadDAQUnit *FindChannel(const ChannelAddress &daqInfo);
     PRadDAQUnit *FindChannel(const string &name);
     PRadDAQUnit *FindChannel(const unsigned short &id);
-    PRadTDCGroup *GetTDCGroup(string &name);
-    const unordered_map< string, PRadTDCGroup *> &GetTDCGroupSet() {return map_tdc;};
+    PRadTDCGroup *GetTDCGroup(const string &name);
+    PRadTDCGroup *GetTDCGroup(const ChannelAddress &addr);
+    const unordered_map< string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};
     const vector< PRadDAQUnit* > &GetChannelList() {return channelList;};
 
 private:
@@ -83,7 +86,8 @@ private:
 #endif
     unordered_map< ChannelAddress, PRadDAQUnit* > map_daq;
     unordered_map< string, PRadDAQUnit* > map_name;
-    unordered_map< string, PRadTDCGroup* > map_tdc;
+    unordered_map< string, PRadTDCGroup* > map_name_tdc;
+    unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
     vector< PRadDAQUnit* > channelList;
     deque< vector< ChannelData > > energyData;
     vector < ChannelData > newEvent, lastEvent;
