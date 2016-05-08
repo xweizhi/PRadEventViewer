@@ -100,7 +100,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
 
     if(sparVal) // only store events above pedestal in memory
     {
-        ChannelData word = { channel->GetID(), sparVal }; // save id because it saves memory
+        ChannelData word(channel->GetID(), sparVal); // save id because it saves memory
 #ifdef MULTI_THREAD
         // unfortunately, we have some non-local variable to deal with
         // so lock the thread to prevent concurrent access
@@ -116,9 +116,19 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
 }
 
 // feed GEM data
-void PRadDataHandler::FeedData(GEMAPVData &)
+void PRadDataHandler::FeedData(GEMAPVData & /*gemData*/)
 {
     // implement later
+}
+
+void PRadDataHandler::FeedData(TDCV767Data &tdcData)
+{
+    tdc_daq_iter it = map_daq_tdc.find(tdcData.config);
+    if(it == map_daq_tdc.end())
+        return;
+
+    PRadTDCGroup *tdc = it->second;
+    tdc->GetHist()->Fill(tdcData.val);
 }
 
 // update High Voltage

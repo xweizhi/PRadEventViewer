@@ -50,10 +50,13 @@ typedef unordered_map< ChannelAddress, PRadTDCGroup* >::iterator tdc_daq_iter;
 class PRadDataHandler
 {
 public:
-    typedef struct {
+    struct ChannelData {
         unsigned short id;
         unsigned short adcValue;
-    } ChannelData;
+        ChannelData() : id(0), adcValue(0) {};
+        ChannelData(const unsigned short &i, const unsigned short &v)
+        : id(i), adcValue(v) {};       
+    };
 
     PRadDataHandler();
     virtual ~PRadDataHandler();
@@ -61,6 +64,7 @@ public:
     void RegisterTDCGroup(PRadTDCGroup *group);
     void FeedData(ADC1881MData &adcData);
     void FeedData(GEMAPVData &gemData);
+    void FeedData(TDCV767Data &tdcData);
     void FeedData(CAENHVData &hvData);
     void UpdateEvent(int idx = 0);
     int GetEventCount() {return energyData.size();};

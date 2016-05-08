@@ -28,9 +28,9 @@ enum PRadROCID
 // PRadROC_5 = 12,
 // PRadROC_6 = 11,
     PRadTS = 2,
-    PRadROC_4 = 4,
-    PRadROC_5 = 5,
-    PRadROC_6 = 6,
+    PRadROC_1 = 4,
+    PRadROC_2 = 5,
+    PRadROC_3 = 6,
 };
 
 enum PRadBankID
@@ -100,6 +100,12 @@ struct PRadEventHeader
 };
 
 struct ADC1881MData
+{
+    ChannelAddress config;
+    unsigned short val;
+};
+
+struct TDCV767Data
 {
     ChannelAddress config;
     unsigned short val;

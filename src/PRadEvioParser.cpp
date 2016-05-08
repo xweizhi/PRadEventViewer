@@ -57,12 +57,12 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
         case EvioBank: // Bank type header for ROC
             switch(evtHeader->tag)
             {
-            case PRadROC_6: // PRIMEXROC6
-            case PRadROC_5: // PRIMEXROC5
-            case PRadROC_4: // PRIMEXROC4
-                continue; // Interested in ROC 4~6, to next header
+            case PRadROC_3: // Fastbus, ROC id 6
+            case PRadROC_2: // Fastbus, ROC id 5
+            case PRadROC_1: // Fastbus, ROC id 4
+            case PRadTS: // VME, ROC id 2
+                continue; // Interested in ROCs, to next header
 
-            case PRadTS: // Not interested in ROC 1, PRIMEXTS2
             default: // unrecognized ROC
                 // Skip the whole segment
                 break;
@@ -221,6 +221,13 @@ void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size, cons
 void PRadEvioParser::parseTDCData(const uint32_t * /*data*/)
 {
     // place holder
+    TDCV767Data tdcData;
+    tdcData.config.crate = 2;
+    tdcData.config.slot = 0;
+    tdcData.config.channel = 10;
+    tdcData.val = 1000;
+
+    myHandler->FeedData(tdcData);
 }
 
 void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
