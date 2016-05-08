@@ -25,12 +25,14 @@ public:
     Pedestal GetPedestal() {return pedestal;};
     std::string GetTDCName() {return tdcGroup;};
     void UpdatePedestal(const double &m, const double &s);
+    void UpdateEnergy(const unsigned short &adcVal);
     void CleanBuffer();
     unsigned short Sparsification(unsigned short &adcVal);
     int GetOccupancy() {return occupancy;};
     std::string &GetName() {return channelName;};
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
+    const double &GetEnergy() {return energy;};
     virtual double Calibration(const unsigned short &) {return 0;}; // will be implemented by the derivative class
 
     TH1I *adcHist;
@@ -43,6 +45,7 @@ protected:
     int occupancy;
     unsigned short sparsify;
     unsigned short channelID;
+    double energy;
 };
 
 #endif

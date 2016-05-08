@@ -27,7 +27,7 @@ PRadDataHandler::~PRadDataHandler()
     delete energyHist;
 }
 
-// register HyCal modules
+// register DAQ channels
 void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
 {
     channel->AssignID(channelList.size());
@@ -37,15 +37,15 @@ void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
 void PRadDataHandler::BuildChannelMap()
 {
     // build unordered maps separately improves its access speed
-    // module name map
+    // name map
     for(auto &channel : channelList)
         map_name[channel->GetName()] = channel;
 
-    // module DAQ configuration map
+    // DAQ configuration map
     for(auto &channel : channelList)
         map_daq[channel->GetDAQInfo()] = channel;
 
-    // module TDC groups
+    // TDC groups
     for(auto &channel : channelList)
     {
         string tdcName = channel->GetTDCName();
@@ -148,15 +148,15 @@ void PRadDataHandler::EndofThisEvent()
 }
 
 // show the event to event viewer
-void PRadDataHandler::ShowEvent(int idx)
+void PRadDataHandler::UpdateEvent(int idx)
 {
-/*
+
     vector< ChannelData > event;
 
     // != avoids operator definition for non-standard map
-    for(auto &module : channelList)
+    for(auto &channel : channelList)
     {
-        module->DeEnergize();
+        channel->UpdateEnergy(0);
     }
 
     if(onlineMode) { // online mode only show the last event
@@ -169,9 +169,9 @@ void PRadDataHandler::ShowEvent(int idx)
 
     for(auto &hit : event)
     {
-        channelList[hit.id]->Energize(hit.adcValue);
+        channelList[hit.id]->UpdateEnergy(hit.adcValue);
     }
-*/
+
 }
 
 // find channels

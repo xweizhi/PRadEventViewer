@@ -5,7 +5,7 @@ PRadDAQUnit::PRadDAQUnit(const char *name,
                          const ChannelAddress &daqAddr,
                          const std::string &tdc)
 : address(daqAddr), pedestal(Pedestal(0, 0)), tdcGroup(tdc),
-  occupancy(0), sparsify(0), channelID(0)
+  occupancy(0), sparsify(0), channelID(0), energy(0)
 {
     adcHist = new TH1I(name, "ADC Value", 8192, 0, 8191);
     channelName = name;
@@ -20,6 +20,11 @@ void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 {
     pedestal = Pedestal(m, s);
     sparsify = (unsigned short)(pedestal.mean + 5*pedestal.sigma + 0.5); // round
+}
+
+void PRadDAQUnit::UpdateEnergy(const unsigned short &adcVal)
+{
+    energy = Calibration(adcVal);
 }
 
 // erase current data

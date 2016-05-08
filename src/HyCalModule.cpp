@@ -24,7 +24,7 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
                          const GeoInfo &geo)
 : PRadDAQUnit(rid.toStdString().c_str(), daqAddr, tdc.toStdString()),
   console(p), name(rid), hvSetup(hvInfo), geometry(geo),
-  energy(0), m_hover(false), m_selected(false), color(Qt::white), font(QFont("times",10))
+  m_hover(false), m_selected(false), color(Qt::white), font(QFont("times",10))
 {
     // initialize the item
     Initialize();
@@ -152,13 +152,6 @@ void HyCalModule::setSelected(bool selected)
 void HyCalModule::SetColor(const double &val)
 {
     color = console->GetColor(val);
-}
-
-// calibration and show energy
-void HyCalModule::Energize(const unsigned short &adcVal)
-{
-    energy =  Calibration(adcVal);
-    SetColor(energy);
 }
 
 // convert ADC value after sparsification to energy

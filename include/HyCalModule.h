@@ -62,12 +62,10 @@ public:
     void ShowPedestal() {SetColor(pedestal.mean);};
     void ShowPedSigma() {SetColor(pedestal.sigma);};
     void ShowOccupancy() {SetColor(occupancy);};
+    void ShowEnergy() {SetColor(energy);};
     void ShowVoltage();
     void UpdateHV(const float &Vmon, const float &Vset, const bool &ON) {hvSetup.volt.Vmon = Vmon; hvSetup.volt.Vset = Vset; hvSetup.volt.ON = ON;};
     void UpdateHVSetup(ChannelAddress &set) {hvSetup.config = set;};
-    void DeEnergize() {color = Qt::white; energy = 0;};
-    void Energize(const unsigned short &adcVal);
-    double GetEnergy() {return energy;};
     double Calibration(const unsigned short &val);
     QString GetReadID() {return name;};
     Voltage GetVoltage() {return hvSetup.volt;};
@@ -90,7 +88,6 @@ private:
     QString name;
     HVSetup hvSetup;
     GeoInfo geometry;
-    double energy;
 
     bool m_hover;
     bool m_selected;

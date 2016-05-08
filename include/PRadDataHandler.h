@@ -59,7 +59,7 @@ public:
     void FeedData(ADC1881MData &adcData);
     void FeedData(GEMAPVData &gemData);
     void FeedData(CAENHVData &hvData);
-    void ShowEvent(int idx = 0);
+    void UpdateEvent(int idx = 0);
     int GetEventCount() {return energyData.size();};
     TH1D *GetEnergyHist() {return energyHist;};
     void Clear();
