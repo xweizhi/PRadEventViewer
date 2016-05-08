@@ -27,6 +27,12 @@ void PRadDAQUnit::UpdateEnergy(const unsigned short &adcVal)
     energy = Calibration(adcVal);
 }
 
+// universe calibration code, can be implemented by derivative class
+double PRadDAQUnit::Calibration(const unsigned short & /*adcVal*/)
+{
+    return 0;
+}
+
 // erase current data
 void PRadDAQUnit::CleanBuffer()
 {

@@ -33,7 +33,7 @@ public:
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
     const double &GetEnergy() {return energy;};
-    virtual double Calibration(const unsigned short &) {return 0;}; // will be implemented by the derivative class
+    virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
 
     TH1I *adcHist;
 
