@@ -20,6 +20,7 @@ using namespace std;
 
 class PRadEvioParser;
 class PRadDAQUnit;
+class PRadTDCGroup;
 class TH1I;
 class TH1D;
 
@@ -43,7 +44,7 @@ namespace std {
 
 typedef unordered_map< ChannelAddress, PRadDAQUnit* >::iterator daq_iter;
 typedef unordered_map< string, PRadDAQUnit* >::iterator name_iter;
-typedef unordered_map< string, vector< PRadDAQUnit* > >::iterator tdc_iter;
+typedef unordered_map< string, PRadTDCGroup* >::iterator tdc_iter;
 
 class PRadDataHandler
 {
@@ -70,8 +71,8 @@ public:
     PRadDAQUnit *FindChannel(const ChannelAddress &daqInfo);
     PRadDAQUnit *FindChannel(const string &name);
     PRadDAQUnit *FindChannel(const unsigned short &id);
-    vector< PRadDAQUnit* > GetTDCGroup(string &name);
-    vector< string > GetTDCGroupList();
+    PRadTDCGroup *GetTDCGroup(string &name);
+    const unordered_map< string, PRadTDCGroup *> &GetTDCGroupSet() {return map_tdc;};
     const vector< PRadDAQUnit* > &GetChannelList() {return channelList;};
 
 private:
@@ -82,7 +83,7 @@ private:
 #endif
     unordered_map< ChannelAddress, PRadDAQUnit* > map_daq;
     unordered_map< string, PRadDAQUnit* > map_name;
-    unordered_map< string, vector< PRadDAQUnit* > > map_tdc;
+    unordered_map< string, PRadTDCGroup* > map_tdc;
     vector< PRadDAQUnit* > channelList;
     deque< vector< ChannelData > > energyData;
     vector < ChannelData > newEvent, lastEvent;

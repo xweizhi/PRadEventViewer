@@ -40,6 +40,7 @@
 #include "PRadHistCanvas.h"
 #include "PRadDataHandler.h"
 #include "PRadDAQUnit.h"
+#include "PRadTDCGroup.h"
 #include "PRadLogBox.h"
 
 #include <sys/time.h>
@@ -396,16 +397,17 @@ void PRadEventViewer::buildModuleMap()
     handler->BuildChannelMap();
 
     // tdc maps
-    std::vector< std::string > tdcList = handler->GetTDCGroupList();
-    for(auto &tdc_name : tdcList)
+    std::unordered_map< std::string, PRadTDCGroup * > tdcList = handler->GetTDCGroupSet();
+    for(auto &it : tdcList)
     {
-        std::vector< PRadDAQUnit* > groupList = handler->GetTDCGroup(tdc_name);
+        PRadTDCGroup *tdcGroup = it.second;
+        std::vector< PRadDAQUnit* > groupList = tdcGroup->GetGroupList();
 
         if(!groupList.size())
             continue;
 
         // get id and set background color
-        QString tdcGroupName = QString::fromStdString(tdc_name);
+        QString tdcGroupName = QString::fromStdString(tdcGroup->GetName());
         QColor bkgColor;
         int tdc = tdcGroupName.mid(1).toInt();
         if(tdcGroupName.at(0) == 'G') { // below is to make different color for adjacent groups
@@ -421,11 +423,8 @@ void PRadEventViewer::buildModuleMap()
         }
 
         // get the tdc group box size
-        HyCalModule::GeoInfo geo = ((HyCalModule*)groupList[0])->GetGeometry();
-        double xmax = geo.x + geo.cellSize/2.;
-        double ymax = geo.y + geo.cellSize/2.;
-        double xmin = geo.x - geo.cellSize/2.;
-        double ymin = geo.y - geo.cellSize/2.;
+        double xmax = -600., xmin = 600.;
+        double ymax = -600., ymin = 600.;
         for(auto &channel : groupList)
         {
             HyCalModule *module = dynamic_cast<HyCalModule *>(channel);

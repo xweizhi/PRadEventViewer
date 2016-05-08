@@ -13,6 +13,7 @@
 #include "PRadEvioParser.h"
 #include "HyCalModule.h"
 #include "HyCalClusters.h"
+#include "PRadTDCGroup.h"
 #include "TH1.h"
 
 PRadDataHandler::PRadDataHandler()
@@ -49,10 +50,14 @@ void PRadDataHandler::BuildChannelMap()
     for(auto &channel : channelList)
     {
         string tdcName = channel->GetTDCName();
-        if(tdcName.empty()) continue; // not belongs to any tdc group
-        vector< PRadDAQUnit* > tdcGroup = GetTDCGroup(tdcName);
-        tdcGroup.push_back(channel);
-        map_tdc[tdcName] = tdcGroup;
+        if(tdcName.empty() || tdcName == "N/A")
+            continue; // not belongs to any tdc group
+        PRadTDCGroup *tdcGroup = GetTDCGroup(tdcName);
+        if(tdcGroup == nullptr) {
+            tdcGroup = new PRadTDCGroup(tdcName);
+            map_tdc[tdcName] = tdcGroup;
+        }
+        tdcGroup->AddChannel(channel);
     }
 }
 
@@ -175,7 +180,7 @@ void PRadDataHandler::UpdateEvent(int idx)
 }
 
 // find channels
-PRadDAQUnit* PRadDataHandler::FindChannel(const ChannelAddress &daqInfo)
+PRadDAQUnit *PRadDataHandler::FindChannel(const ChannelAddress &daqInfo)
 {
     daq_iter it = map_daq.find(daqInfo);
     if(it == map_daq.end())
@@ -183,7 +188,7 @@ PRadDAQUnit* PRadDataHandler::FindChannel(const ChannelAddress &daqInfo)
     return it->second;
 }
 
-PRadDAQUnit* PRadDataHandler::FindChannel(const string &name)
+PRadDAQUnit *PRadDataHandler::FindChannel(const string &name)
 {
     name_iter it = map_name.find(name);
     if(it == map_name.end())
@@ -191,27 +196,18 @@ PRadDAQUnit* PRadDataHandler::FindChannel(const string &name)
     return it->second;
 }
 
-PRadDAQUnit* PRadDataHandler::FindChannel(const unsigned short &id)
+PRadDAQUnit *PRadDataHandler::FindChannel(const unsigned short &id)
 {
     if(id >= channelList.size())
         return nullptr;
     return channelList[id];
 }
 
-vector< PRadDAQUnit* > PRadDataHandler::GetTDCGroup(string &name)
+PRadTDCGroup *PRadDataHandler::GetTDCGroup(string &name)
 {
     tdc_iter it = map_tdc.find(name);
     if(it == map_tdc.end())
-        return vector< PRadDAQUnit* >(); // return empty vector
+        return nullptr; // return empty vector
     return it->second;
 }
 
-vector< string > PRadDataHandler::GetTDCGroupList()
-{
-    vector< string > list;
-    for(tdc_iter it = map_tdc.begin(); it != map_tdc.end(); ++it)
-    {
-        list.push_back(it->first);
-    }
-    return list;
-}
