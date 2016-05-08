@@ -39,6 +39,7 @@
 #include "PRadEvioParser.h"
 #include "PRadHistCanvas.h"
 #include "PRadDataHandler.h"
+#include "PRadDAQUnit.h"
 #include "PRadLogBox.h"
 
 #include <sys/time.h>
@@ -376,8 +377,8 @@ void PRadEventViewer::readModuleList()
             hvInfo.config.channel = (unsigned char)fields.takeFirst().toInt();
 
             HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, hvInfo, geometry);
-            HyCal->addItem(newModule);
-            handler->RegisterModule(newModule);
+            HyCal->addModule(newModule);
+            handler->RegisterChannel(newModule);
         } else {
             std::cout << "Unrecognized input format in configuration file, skipped one line!"
                       << std::endl;
@@ -392,13 +393,13 @@ void PRadEventViewer::readModuleList()
 // send the tdc group geometry to scene for annotation
 void PRadEventViewer::buildModuleMap()
 {
-    handler->BuildModuleMap();
+    handler->BuildChannelMap();
 
     // tdc maps
     std::vector< std::string > tdcList = handler->GetTDCGroupList();
     for(auto &tdc_name : tdcList)
     {
-        std::vector< HyCalModule* > groupList = handler->GetTDCGroup(tdc_name);
+        std::vector< PRadDAQUnit* > groupList = handler->GetTDCGroup(tdc_name);
 
         if(!groupList.size())
             continue;
@@ -420,13 +421,17 @@ void PRadEventViewer::buildModuleMap()
         }
 
         // get the tdc group box size
-        HyCalModule::GeoInfo geo = groupList[0]->GetGeometry();
+        HyCalModule::GeoInfo geo = ((HyCalModule*)groupList[0])->GetGeometry();
         double xmax = geo.x + geo.cellSize/2.;
         double ymax = geo.y + geo.cellSize/2.;
         double xmin = geo.x - geo.cellSize/2.;
         double ymin = geo.y - geo.cellSize/2.;
-        for(auto &module : groupList)
+        for(auto &channel : groupList)
         {
+            HyCalModule *module = dynamic_cast<HyCalModule *>(channel);
+            if(module == nullptr)
+                continue;
+
             HyCalModule::GeoInfo geo = module->GetGeometry();
             if((geo.x + geo.cellSize/2.) > xmax)
                 xmax = geo.x + geo.cellSize/2.;
@@ -458,7 +463,7 @@ void PRadEventViewer::readPedestalData(const QString &filename)
     int crate, slot, channel;
     double val, sigma;
     ChannelAddress daqInfo;
-    HyCalModule *tmp;
+    PRadDAQUnit *tmp;
 
     QTextStream in(&pedData);
 
@@ -477,7 +482,7 @@ void PRadEventViewer::readPedestalData(const QString &filename)
             daqInfo.crate = crate;
             daqInfo.slot = slot;
             daqInfo.channel = channel;
-            if((tmp = handler->FindModule(daqInfo)) != nullptr)
+            if((tmp = handler->FindChannel(daqInfo)) != nullptr)
                 tmp->UpdatePedestal(val, sigma);
         }
     }
@@ -492,7 +497,7 @@ void PRadEventViewer::readPedestalData(const QString &filename)
 // do the action for all modules
 void PRadEventViewer::ModuleAction(void (HyCalModule::*act)())
 {
-    std::vector<HyCalModule*> moduleList = handler->GetModuleList();
+    QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
         (module->*act)();
@@ -501,7 +506,7 @@ void PRadEventViewer::ModuleAction(void (HyCalModule::*act)())
 
 void PRadEventViewer::ListModules()
 {
-    std::vector<HyCalModule*> moduleList = handler->GetModuleList();
+    QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     std::ofstream outf("config/current_list.txt");
 
     for(auto &module : moduleList)
@@ -835,7 +840,7 @@ void PRadEventViewer::saveHistToFile()
 
     handler->GetEnergyHist()->Write();
 
-    vector<HyCalModule*> moduleList = handler->GetModuleList();
+    QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
         module->adcHist->Write();
@@ -850,7 +855,7 @@ void PRadEventViewer::fitEventsForPedestal()
 
     ofstream pedestalmap("config/pedestal.dat");
 
-    vector<HyCalModule*> moduleList = handler->GetModuleList();
+    QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
         module->adcHist->Fit("gaus");

@@ -67,8 +67,6 @@ public:
     void UpdateHVSetup(ChannelAddress &set) {hvSetup.config = set;};
     void DeEnergize() {color = Qt::white; energy = 0;};
     void Energize(const unsigned short &adcVal);
-    void AssignID(const int &n) {id = n;};
-    unsigned short GetID() {return id;};
     double GetEnergy() {return energy;};
     double Calibration(const unsigned short &val);
     QString GetReadID() {return name;};
@@ -93,7 +91,6 @@ private:
     HVSetup hvSetup;
     GeoInfo geometry;
     double energy;
-    unsigned short id;
 
     bool m_hover;
     bool m_selected;

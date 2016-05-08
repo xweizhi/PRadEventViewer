@@ -5,9 +5,10 @@ PRadDAQUnit::PRadDAQUnit(const char *name,
                          const ChannelAddress &daqAddr,
                          const std::string &tdc)
 : address(daqAddr), pedestal(Pedestal(0, 0)), tdcGroup(tdc),
-  occupancy(0), sparsify(0)
+  occupancy(0), sparsify(0), channelID(0)
 {
     adcHist = new TH1I(name, "ADC Value", 8192, 0, 8191);
+    channelName = name;
 }
 
 PRadDAQUnit::~PRadDAQUnit()

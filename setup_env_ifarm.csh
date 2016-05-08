@@ -11,6 +11,9 @@ else
 endif
 
 # comment this if you have your own root installed
-#source /apps/root/5.34.21/setroot_CUE.csh
-
-setenv LD_LIBRARY_PATH ${THIRD_LIB}:${ET_LIB}:${LD_LIBRARY_PATH}
+source /apps/root/6.02.00/setroot_CUE.csh
+if ! $?LD_LIBRARY_PATH then
+	setenv LD_LIBRARY_PATH ${THIRD_LIB}:${ET_LIB}
+else
+	setenv LD_LIBRARY_PATH ${THIRD_LIB}:${ET_LIB}:${LD_LIBRARY_PATH}
+endif

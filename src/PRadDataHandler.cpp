@@ -28,30 +28,30 @@ PRadDataHandler::~PRadDataHandler()
 }
 
 // register HyCal modules
-void PRadDataHandler::RegisterModule(HyCalModule* hyCalModule)
+void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
 {
-    hyCalModule->AssignID(moduleList.size());
-    moduleList.push_back(hyCalModule);
+    channel->AssignID(channelList.size());
+    channelList.push_back(channel);
 }
 
-void PRadDataHandler::BuildModuleMap()
+void PRadDataHandler::BuildChannelMap()
 {
     // build unordered maps separately improves its access speed
     // module name map
-    for(auto &module : moduleList)
-        map_name[module->GetReadID().toStdString()] = module;
+    for(auto &channel : channelList)
+        map_name[channel->GetName()] = channel;
 
     // module DAQ configuration map
-    for(auto &module : moduleList)
-        map_daq[module->GetDAQInfo()] = module;
+    for(auto &channel : channelList)
+        map_daq[channel->GetDAQInfo()] = channel;
 
     // module TDC groups
-    for(auto &module : moduleList)
+    for(auto &channel : channelList)
     {
-        string tdcName = module->GetTDCName();
+        string tdcName = channel->GetTDCName();
         if(tdcName.empty()) continue; // not belongs to any tdc group
-        vector< HyCalModule* > tdcGroup = GetTDCGroup(tdcName);
-        tdcGroup.push_back(module);
+        vector< PRadDAQUnit* > tdcGroup = GetTDCGroup(tdcName);
+        tdcGroup.push_back(channel);
         map_tdc[tdcName] = tdcGroup;
     }
 }
@@ -69,31 +69,31 @@ void PRadDataHandler::Clear()
 // feed ADC1881M data
 void PRadDataHandler::FeedData(ADC1881MData &adcData)
 {
-    // find the module with this DAQ configuration
+    // find the channel with this DAQ configuration
     daq_iter it = map_daq.find(adcData.config);
 
-    // did not find any module
+    // did not find any channel
     if(it == map_daq.end())
         return;
 
-    // get the module pointer
-    HyCalModule *module = it->second;
+    // get the channel
+    PRadDAQUnit *channel = it->second;
 
-    // fill module adc value histogram
-    module->adcHist->Fill(adcData.val);
+    // fill adc value histogram
+    channel->adcHist->Fill(adcData.val);
 
     // zero suppression
-    unsigned short sparVal = module->Sparsification(adcData.val);
+    unsigned short sparVal = channel->Sparsification(adcData.val);
 
     if(sparVal) // only store events above pedestal in memory
     {
-        ModuleEnergyData word = { module->GetID(), sparVal }; // save id because it saves memory
+        ChannelData word = { channel->GetID(), sparVal }; // save id because it saves memory
 #ifdef MULTI_THREAD
         // unfortunately, we have some non-local variable to deal with
         // so lock the thread to prevent concurrent access
         myLock.lock();
 #endif
-        totalE += module->Calibration(sparVal); // calculate total energy of this event
+        totalE += channel->Calibration(sparVal); // calculate total energy of this event
         newEvent.push_back(word); // store this data word
 #ifdef MULTI_THREAD
         myLock.unlock();
@@ -116,7 +116,11 @@ void PRadDataHandler::FeedData(CAENHVData &hvData)
     if(it == map_name.end())
         return;
 
-    HyCalModule *module = it->second;
+    PRadDAQUnit *channel = it->second;
+    HyCalModule *module = dynamic_cast<HyCalModule *>(channel);
+    if(module == nullptr)
+        return;
+
     if(module->GetHVInfo() == hvData.config) {
         module->UpdateHV(hvData.Vmon, hvData.Vset, hvData.ON);
     } else {
@@ -146,10 +150,11 @@ void PRadDataHandler::EndofThisEvent()
 // show the event to event viewer
 void PRadDataHandler::ShowEvent(int idx)
 {
-    vector< ModuleEnergyData > event;
+/*
+    vector< ChannelData > event;
 
     // != avoids operator definition for non-standard map
-    for(auto &module : moduleList)
+    for(auto &module : channelList)
     {
         module->DeEnergize();
     }
@@ -164,12 +169,13 @@ void PRadDataHandler::ShowEvent(int idx)
 
     for(auto &hit : event)
     {
-        moduleList[hit.id]->Energize(hit.adcValue);
+        channelList[hit.id]->Energize(hit.adcValue);
     }
+*/
 }
 
-// find modules
-HyCalModule* PRadDataHandler::FindModule(const ChannelAddress &daqInfo)
+// find channels
+PRadDAQUnit* PRadDataHandler::FindChannel(const ChannelAddress &daqInfo)
 {
     daq_iter it = map_daq.find(daqInfo);
     if(it == map_daq.end())
@@ -177,7 +183,7 @@ HyCalModule* PRadDataHandler::FindModule(const ChannelAddress &daqInfo)
     return it->second;
 }
 
-HyCalModule* PRadDataHandler::FindModule(const string &name)
+PRadDAQUnit* PRadDataHandler::FindChannel(const string &name)
 {
     name_iter it = map_name.find(name);
     if(it == map_name.end())
@@ -185,18 +191,18 @@ HyCalModule* PRadDataHandler::FindModule(const string &name)
     return it->second;
 }
 
-HyCalModule* PRadDataHandler::FindModule(const unsigned short &id)
+PRadDAQUnit* PRadDataHandler::FindChannel(const unsigned short &id)
 {
-    if(id >= moduleList.size())
+    if(id >= channelList.size())
         return nullptr;
-    return moduleList[id];
+    return channelList[id];
 }
 
-vector< HyCalModule* > PRadDataHandler::GetTDCGroup(string &name)
+vector< PRadDAQUnit* > PRadDataHandler::GetTDCGroup(string &name)
 {
     tdc_iter it = map_tdc.find(name);
     if(it == map_tdc.end())
-        return vector< HyCalModule* >(); // return empty vector
+        return vector< PRadDAQUnit* >(); // return empty vector
     return it->second;
 }
 

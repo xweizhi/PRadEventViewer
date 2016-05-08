@@ -48,6 +48,12 @@ void HyCalScene::addItem(QGraphicsItem *item)
     QGraphicsScene::addItem(item);
 }
 
+void HyCalScene::addModule(HyCalModule *module)
+{
+    QGraphicsScene::addItem(module);
+    moduleList.push_back(module);
+}
+
 void HyCalScene::AddTextBox(QString &name, QRectF &textBox, QColor &bkgColor)
 {
     TextBox newBox;

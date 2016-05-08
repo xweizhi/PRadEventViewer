@@ -28,6 +28,9 @@ public:
     void CleanBuffer();
     unsigned short Sparsification(unsigned short &adcVal);
     int GetOccupancy() {return occupancy;};
+    std::string &GetName() {return channelName;};
+    void AssignID(const unsigned short &id) {channelID = id;};
+    unsigned short GetID() {return channelID;};
     virtual double Calibration(const unsigned short &) {return 0;}; // will be implemented by the derivative class
 
     TH1I *adcHist;
@@ -36,8 +39,10 @@ protected:
     ChannelAddress address;
     Pedestal pedestal;
     std::string tdcGroup;
+    std::string channelName;
     int occupancy;
     unsigned short sparsify;
+    unsigned short channelID;
 };
 
 #endif

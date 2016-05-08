@@ -19,7 +19,7 @@
 using namespace std;
 
 class PRadEvioParser;
-class HyCalModule;
+class PRadDAQUnit;
 class TH1I;
 class TH1D;
 
@@ -41,9 +41,9 @@ namespace std {
    };
 }
 
-typedef unordered_map< ChannelAddress, HyCalModule* >::iterator daq_iter;
-typedef unordered_map< string, HyCalModule* >::iterator name_iter;
-typedef unordered_map< string, vector< HyCalModule* > >::iterator tdc_iter;
+typedef unordered_map< ChannelAddress, PRadDAQUnit* >::iterator daq_iter;
+typedef unordered_map< string, PRadDAQUnit* >::iterator name_iter;
+typedef unordered_map< string, vector< PRadDAQUnit* > >::iterator tdc_iter;
 
 class PRadDataHandler
 {
@@ -51,11 +51,11 @@ public:
     typedef struct {
         unsigned short id;
         unsigned short adcValue;
-    } ModuleEnergyData;
+    } ChannelData;
 
     PRadDataHandler();
     virtual ~PRadDataHandler();
-    void RegisterModule(HyCalModule *hyCalModule);
+    void RegisterChannel(PRadDAQUnit *channel);
     void FeedData(ADC1881MData &adcData);
     void FeedData(GEMAPVData &gemData);
     void FeedData(CAENHVData &hvData);
@@ -66,13 +66,13 @@ public:
     void EndofThisEvent();
     void OnlineMode() {onlineMode = true;};
     void OfflineMode() {onlineMode = false;};
-    void BuildModuleMap();
-    HyCalModule *FindModule(const ChannelAddress &daqInfo);
-    HyCalModule *FindModule(const string &name);
-    HyCalModule *FindModule(const unsigned short &id);
-    vector< HyCalModule* > GetTDCGroup(string &name);
+    void BuildChannelMap();
+    PRadDAQUnit *FindChannel(const ChannelAddress &daqInfo);
+    PRadDAQUnit *FindChannel(const string &name);
+    PRadDAQUnit *FindChannel(const unsigned short &id);
+    vector< PRadDAQUnit* > GetTDCGroup(string &name);
     vector< string > GetTDCGroupList();
-    const vector< HyCalModule* > &GetModuleList() {return moduleList;};
+    const vector< PRadDAQUnit* > &GetChannelList() {return channelList;};
 
 private:
     double totalE;
@@ -80,12 +80,12 @@ private:
 #ifdef MULTI_THREAD
     mutex myLock;
 #endif
-    unordered_map< ChannelAddress, HyCalModule* > map_daq;
-    unordered_map< string, HyCalModule* > map_name;
-    unordered_map< string, vector< HyCalModule* > > map_tdc;
-    vector< HyCalModule* > moduleList;
-    deque< vector< ModuleEnergyData > > energyData;
-    vector < ModuleEnergyData > newEvent, lastEvent;
+    unordered_map< ChannelAddress, PRadDAQUnit* > map_daq;
+    unordered_map< string, PRadDAQUnit* > map_name;
+    unordered_map< string, vector< PRadDAQUnit* > > map_tdc;
+    vector< PRadDAQUnit* > channelList;
+    deque< vector< ChannelData > > energyData;
+    vector < ChannelData > newEvent, lastEvent;
     TH1D *energyHist;
 };
 
