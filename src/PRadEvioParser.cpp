@@ -17,7 +17,8 @@
 
 using namespace std;
 
-PRadEvioParser::PRadEvioParser(PRadDataHandler *handler) : myHandler(handler) {}
+PRadEvioParser::PRadEvioParser(PRadDataHandler *handler) : myHandler(handler)
+{}
 
 void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
 {

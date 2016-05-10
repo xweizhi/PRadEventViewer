@@ -5,6 +5,7 @@
 
 enum PRadEventType
 {
+    Unknown = 0,
     LMS_Led = 0x01,
     LMS_Alpha = 0x02,
     PHYS_Pedestal = 0x03,
@@ -97,6 +98,13 @@ struct PRadEventHeader
     unsigned char num;
     unsigned char type;
     unsigned short tag;
+};
+
+struct JLabTIData
+{
+    unsigned int time_gated;
+    unsigned int time_ungated;
+    unsigned int trigger_type;
 };
 
 struct ADC1881MData

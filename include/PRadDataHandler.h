@@ -58,11 +58,26 @@ public:
         : id(i), adcValue(v) {};       
     };
 
+    struct EventData {
+        unsigned char type;
+        unsigned int time;
+        vector< ChannelData > channels;
+        EventData() : type(0), time(0) {};
+        EventData(const unsigned char &t) : type(t), time(0) {};
+        EventData(const unsigned char &t, vector< ChannelData > &v)
+        : type(t), time(0), channels(v) {};
+        void clear() {type = 0; channels.clear();};
+        void push_back(const ChannelData &word) {channels.push_back(word);};
+        void update_type(const unsigned char &t) {type = t;};
+        void update_time(const unsigned int &t) {time = t;};
+    };
+
     PRadDataHandler();
     virtual ~PRadDataHandler();
     void AddChannel(PRadDAQUnit *channel);
     void AddTDCGroup(PRadTDCGroup *group);
     void RegisterChannel(PRadDAQUnit *channel);
+    void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);
     void FeedData(GEMAPVData &gemData);
     void FeedData(TDCV767Data &tdcData);
@@ -95,8 +110,8 @@ private:
     unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
     vector< PRadDAQUnit* > channelList;
     vector< PRadDAQUnit* > freeList;
-    deque< vector< ChannelData > > energyData;
-    vector < ChannelData > newEvent, lastEvent;
+    deque< EventData > energyData;
+    EventData newEvent, lastEvent;
     TH1D *energyHist;
 };
 

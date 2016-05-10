@@ -29,12 +29,12 @@ PRadDataHandler::~PRadDataHandler()
 
     for(auto &ele : freeList)
     {
-        delete ele;
+        delete ele, ele = nullptr;
     }
 
     for(auto &it : map_name_tdc)
     {
-        delete it.second;
+        delete it.second, it.second = nullptr;
     }
 }
 
@@ -94,6 +94,11 @@ void PRadDataHandler::Clear()
     totalE = 0;
     newEvent.clear();
     energyHist->Reset();
+}
+
+void PRadDataHandler::FeedData(JLabTIData &/*tiData*/)
+{
+    // place holder
 }
 
 // feed ADC1881M data
@@ -191,7 +196,7 @@ void PRadDataHandler::EndofThisEvent()
 void PRadDataHandler::UpdateEvent(int idx)
 {
 
-    vector< ChannelData > event;
+    EventData event;
 
     // != avoids operator definition for non-standard map
     for(auto &channel : channelList)
@@ -207,9 +212,9 @@ void PRadDataHandler::UpdateEvent(int idx)
         event = energyData[idx];
     }
 
-    for(auto &hit : event)
+    for(auto &channel : event.channels)
     {
-        channelList[hit.id]->UpdateEnergy(hit.adcValue);
+        channelList[channel.id]->UpdateEnergy(channel.adcValue);
     }
 
 }
