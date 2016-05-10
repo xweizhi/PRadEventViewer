@@ -715,7 +715,7 @@ void PRadEventViewer::UpdateStatusInfo()
               << typeInfo                                            // module type
               << tr("C") + QString::number(daqInfo.crate)            // daq crate
                  + tr(", S") + QString::number(daqInfo.slot)         // daq slot
-                 + tr(", Ch") + QString::number(daqInfo.channel + 1) // daq channel
+                 + tr(", Ch") + QString::number(daqInfo.channel)     // daq channel
               << selection->GetTDCGroupName()                        // tdc group
               << tr("C") + QString::number(hvInfo.crate)             // hv crate
                  + tr(", S") + QString::number(hvInfo.slot)          // hv slot
