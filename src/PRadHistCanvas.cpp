@@ -54,8 +54,10 @@ void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int rang
 
     TH1 *hist = (TH1*)tob;
 
-    hist->GetXaxis()->SetRangeUser(hist->FindFirstBinAbove(0,1) - 10,
-                                   hist->FindLastBinAbove(0,1) + 10);
+    int firstBin = hist->FindFirstBinAbove(0,1)*0.7;
+    int lastBin = hist->FindLastBinAbove(0,1)*1.3;
+
+    hist->GetXaxis()->SetRangeUser(firstBin, lastBin);
 
     hist->GetXaxis()->SetLabelSize(HIST_LABEL_SIZE);
     hist->GetYaxis()->SetLabelSize(HIST_LABEL_SIZE);

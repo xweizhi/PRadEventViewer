@@ -20,7 +20,7 @@ PRadDataHandler::PRadDataHandler()
 : totalE(0), onlineMode(false)
 {
     // total energy histogram
-    energyHist = new TH1D("HyCalEnergy", "Total Energy (MeV)", 2500, 0, 2500);
+    energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
 }
 
 PRadDataHandler::~PRadDataHandler()

@@ -198,7 +198,11 @@ void PRadEventViewer::createMainMenu()
     QAction *snapShotAction = toolMenu->addAction(tr("Take SnapShot"));
     snapShotAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_S));
 
+    QAction *eraseAction = toolMenu->addAction(tr("Erase Buffer"));
+    eraseAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_X));
+
     connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
+    connect(eraseAction, SIGNAL(triggered()), this, SLOT(eraseBufferAction()));
     menuBar()->addMenu(toolMenu);
 
 }
@@ -212,10 +216,9 @@ void PRadEventViewer::createControlPanel()
     connect(eventSpin, SIGNAL(valueChanged(int)),
             this, SLOT(changeCurrentEvent(int)));
 
-    QPushButton *histCleanButton = new QPushButton("Erase Buffer");
-    connect(histCleanButton, SIGNAL(clicked()),
-            this, SLOT(eraseBufferAction()));
-
+    histTypeBox = new QComboBox();
+    histTypeBox->addItem(tr("Module Hist"));
+    histTypeBox->addItem(tr("LMS Hist"));
     annoTypeBox = new QComboBox();
     annoTypeBox->addItem(tr("No Annotation"));
     annoTypeBox->addItem(tr("Module ID"));
@@ -233,6 +236,8 @@ void PRadEventViewer::createControlPanel()
     eventCntLabel = new QLabel;
     eventCntLabel->setText(tr("No events data loaded."));
 
+    connect(histTypeBox, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(changeHistType(int)));
     connect(annoTypeBox, SIGNAL(currentIndexChanged(int)),
             this, SLOT(changeAnnoType(int)));
     connect(viewModeBox, SIGNAL(currentIndexChanged(int)),
@@ -244,13 +249,13 @@ void PRadEventViewer::createControlPanel()
 
     QGridLayout *layout = new QGridLayout();
 
-    layout->addWidget(eventSpin,            0, 0, 1, 1);
-    layout->addWidget(eventCntLabel,        0, 1, 1, 1);
-    layout->addWidget(histCleanButton,      0, 2, 1, 1);
-    layout->addWidget(viewModeBox,          1, 0, 1, 1);
-    layout->addWidget(annoTypeBox,          1, 1, 1, 1);
-    layout->addWidget(spectrumSettingButton,1, 2, 1, 1);
-    layout->addWidget(logBox,               2, 0, 3, 3);
+    layout->addWidget(eventSpin,             0, 0, 1, 1);
+    layout->addWidget(eventCntLabel,         0, 1, 1, 1);
+    layout->addWidget(spectrumSettingButton, 0, 2, 1, 1);
+    layout->addWidget(histTypeBox,           1, 0, 1, 1);
+    layout->addWidget(viewModeBox,           1, 1, 1, 1);
+    layout->addWidget(annoTypeBox,           1, 2, 1, 1);
+    layout->addWidget(logBox,                2, 0, 3, 3);
 
     controlPanel = new QWidget(this);
     controlPanel->setLayout(layout);
@@ -705,6 +710,12 @@ void PRadEventViewer::openPedFile()
     }
 }
 
+void PRadEventViewer::changeHistType(int index)
+{
+    histType = (HistType)index;
+    UpdateHistCanvas();
+}
+
 void PRadEventViewer::changeAnnoType(int index)
 {
     annoType = (AnnoType)index;
@@ -776,16 +787,29 @@ void PRadEventViewer::updateEventRange()
 void PRadEventViewer::UpdateHistCanvas()
 {
     gSystem->ProcessEvents();
-    if(selection != nullptr) {
-        PRadDAQUnit::Pedestal ped = selection->GetPedestal();
-        int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
-        int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
-        histCanvas->UpdateHist(1, selection->GetHist(), fit_min, fit_max);
-        PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
-        if(tdc)
-            histCanvas->UpdateHist(2, tdc->GetHist());
+    switch(histType) {
+    default:
+    case ModuleHist:
+        if(selection != nullptr) {
+            PRadDAQUnit::Pedestal ped = selection->GetPedestal();
+            int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
+            int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
+            histCanvas->UpdateHist(1, selection->GetHist(), fit_min, fit_max);
+            PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
+            if(tdc)
+                histCanvas->UpdateHist(2, tdc->GetHist());
+        }
+        histCanvas->UpdateHist(3, handler->GetEnergyHist());
+        break;
+    case LMSHist:
+        for(int i = 1; i <= 3; ++i)
+        {
+            PRadDAQUnit *lmsChannel = handler->FindChannel("LMS" + std::to_string(i));
+            if(lmsChannel)
+                histCanvas->UpdateHist(i, lmsChannel->GetHist());
+        }
+        break;
     }
-    histCanvas->UpdateHist(3, handler->GetEnergyHist());
 }
 
 void PRadEventViewer::SelectModule(HyCalModule* module)

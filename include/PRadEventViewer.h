@@ -37,6 +37,11 @@ class QTimer;
 class QAction;
 QT_END_NAMESPACE
 
+enum HistType {
+    ModuleHist,
+    LMSHist,
+};
+
 enum AnnoType {
     NoAnnotation,
     ShowID,
@@ -83,6 +88,7 @@ private slots:
     void openPedFile();
     void saveHistToFile();
     void takeSnapShot();
+    void changeHistType(int index);
     void changeAnnoType(int index);
     void changeViewMode(int index);
     void changeSpectrumSetting();
@@ -124,6 +130,7 @@ private:
 
     PRadDataHandler *handler;
     int currentEvent;
+    HistType histType;
     AnnoType annoType;
     ViewMode viewMode;
 
@@ -146,6 +153,7 @@ private:
     QWidget *controlPanel;
     QSpinBox *eventSpin;
     QLabel *eventCntLabel;
+    QComboBox *histTypeBox;
     QComboBox *annoTypeBox;
     QComboBox *viewModeBox;
     QPushButton *spectrumSettingButton;
