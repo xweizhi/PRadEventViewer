@@ -19,7 +19,7 @@ public:
     };
 
 public:
-    PRadDAQUnit(const char *name, const ChannelAddress &daqAddr, const std::string &tdc = "");
+    PRadDAQUnit(const std::string &name, const ChannelAddress &daqAddr, const std::string &tdc = "");
     virtual ~PRadDAQUnit();
     ChannelAddress GetDAQInfo() {return address;};
     Pedestal GetPedestal() {return pedestal;};
@@ -33,9 +33,8 @@ public:
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
     const double &GetEnergy() {return energy;};
+    TH1I *GetHist() {return adcHist;};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
-
-    TH1I *adcHist;
 
 protected:
     ChannelAddress address;
@@ -46,6 +45,7 @@ protected:
     unsigned short sparsify;
     unsigned short channelID;
     double energy;
+    TH1I *adcHist;
 };
 
 #endif

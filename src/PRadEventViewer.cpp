@@ -53,7 +53,8 @@
 // constructor                                                                //
 //============================================================================//
 PRadEventViewer::PRadEventViewer()
-: currentEvent(0), selection(nullptr), etChannel(nullptr), hvChannel(nullptr)
+: handler(new PRadDataHandler()),
+  currentEvent(0), selection(nullptr), etChannel(nullptr), hvChannel(nullptr)
 {
     initView();
     setupUI();
@@ -71,8 +72,6 @@ void PRadEventViewer::initView()
 {
     HyCal = new HyCalScene(this, -720, -720, 1440, 1440);
     HyCal->setBackgroundBrush(QColor(255, 255, 238));
-
-    handler = new PRadDataHandler(); // data handler and container
 
     generateSpectrum();
     generateHyCalModules();
@@ -141,6 +140,11 @@ void PRadEventViewer::generateHyCalModules()
 {
     readTDCList();
     readModuleList();
+    readSpecialChannels();
+
+    // end of channel/module reading
+    buildModuleMap();
+
     readPedestalData("config/pedestal.dat");
 
     // Default setting
@@ -278,7 +282,7 @@ void PRadEventViewer::createStatusWindow()
     histCanvas = new PRadHistCanvas(this);
     histCanvas->AddCanvas(0, 0, 38);
     histCanvas->AddCanvas(1, 0, 46);
-    histCanvas->AddCanvas(2, 0, 46);
+    histCanvas->AddCanvas(2, 0, 30);
 
     statusWindow->addWidget(statusInfoWidget);
     statusWindow->addWidget(histCanvas);
@@ -358,7 +362,7 @@ void PRadEventViewer::readTDCList()
             addr.crate = (unsigned char)fields.takeFirst().toInt();
             addr.slot = (unsigned char)fields.takeFirst().toInt();
             addr.channel = (unsigned char)fields.takeFirst().toInt();
-            handler->RegisterTDCGroup(new PRadTDCGroup(name.toStdString(), addr));
+            handler->AddTDCGroup(new PRadTDCGroup(name.toStdString(), addr));
         } else {
             std::cout << "Unrecognized input format in configuration file, skipped one line!"
                       << std::endl;
@@ -422,7 +426,47 @@ void PRadEventViewer::readModuleList()
     }
 
     list.close();
-    buildModuleMap();
+}
+
+void PRadEventViewer::readSpecialChannels()
+{
+    QFile list("config/special_channels.txt");
+    if(!list.open(QFile::ReadOnly | QFile::Text)) {
+        std::cerr << "WARNING: Missing configuration file \"config/special_channels.txt\"."
+                  << std::endl;
+        return;
+    }
+
+    QTextStream in(&list);
+    QString moduleName;
+    ChannelAddress daqAddr;
+    QString tdcGroup;
+    HyCalModule::HVSetup hvInfo;
+
+    // some info that is not read from list
+    while (!in.atEnd())
+    {
+        QString line = in.readLine().simplified();
+        if(line.at(0) == '#')
+            continue;
+        QStringList fields = line.split(QRegExp("\\s+"));
+        if(fields.size() == 8) {
+            moduleName = fields.takeFirst();
+            daqAddr.crate = (unsigned char)fields.takeFirst().toInt();
+            daqAddr.slot = (unsigned char)fields.takeFirst().toInt();
+            daqAddr.channel = (unsigned char)fields.takeFirst().toInt();
+            tdcGroup = fields.takeFirst();
+/*
+            hvInfo.config.crate = (unsigned char)fields.takeFirst().toInt();
+            hvInfo.config.slot = (unsigned char)fields.takeFirst().toInt();
+            hvInfo.config.channel = (unsigned char)fields.takeFirst().toInt();
+*/
+            handler->AddChannel(new PRadDAQUnit(moduleName.toStdString(), daqAddr, tdcGroup.toStdString()));
+        } else {
+            std::cout << "Unrecognized input format in configuration file, skipped one line!"
+                      << std::endl;
+        }
+    } 
 }
 
 // build module maps for speed access to module
@@ -430,7 +474,6 @@ void PRadEventViewer::readModuleList()
 void PRadEventViewer::buildModuleMap()
 {
     handler->BuildChannelMap();
-
     // tdc maps
     std::unordered_map< std::string, PRadTDCGroup * > tdcList = handler->GetTDCGroupSet();
     for(auto &it : tdcList)
@@ -460,12 +503,14 @@ void PRadEventViewer::buildModuleMap()
         // get the tdc group box size
         double xmax = -600., xmin = 600.;
         double ymax = -600., ymin = 600.;
+        bool has_module = false;
         for(auto &channel : groupList)
         {
             HyCalModule *module = dynamic_cast<HyCalModule *>(channel);
             if(module == nullptr)
                 continue;
 
+            has_module = true;
             HyCalModule::GeoInfo geo = module->GetGeometry();
             if((geo.x + geo.cellSize/2.) > xmax)
                 xmax = geo.x + geo.cellSize/2.;
@@ -478,8 +523,8 @@ void PRadEventViewer::buildModuleMap()
                 ymin = geo.y - geo.cellSize/2.;
         }
         QRectF groupBox = QRectF(xmin - HYCAL_SHIFT, ymin, xmax-xmin, ymax-ymin);
-
-        HyCal->AddTextBox(tdcGroupName, groupBox, bkgColor);
+        if(has_module)
+            HyCal->AddTextBox(tdcGroupName, groupBox, bkgColor);
     }
 }
 
@@ -735,7 +780,7 @@ void PRadEventViewer::UpdateHistCanvas()
         PRadDAQUnit::Pedestal ped = selection->GetPedestal();
         int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
         int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
-        histCanvas->UpdateHist(1, selection->adcHist, fit_min, fit_max);
+        histCanvas->UpdateHist(1, selection->GetHist(), fit_min, fit_max);
         PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
         if(tdc)
             histCanvas->UpdateHist(2, tdc->GetHist());
@@ -773,7 +818,7 @@ void PRadEventViewer::UpdateStatusInfo()
               << typeInfo                                            // module type
               << tr("C") + QString::number(daqInfo.crate)            // daq crate
                  + tr(", S") + QString::number(daqInfo.slot)         // daq slot
-                 + tr(", Ch") + QString::number(daqInfo.channel + 1) // daq channel
+                 + tr(", Ch") + QString::number(daqInfo.channel)     // daq channel
               << QString::fromStdString(selection->GetTDCName())     // tdc group
               << tr("C") + QString::number(hvInfo.crate)             // hv crate
                  + tr(", S") + QString::number(hvInfo.slot)          // hv slot
@@ -881,7 +926,7 @@ void PRadEventViewer::saveHistToFile()
     QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
-        module->adcHist->Write();
+        module->GetHist()->Write();
     }
     f->Close();
     rStatusLabel->setText(tr("All histograms are saved to ") + rootFile);
@@ -896,8 +941,8 @@ void PRadEventViewer::fitEventsForPedestal()
     QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
-        module->adcHist->Fit("gaus");
-        TF1 *myfit = (TF1*) module->adcHist->GetFunction("gaus");
+        module->GetHist()->Fit("gaus");
+        TF1 *myfit = (TF1*) module->GetHist()->GetFunction("gaus");
         double p0 = myfit->GetParameter(1);
         double p1 = myfit->GetParameter(2);
         module->UpdatePedestal(p0, p1);

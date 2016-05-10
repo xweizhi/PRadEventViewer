@@ -26,16 +26,33 @@ PRadDataHandler::PRadDataHandler()
 PRadDataHandler::~PRadDataHandler()
 {
     delete energyHist;
+
+    for(auto &ele : freeList)
+    {
+        delete ele;
+    }
+
+    for(auto &it : map_name_tdc)
+    {
+        delete it.second;
+    }
 }
 
-// register DAQ channels
+// add DAQ channels
+void PRadDataHandler::AddChannel(PRadDAQUnit *channel)
+{
+    RegisterChannel(channel);
+    freeList.push_back(channel);
+}
+
+// register DAQ channels, memory is managed by other process
 void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
 {
     channel->AssignID(channelList.size());
     channelList.push_back(channel);
 }
 
-void PRadDataHandler::RegisterTDCGroup(PRadTDCGroup *group)
+void PRadDataHandler::AddTDCGroup(PRadTDCGroup *group)
 {
     map_name_tdc[group->GetName()] = group;
     map_daq_tdc[group->GetAddress()] = group;
@@ -56,7 +73,7 @@ void PRadDataHandler::BuildChannelMap()
     for(auto &channel : channelList)
     {
         string tdcName = channel->GetTDCName();
-        if(tdcName.empty() || tdcName == "N/A")
+        if(tdcName.empty() || tdcName == "N/A" || tdcName == "NONE")
             continue; // not belongs to any tdc group
         PRadTDCGroup *tdcGroup = GetTDCGroup(tdcName);
         if(tdcGroup == nullptr) {
@@ -93,7 +110,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     PRadDAQUnit *channel = it->second;
 
     // fill adc value histogram
-    channel->adcHist->Fill(adcData.val);
+    channel->GetHist()->Fill(adcData.val);
 
     // zero suppression
     unsigned short sparVal = channel->Sparsification(adcData.val);

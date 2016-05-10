@@ -1,3 +1,4 @@
+#    tdc   crate slot channel
       G4     2     0    96
      G25     2     0    97
       W6     2     0    98

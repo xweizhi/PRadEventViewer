@@ -60,8 +60,9 @@ public:
 
     PRadDataHandler();
     virtual ~PRadDataHandler();
+    void AddChannel(PRadDAQUnit *channel);
+    void AddTDCGroup(PRadTDCGroup *group);
     void RegisterChannel(PRadDAQUnit *channel);
-    void RegisterTDCGroup(PRadTDCGroup *group);
     void FeedData(ADC1881MData &adcData);
     void FeedData(GEMAPVData &gemData);
     void FeedData(TDCV767Data &tdcData);
@@ -93,6 +94,7 @@ private:
     unordered_map< string, PRadTDCGroup* > map_name_tdc;
     unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
     vector< PRadDAQUnit* > channelList;
+    vector< PRadDAQUnit* > freeList;
     deque< vector< ChannelData > > energyData;
     vector < ChannelData > newEvent, lastEvent;
     TH1D *energyHist;

@@ -1,13 +1,13 @@
 #include "PRadDAQUnit.h"
 #include "TH1I.h"
 
-PRadDAQUnit::PRadDAQUnit(const char *name,
+PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const ChannelAddress &daqAddr,
                          const std::string &tdc)
 : address(daqAddr), pedestal(Pedestal(0, 0)), tdcGroup(tdc),
   occupancy(0), sparsify(0), channelID(0), energy(0)
 {
-    adcHist = new TH1I(name, "ADC Value", 8192, 0, 8191);
+    adcHist = new TH1I(name.c_str(), "ADC Value", 8192, 0, 8191);
     channelName = name;
 }
 

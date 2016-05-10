@@ -74,7 +74,6 @@ public:
     void UpdateStatusInfo();
     void UpdateHistCanvas();
     void SelectModule(HyCalModule* module);
-    PRadDataHandler *handler;
 
 public slots:
     void Refresh();
@@ -105,6 +104,7 @@ private:
     void setupOnlineMode();
     void readModuleList();
     void readTDCList();
+    void readSpecialChannels();
     void readPedestalData(const QString &filename);
     void eraseModuleBuffer();
     void createMainMenu();
@@ -122,6 +122,7 @@ private:
                         const QString &suffix,
                         QFileDialog::AcceptMode mode = QFileDialog::AcceptOpen);
 
+    PRadDataHandler *handler;
     int currentEvent;
     AnnoType annoType;
     ViewMode viewMode;

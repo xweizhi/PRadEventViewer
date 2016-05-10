@@ -22,7 +22,7 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
                          const QString &tdc,
                          const HVSetup &hvInfo,
                          const GeoInfo &geo)
-: PRadDAQUnit(rid.toStdString().c_str(), daqAddr, tdc.toStdString()),
+: PRadDAQUnit(rid.toStdString(), daqAddr, tdc.toStdString()),
   console(p), name(rid), hvSetup(hvInfo), geometry(geo),
   m_hover(false), m_selected(false), color(Qt::white), font(QFont("times",10))
 {
