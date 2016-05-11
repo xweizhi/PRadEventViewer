@@ -92,8 +92,13 @@ void PRadEventViewer::setupUI()
 {
     setWindowTitle(tr("PRad Event Viewer"));
     QDesktopWidget dw;
-    view->scale((dw.height()*0.8)/1440, (dw.height()*0.8)/1440);
-    resize(dw.width()*0.8, dw.height()*0.8);
+    double height = dw.height();
+    double width = dw.width();
+    double scale = 0.8;
+    if(width/height < 15./9.)
+        scale = 0.6;
+    view->scale((height*scale)/1440, (height*scale)/1440);
+    resize(height*scale*16./9., height*scale);
 
     createMainMenu();
     createStatusBar();
