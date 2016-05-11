@@ -12,9 +12,15 @@
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
 #include "HyCalModule.h"
-#include "HyCalClusters.h"
 #include "PRadTDCGroup.h"
 #include "TH1.h"
+
+#define recon_test
+
+#ifdef recon_test
+#include <fstream>
+#include "HyCalClusters.h"
+#endif
 
 PRadDataHandler::PRadDataHandler()
 : totalE(0), onlineMode(false)
@@ -186,6 +192,25 @@ void PRadDataHandler::EndofThisEvent()
     }
 
     energyHist->Fill(totalE); // fill energy histogram
+
+#ifdef recon_test
+    ofstream outfile;
+    outfile.open("HyCal_Hits.txt", ofstream::app);
+    // reconstruct it
+    HyCalClusters cluster;
+    for(auto &channel : newEvent.channels)
+    {
+        HyCalModule *module = dynamic_cast<HyCalModule*>(FindChannel(channel.id));
+        if(module)
+            cluster.AddModule(module->GetGeometry().x, module->GetGeometry().y, module->Calibration(channel.adcValue));
+    }
+    vector<HyCalClusters::HyCal_Hits> hits = cluster.ReconstructHits();
+    for(auto &hit : hits)
+    {
+        outfile << energyData.size() << "  " <<  hit.x << "  " << hit.y << "  "  << hit.E << endl;
+    }
+    outfile.close();
+#endif
 
     // clear buffer for next event
     newEvent.clear();

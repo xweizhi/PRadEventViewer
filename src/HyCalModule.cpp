@@ -158,7 +158,7 @@ void HyCalModule::SetColor(const double &val)
 // TODO implement calibration
 double HyCalModule::Calibration(const unsigned short &val)
 {
-    return (double) val;
+    return (double) val/3.;
 }
 
 // update high voltage

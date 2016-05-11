@@ -17,12 +17,15 @@ public:
     } HyCal_Hits, HyCal_Module;
 
 public:
-    HyCalClusters();
+    HyCalClusters(const double &thres = 200.);
     virtual ~HyCalClusters() {};
     void AddModule(const double &x, const double &y, const double &E);
     std::vector<HyCal_Hits> ReconstructHits();
 
 private:
+    double distance(const HyCal_Module &m1, const HyCal_Module &m2);
+    double threshold;
+    double baseR;
     std::vector<HyCal_Module> modules;
 };
 

@@ -53,8 +53,7 @@
 // constructor                                                                //
 //============================================================================//
 PRadEventViewer::PRadEventViewer()
-: handler(new PRadDataHandler()),
-  currentEvent(0), selection(nullptr), etChannel(nullptr), hvChannel(nullptr)
+: handler(new PRadDataHandler()), currentEvent(0), etChannel(nullptr), hvChannel(nullptr)
 {
     initView();
     setupUI();
@@ -70,7 +69,7 @@ PRadEventViewer::~PRadEventViewer()
 // set up the view for HyCal
 void PRadEventViewer::initView()
 {
-    HyCal = new HyCalScene(this, -720, -720, 1440, 1440);
+    HyCal = new HyCalScene(this, -800, -800, 1600, 1600);
     HyCal->setBackgroundBrush(QColor(255, 255, 238));
 
     generateSpectrum();
@@ -94,9 +93,7 @@ void PRadEventViewer::setupUI()
     QDesktopWidget dw;
     double height = dw.height();
     double width = dw.width();
-    double scale = 0.8;
-    if(width/height < 15./9.)
-        scale = 0.6;
+    double scale = (width/height > (16./9.))? 0.8 : 0.8 * ((width/height)/(16/9.));
     view->scale((height*scale)/1440, (height*scale)/1440);
     resize(height*scale*16./9., height*scale);
 
@@ -153,6 +150,7 @@ void PRadEventViewer::generateHyCalModules()
     readPedestalData("config/pedestal.dat");
 
     // Default setting
+    selection = HyCal->GetModuleList().at(0);
     annoType = NoAnnotation;
     viewMode = EnergyView;
 
