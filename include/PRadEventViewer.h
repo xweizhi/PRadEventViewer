@@ -99,9 +99,10 @@ private slots:
     bool connectETClient();
     void startOnlineMode();
     void stopOnlineMode();
+    void connectHVChannel();
+    void initHVChannel();
+    void disconnectHVChannel();
     void startHVMonitor();
-    void stopHVMonitor();
-    void initHVMonitor();
     void handleRootEvents();
 
 private:
@@ -172,6 +173,7 @@ private:
     QAction *onlineEnAction;
     QAction *onlineDisAction;
     QAction *hvEnableAction;
+    QAction *hvMonitorAction;
     QAction *hvDisableAction;
 
     QFileDialog *fileDialog;

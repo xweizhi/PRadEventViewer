@@ -76,8 +76,10 @@ public:
                   const string &password = "admin");
     void Initialize();
     void DeInitialize();
+    void Connect();
+    void Disconnect();
     void StartMonitor();
-    void StopMonitor() {alive = false;};
+    void StopMonitor();
     void SetPowerOn(bool &val);
     void SetPowerOn(ChannelAddress &config, bool &val);
     void SetVoltage(const char *name, ChannelAddress &config, float &val);
@@ -88,7 +90,7 @@ private:
     PRadDataHandler *myHandler;
     vector<CAEN_Crate> crateList;
     volatile bool alive;
-    thread *queryThread;
+    thread queryThread;
     mutex locker;
     void getCrateMap(CAEN_Crate &crate);
     void heartBeat();

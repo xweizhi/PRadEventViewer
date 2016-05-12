@@ -35,14 +35,7 @@ PRadHVChannel::PRadHVChannel(PRadDataHandler *h)
 
 PRadHVChannel::~PRadHVChannel()
 {
-    StopMonitor();
-    if(queryThread->joinable())
-        queryThread->join();
-
-    for(auto &crate : crateList)
-    {
-        CAENHV_DeinitSystem(crate.handle);
-    }
+    Disconnect();
 }
 
 void PRadHVChannel::AddCrate(const string &name,
@@ -121,6 +114,18 @@ void PRadHVChannel::DeInitialize()
     }
 }
 
+void PRadHVChannel::Connect()
+{
+    Initialize();
+}
+
+void PRadHVChannel::Disconnect()
+{
+    StopMonitor();
+
+    DeInitialize();
+}
+
 void PRadHVChannel::getCrateMap(CAEN_Crate &crate)
 {
     if(crate.handle < 0) {
@@ -161,7 +166,14 @@ void PRadHVChannel::getCrateMap(CAEN_Crate &crate)
 void PRadHVChannel::StartMonitor()
 {
     alive = true;
-    queryThread = new thread(&PRadHVChannel::queryLoop, this);
+    queryThread = thread(&PRadHVChannel::queryLoop, this);
+}
+
+void PRadHVChannel::StopMonitor()
+{
+    alive = false;
+    if(queryThread.joinable())
+        queryThread.join();
 }
 
 void PRadHVChannel::queryLoop()

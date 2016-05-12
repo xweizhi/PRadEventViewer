@@ -198,11 +198,14 @@ void PRadEventViewer::createMainMenu()
     // high voltage menu
     QMenu *hvMenu = new QMenu(tr("High Voltage"));
     hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
+    hvMonitorAction = hvMenu->addAction(tr("Start HV Monitor"));
+    hvMonitorAction->setEnabled(false);
     hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
     hvDisableAction->setEnabled(false);
 
-    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(startHVMonitor()));
-    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(stopHVMonitor()));
+    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVChannel()));
+    connect(hvMonitorAction, SIGNAL(triggered()), this, SLOT(startHVMonitor()));
+    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVChannel()));
     menuBar()->addMenu(hvMenu);
 
     // tool menu, useful tools
@@ -1203,25 +1206,30 @@ void PRadEventViewer::onlineUpdate()
 // high voltage control functions                                             //
 //============================================================================//
 
-void PRadEventViewer::startHVMonitor()
+void PRadEventViewer::connectHVChannel()
 {
     hvEnableAction->setEnabled(false);
     hvDisableAction->setEnabled(false);
-    QtConcurrent::run(this, &PRadEventViewer::initHVMonitor);
-    //initHVMonitor();
+    QtConcurrent::run(this, &PRadEventViewer::initHVChannel);
 }
 
-void PRadEventViewer::initHVMonitor()
+void PRadEventViewer::initHVChannel()
 {
-    hvChannel->Initialize();
+    hvChannel->Connect();
     hvDisableAction->setEnabled(true);
-    hvChannel->StartMonitor();
+    hvMonitorAction->setEnabled(true);
 }
 
-void PRadEventViewer::stopHVMonitor()
+void PRadEventViewer::startHVMonitor()
 {
-    hvChannel->StopMonitor();
-    hvChannel->DeInitialize();
+    hvChannel->StartMonitor();
+    hvMonitorAction->setEnabled(false);
+}
+
+void PRadEventViewer::disconnectHVChannel()
+{
+    hvChannel->Disconnect();
     hvEnableAction->setEnabled(true);
     hvDisableAction->setEnabled(false);
+    hvMonitorAction->setEnabled(false);
 }
