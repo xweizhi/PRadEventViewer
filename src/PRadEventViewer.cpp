@@ -191,9 +191,19 @@ void PRadEventViewer::createMainMenu()
     onlineDisAction = onlineMenu->addAction(tr("Stop Online Mode"));
     onlineDisAction->setEnabled(false);
 
-    connect(onlineEnAction, SIGNAL(triggered()), this, SLOT(startOnlineMode()));
+    connect(onlineEnAction, SIGNAL(triggered()), this, SLOT(initOnlineMode()));
     connect(onlineDisAction, SIGNAL(triggered()), this, SLOT(stopOnlineMode()));
     menuBar()->addMenu(onlineMenu);
+
+    // high voltage menu
+    QMenu *hvMenu = new QMenu(tr("High Voltage"));
+    hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
+    hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
+    hvDisableAction->setEnabled(false);
+
+    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(startHVMonitor()));
+    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(stopHVMonitor()));
+    menuBar()->addMenu(hvMenu);
 
     // tool menu, useful tools
     QMenu *toolMenu = new QMenu(tr("&Tools"));
@@ -853,7 +863,8 @@ void PRadEventViewer::UpdateStatusInfo()
 
     PRadDAQUnit::Pedestal ped = selection->GetPedestal();
     HyCalModule::Voltage volt = selection->GetVoltage();
-    QString temp = (volt.ON)?(QString::number(volt.Vmon) + tr(" V / ")) : tr("OFF / ")
+    QString temp = QString::number(volt.Vmon) + tr(" V ")
+                   + ((volt.ON)? tr("/ ") : tr("(OFF) / "))
                    + QString::number(volt.Vset) + tr(" V");
 
     // second value column
@@ -1033,7 +1044,7 @@ void PRadEventViewer::setupOnlineMode()
     connect(onlineTimer, SIGNAL(timeout()), this, SLOT(onlineUpdate()));
 
     // future watcher for online mode
-    connect(&watcher, SIGNAL(finished()), this, SLOT(onlineMode()));
+    connect(&watcher, SIGNAL(finished()), this, SLOT(startOnlineMode()));
 
     etChannel = new PRadETChannel();
     hvChannel = new PRadHVChannel(handler);
@@ -1070,7 +1081,7 @@ void PRadEventViewer::setupOnlineMode()
     hvCrateList.close();
 }
 
-void PRadEventViewer::startOnlineMode()
+void PRadEventViewer::initOnlineMode()
 {
     if(!etSetting->exec())
         return;
@@ -1099,11 +1110,10 @@ bool PRadEventViewer::connectETClient()
         return false;
     }
 
-    hvChannel->Initialize();
     return true;
 }
 
-void PRadEventViewer::onlineMode()
+void PRadEventViewer::startOnlineMode()
 {
     if(!future.result()) { // did not connected to ET
         QMessageBox::critical(this,
@@ -1117,8 +1127,6 @@ void PRadEventViewer::onlineMode()
         eventSpin->setEnabled(true);
         return;
     }
-
-    hvChannel->StartMonitor();
 
     QMessageBox::information(this,
                              tr("Online Mode"),
@@ -1142,8 +1150,6 @@ void PRadEventViewer::stopOnlineMode()
 {
     // Stop timer
     onlineTimer->stop();
-
-    hvChannel->StopMonitor();
 
     etChannel->ForceClose();
     QMessageBox::information(this,
@@ -1192,3 +1198,28 @@ void PRadEventViewer::onlineUpdate()
     }
 }
 
+
+//============================================================================//
+// high voltage control functions                                             //
+//============================================================================//
+
+void PRadEventViewer::startHVMonitor()
+{
+    hvEnableAction->setEnabled(false);
+    hvDisableAction->setEnabled(false);
+    QtConcurrent::run(this, &PRadEventViewer::initHVMonitor);
+}
+
+void PRadEventViewer::initHVMonitor()
+{
+    hvChannel->Initialize();
+    hvChannel->StartMonitor();
+    hvDisableAction->setEnabled(true);
+}
+
+void PRadEventViewer::stopHVMonitor()
+{
+    hvChannel->StopMonitor();
+    hvEnableAction->setEnabled(true);
+    hvDisableAction->setEnabled(false);
+}

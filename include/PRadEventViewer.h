@@ -95,10 +95,13 @@ private slots:
     void changeCurrentEvent(int evt);
     void eraseBufferAction();
     void onlineUpdate();
-    void startOnlineMode();
+    void initOnlineMode();
     bool connectETClient();
-    void onlineMode();
+    void startOnlineMode();
     void stopOnlineMode();
+    void startHVMonitor();
+    void stopHVMonitor();
+    void initHVMonitor();
     void handleRootEvents();
 
 private:
@@ -168,6 +171,8 @@ private:
     QAction *openPedAction;
     QAction *onlineEnAction;
     QAction *onlineDisAction;
+    QAction *hvEnableAction;
+    QAction *hvDisableAction;
 
     QFileDialog *fileDialog;
     ETSettingPanel *etSetting;

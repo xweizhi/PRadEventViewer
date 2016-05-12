@@ -296,7 +296,7 @@ void PRadHVChannel::ReadVoltage()
 void PRadHVChannel::PrintOut()
 {
     cout << crateList.size() << " high voltage crates connected." << endl;
-    cout << "========================================================" << endl;
+    cout << "==========================================" << endl;
     for(auto &crate : crateList)
     {
         cout << crate.name << "@" << crate.ip
@@ -307,7 +307,7 @@ void PRadHVChannel::PrintOut()
         {
             cout << board << endl;
         }
-        cout << "========================================================" << endl;
+        cout << "======================================" << endl;
     }
 }
 
