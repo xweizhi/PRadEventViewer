@@ -38,6 +38,11 @@ PRadHVChannel::~PRadHVChannel()
     StopMonitor();
     if(queryThread->joinable())
         queryThread->join();
+
+    for(auto &crate : crateList)
+    {
+        CAENHV_DeinitSystem(crate.handle);
+    }
 }
 
 void PRadHVChannel::AddCrate(const string &name,
@@ -95,6 +100,27 @@ void PRadHVChannel::Initialize()
     locker.unlock();
 }
 
+void PRadHVChannel::DeInitialize()
+{
+    for(auto &crate : crateList)
+    {
+        int err = CAENHV_DeinitSystem(crate.handle);
+        crate.clear();
+
+        if(err == CAENHV_OK) {
+            cout << "Disconnected from high voltage system "
+                 << crate.name << "@" << crate.ip
+                 << endl;
+        }
+        else {
+            cerr << "Failed to disconnect from "
+                 << crate.name << "@" << crate.ip
+                 << endl;
+            showError("HV DeInitialize", err);
+        }
+    }
+}
+
 void PRadHVChannel::getCrateMap(CAEN_Crate &crate)
 {
     if(crate.handle < 0) {
@@ -104,7 +130,6 @@ void PRadHVChannel::getCrateMap(CAEN_Crate &crate)
         return;
     }
 
-    locker.lock();
     unsigned short NbofSlot;
     unsigned short *NbofChList;
     char *modelList, *descList;
@@ -131,8 +156,6 @@ void PRadHVChannel::getCrateMap(CAEN_Crate &crate)
     free(fmwMaxList);
 
     crate.mapped = true;
-
-    locker.unlock();
 }
 
 void PRadHVChannel::StartMonitor()
@@ -210,8 +233,7 @@ void PRadHVChannel::SetPowerOn(ChannelAddress &config, bool &val)
 void PRadHVChannel::SetVoltage(const char *name, ChannelAddress &config, float &val)
 {
     // set voltage limit
-    float limit = (name[0] == 'G')?1900:1300;
-    if(val > limit) {
+    if(val > getLimit(name)) {
         cerr << "Exceeds safe value in setting the voltage, ignore the action!" << endl;
         return;
     }
@@ -273,17 +295,7 @@ void PRadHVChannel::ReadVoltage()
                     hvData.Vmon = monVals[k];
                     hvData.Vset = setVals[k];
 
-                    float diff = (hvData.ON)?(hvData.Vmon - hvData.Vset):0;
-                    if(diff > 10 || diff < -10) {
-                        cerr << "WARNING: voltage deviates from set value!" << endl
-                             << hvData << endl;
-                    }
-
-                    float limit = (nameList[k][0] == 'W')?1200:1700;
-                    if(hvData.Vmon > limit) {
-                        cerr << "WARNING: voltage exceeds safe limit!" << endl
-                             << hvData << endl;
-                    }
+                    checkVoltage(hvData);
 
                     myHandler->FeedData(hvData);
             }
@@ -309,6 +321,32 @@ void PRadHVChannel::PrintOut()
         }
         cout << "======================================" << endl;
     }
+}
+
+void PRadHVChannel::checkVoltage(const CAENHVData &hvData)
+{
+    if(hvData.name.at(0) == 'G' || hvData.name.at(0) == 'W' || hvData.name.at(0) == 'L') {
+        float diff = (hvData.ON)?(hvData.Vmon - hvData.Vset):0;
+        if(diff > 15 || diff < -15) {
+            cerr << "WARNING: voltage deviates from set value!" << endl
+                 << hvData << endl;
+        }
+    }
+
+    float limit = getLimit(hvData.name.c_str());
+    if(hvData.Vmon > limit) {
+        cerr << "WARNING: voltage exceeds safe limit!" << endl
+             << hvData << endl;
+    }
+}
+
+float PRadHVChannel::getLimit(const char *name)
+{
+    if(name[0] == 'G') return 1700;
+    if(name[0] == 'W') return 1200;
+    if(name[0] == 'L') return 2000;
+    if(name[0] == 'P') return 3000;
+    return 1200;
 }
 
 void PRadHVChannel::showError(const string &prefix, const int &err, ShowErrorType type)

@@ -1208,18 +1208,20 @@ void PRadEventViewer::startHVMonitor()
     hvEnableAction->setEnabled(false);
     hvDisableAction->setEnabled(false);
     QtConcurrent::run(this, &PRadEventViewer::initHVMonitor);
+    //initHVMonitor();
 }
 
 void PRadEventViewer::initHVMonitor()
 {
     hvChannel->Initialize();
-    hvChannel->StartMonitor();
     hvDisableAction->setEnabled(true);
+    hvChannel->StartMonitor();
 }
 
 void PRadEventViewer::stopHVMonitor()
 {
     hvChannel->StopMonitor();
+    hvChannel->DeInitialize();
     hvEnableAction->setEnabled(true);
     hvDisableAction->setEnabled(false);
 }

@@ -56,6 +56,7 @@ public:
                    int link, string user, string pwd)
         : id(i), name(n), ip(p), sysType(type), linkType(link),
           username(user), password(pwd), handle(-1), mapped(false) {};
+        void clear() {handle = -1; mapped = false; boardList.clear();};
     };
 
     enum ShowErrorType
@@ -74,6 +75,7 @@ public:
                   const string &username = "admin",
                   const string &password = "admin");
     void Initialize();
+    void DeInitialize();
     void StartMonitor();
     void StopMonitor() {alive = false;};
     void SetPowerOn(bool &val);
@@ -91,7 +93,9 @@ private:
     void getCrateMap(CAEN_Crate &crate);
     void heartBeat();
     void queryLoop();
+    void checkVoltage(const CAENHVData &hvData);
     void showError(const string &prefix, const int &err, ShowErrorType type = ShowError);
+    float getLimit(const char *name = "");
 };
 
 #endif
