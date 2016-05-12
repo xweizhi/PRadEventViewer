@@ -33,7 +33,7 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadETStation.h \
            include/ETSettingPanel.h \
            include/PRadLogBox.h \
-           include/PRadHVChannel.h \
+           include/PRadHVSystem.h \
            include/PRadException.h \
            include/PRadHistCanvas.h \
            include/QRootCanvas.h
@@ -55,7 +55,7 @@ SOURCES += src/main.cpp \
            src/PRadETStation.cpp\
            src/ETSettingPanel.cpp \
            src/PRadLogBox.cpp \
-           src/PRadHVChannel.cpp \
+           src/PRadHVSystem.cpp \
            src/PRadException.cpp \
            src/PRadHistCanvas.cpp \
            src/QRootCanvas.cpp

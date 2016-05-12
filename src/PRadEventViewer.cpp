@@ -34,7 +34,7 @@
 #include "SpectrumSettingPanel.h"
 #include "HtmlDelegate.h"
 #include "PRadETChannel.h"
-#include "PRadHVChannel.h"
+#include "PRadHVSystem.h"
 #include "ETSettingPanel.h"
 #include "PRadEvioParser.h"
 #include "PRadHistCanvas.h"
@@ -53,7 +53,7 @@
 // constructor                                                                //
 //============================================================================//
 PRadEventViewer::PRadEventViewer()
-: handler(new PRadDataHandler()), currentEvent(0), etChannel(nullptr), hvChannel(nullptr)
+: handler(new PRadDataHandler()), currentEvent(0), etChannel(nullptr), hvSystem(nullptr)
 {
     initView();
     setupUI();
@@ -61,7 +61,7 @@ PRadEventViewer::PRadEventViewer()
 
 PRadEventViewer::~PRadEventViewer()
 {
-    delete hvChannel;
+    delete hvSystem;
     delete etChannel;
     delete handler;
 }
@@ -203,9 +203,9 @@ void PRadEventViewer::createMainMenu()
     hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
     hvDisableAction->setEnabled(false);
 
-    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVChannel()));
+    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
     connect(hvMonitorAction, SIGNAL(triggered()), this, SLOT(startHVMonitor()));
-    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVChannel()));
+    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVSystem()));
     menuBar()->addMenu(hvMenu);
 
     // tool menu, useful tools
@@ -1050,7 +1050,7 @@ void PRadEventViewer::setupOnlineMode()
     connect(&watcher, SIGNAL(finished()), this, SLOT(startOnlineMode()));
 
     etChannel = new PRadETChannel();
-    hvChannel = new PRadHVChannel(handler);
+    hvSystem = new PRadHVSystem(handler);
 
     QFile hvCrateList("config/hv_crate_list.txt");
 
@@ -1077,7 +1077,7 @@ void PRadEventViewer::setupOnlineMode()
             name = fields.takeFirst().toStdString();
             ip = fields.takeFirst().toStdString();
             id = fields.takeFirst().toInt();
-            hvChannel->AddCrate(name, ip, id);
+            hvSystem->AddCrate(name, ip, id);
         }
     }
 
@@ -1206,29 +1206,29 @@ void PRadEventViewer::onlineUpdate()
 // high voltage control functions                                             //
 //============================================================================//
 
-void PRadEventViewer::connectHVChannel()
+void PRadEventViewer::connectHVSystem()
 {
     hvEnableAction->setEnabled(false);
     hvDisableAction->setEnabled(false);
-    QtConcurrent::run(this, &PRadEventViewer::initHVChannel);
+    QtConcurrent::run(this, &PRadEventViewer::initHVSystem);
 }
 
-void PRadEventViewer::initHVChannel()
+void PRadEventViewer::initHVSystem()
 {
-    hvChannel->Connect();
+    hvSystem->Connect();
     hvDisableAction->setEnabled(true);
     hvMonitorAction->setEnabled(true);
 }
 
 void PRadEventViewer::startHVMonitor()
 {
-    hvChannel->StartMonitor();
+    hvSystem->StartMonitor();
     hvMonitorAction->setEnabled(false);
 }
 
-void PRadEventViewer::disconnectHVChannel()
+void PRadEventViewer::disconnectHVSystem()
 {
-    hvChannel->Disconnect();
+    hvSystem->Disconnect();
     hvEnableAction->setEnabled(true);
     hvDisableAction->setEnabled(false);
     hvMonitorAction->setEnabled(false);

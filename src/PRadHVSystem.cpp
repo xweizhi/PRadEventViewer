@@ -10,10 +10,10 @@
 #include <cstring>
 #include <iostream>
 #include <chrono>
-#include "PRadHVChannel.h"
+#include "PRadHVSystem.h"
 #include "PRadDataHandler.h"
 
-ostream &operator<<(ostream &os, PRadHVChannel::CAEN_Board const &b)
+ostream &operator<<(ostream &os, PRadHVSystem::CAEN_Board const &b)
 {
     return os << b.model << ", " << b.desc << ", "
               << b.slot << ", " << b.nChan << ", "
@@ -29,16 +29,16 @@ ostream &operator<<(ostream &os, CAENHVData const &data)
               << endl;
 }
 
-PRadHVChannel::PRadHVChannel(PRadDataHandler *h)
+PRadHVSystem::PRadHVSystem(PRadDataHandler *h)
 : myHandler(h), alive(false)
 {}
 
-PRadHVChannel::~PRadHVChannel()
+PRadHVSystem::~PRadHVSystem()
 {
     Disconnect();
 }
 
-void PRadHVChannel::AddCrate(const string &name,
+void PRadHVSystem::AddCrate(const string &name,
                              const string &ip,
                              const unsigned char &id,
                              const CAENHV_SYSTEM_TYPE_t &type,
@@ -51,7 +51,7 @@ void PRadHVChannel::AddCrate(const string &name,
     crateList.push_back(CAEN_Crate(id, name, ip, type, linkType, username, password));
 }
 
-void PRadHVChannel::Initialize()
+void PRadHVSystem::Initialize()
 {
     locker.lock();
     int try_cnt = 0, fail_cnt = 0;
@@ -93,7 +93,7 @@ void PRadHVChannel::Initialize()
     locker.unlock();
 }
 
-void PRadHVChannel::DeInitialize()
+void PRadHVSystem::DeInitialize()
 {
     for(auto &crate : crateList)
     {
@@ -114,19 +114,19 @@ void PRadHVChannel::DeInitialize()
     }
 }
 
-void PRadHVChannel::Connect()
+void PRadHVSystem::Connect()
 {
     Initialize();
 }
 
-void PRadHVChannel::Disconnect()
+void PRadHVSystem::Disconnect()
 {
     StopMonitor();
 
     DeInitialize();
 }
 
-void PRadHVChannel::getCrateMap(CAEN_Crate &crate)
+void PRadHVSystem::getCrateMap(CAEN_Crate &crate)
 {
     if(crate.handle < 0) {
         cerr << "HV Channel Get Crate Map Error: crate "
@@ -163,20 +163,20 @@ void PRadHVChannel::getCrateMap(CAEN_Crate &crate)
     crate.mapped = true;
 }
 
-void PRadHVChannel::StartMonitor()
+void PRadHVSystem::StartMonitor()
 {
     alive = true;
-    queryThread = thread(&PRadHVChannel::queryLoop, this);
+    queryThread = thread(&PRadHVSystem::queryLoop, this);
 }
 
-void PRadHVChannel::StopMonitor()
+void PRadHVSystem::StopMonitor()
 {
     alive = false;
     if(queryThread.joinable())
         queryThread.join();
 }
 
-void PRadHVChannel::queryLoop()
+void PRadHVSystem::queryLoop()
 {
     unsigned int loopCount = 0;
     while(alive)
@@ -190,7 +190,7 @@ void PRadHVChannel::queryLoop()
     }
 }
 
-void PRadHVChannel::heartBeat()
+void PRadHVSystem::heartBeat()
 {
     locker.lock();
     for(auto &crate : crateList)
@@ -205,7 +205,7 @@ void PRadHVChannel::heartBeat()
     locker.unlock();
 }
 
-void PRadHVChannel::SetPowerOn(bool &val)
+void PRadHVSystem::SetPowerOn(bool &val)
 {
     int err;
     for(auto &crate : crateList)
@@ -227,7 +227,7 @@ void PRadHVChannel::SetPowerOn(bool &val)
     }
 }
 
-void PRadHVChannel::SetPowerOn(ChannelAddress &config, bool &val)
+void PRadHVSystem::SetPowerOn(ChannelAddress &config, bool &val)
 {
     for(auto &crate : crateList)
     {
@@ -242,7 +242,7 @@ void PRadHVChannel::SetPowerOn(ChannelAddress &config, bool &val)
     }
 }
 
-void PRadHVChannel::SetVoltage(const char *name, ChannelAddress &config, float &val)
+void PRadHVSystem::SetVoltage(const char *name, ChannelAddress &config, float &val)
 {
     // set voltage limit
     if(val > getLimit(name)) {
@@ -264,7 +264,7 @@ void PRadHVChannel::SetVoltage(const char *name, ChannelAddress &config, float &
     }
 }
 
-void PRadHVChannel::ReadVoltage()
+void PRadHVSystem::ReadVoltage()
 {
     locker.lock();
     int err;
@@ -317,7 +317,7 @@ void PRadHVChannel::ReadVoltage()
     locker.unlock();
 }
 
-void PRadHVChannel::PrintOut()
+void PRadHVSystem::PrintOut()
 {
     cout << crateList.size() << " high voltage crates connected." << endl;
     cout << "==========================================" << endl;
@@ -335,7 +335,7 @@ void PRadHVChannel::PrintOut()
     }
 }
 
-void PRadHVChannel::checkVoltage(const CAENHVData &hvData)
+void PRadHVSystem::checkVoltage(const CAENHVData &hvData)
 {
     if(hvData.name.at(0) == 'G' || hvData.name.at(0) == 'W' || hvData.name.at(0) == 'L') {
         float diff = (hvData.ON)?(hvData.Vmon - hvData.Vset):0;
@@ -352,7 +352,7 @@ void PRadHVChannel::checkVoltage(const CAENHVData &hvData)
     }
 }
 
-float PRadHVChannel::getLimit(const char *name)
+float PRadHVSystem::getLimit(const char *name)
 {
     if(name[0] == 'G') return 1700;
     if(name[0] == 'W') return 1200;
@@ -361,7 +361,7 @@ float PRadHVChannel::getLimit(const char *name)
     return 1200;
 }
 
-void PRadHVChannel::showError(const string &prefix, const int &err, ShowErrorType type)
+void PRadHVSystem::showError(const string &prefix, const int &err, ShowErrorType type)
 {
     if(err == CAENHV_OK && type != ShowAll)
         return;

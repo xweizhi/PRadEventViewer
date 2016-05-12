@@ -57,6 +57,9 @@ string PRadException::FailureType(void) const throw()
     case ET_PUT_ERROR:
         oss = "ET PUT ERROR";
         break;
+    case HIGH_VOLTAGE_ERROR:
+        oss = "HIGH VOLTAGE SYSTEM ERROR";
+        break;
     default:
         oss = "UNKNOWN ERROR";
         break;

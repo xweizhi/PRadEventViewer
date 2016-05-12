@@ -1,22 +1,24 @@
-#ifndef PRAD_HV_CHANNEL_H
-#define PRAD_HV_CHANNEL_H
+#ifndef PRAD_HV_SYSTEM_H
+#define PRAD_HV_SYSTEM_H
 
 #include "CAENHVWrapper.h"
 #include <vector>
 #include <string>
 #include <thread>
 #include <mutex>
+#include "PRadException.h"
 #include "datastruct.h"
 
 using namespace std;
 
 class PRadDataHandler;
 
-class PRadHVChannel
+class PRadHVSystem
 {
 public:
-    struct CAEN_Board
+    class CAEN_Board
     {
+    public:
         string model;
         string desc;
         unsigned short slot;
@@ -37,8 +39,9 @@ public:
         {};
      };
 
-    struct CAEN_Crate
+    class CAEN_Crate
     {
+    public:
         unsigned char id;
         string name;
         string ip;
@@ -56,6 +59,8 @@ public:
                    int link, string user, string pwd)
         : id(i), name(n), ip(p), sysType(type), linkType(link),
           username(user), password(pwd), handle(-1), mapped(false) {};
+//        void Initialize() throw(PRadException);
+//        void DeInitialize() throw(PRadException);
         void clear() {handle = -1; mapped = false; boardList.clear();};
     };
 
@@ -65,8 +70,8 @@ public:
         ShowAll,
     };
 
-    PRadHVChannel(PRadDataHandler *h);
-    virtual ~PRadHVChannel();
+    PRadHVSystem(PRadDataHandler *h);
+    virtual ~PRadHVSystem();
     void AddCrate(const string &name,
                   const string &ip,
                   const unsigned char &id,

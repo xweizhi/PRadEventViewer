@@ -21,6 +21,7 @@ public:
         ET_STATION_ATTACH_ERROR,
         ET_READ_ERROR,
         ET_PUT_ERROR,
+        HIGH_VOLTAGE_ERROR,
     };
     PRadException(PRadExceptionType typ = UNKNOWN_ERROR, const std::string &txt = "", const std::string &aux = "");
     PRadException(PRadExceptionType typ, const std::string &txt, const std::string &file, const std::string &func, int line);

@@ -16,7 +16,7 @@ class PRadHistCanvas;
 class PRadDataHandler;
 class ETSettingPanel;
 class PRadLogBox;
-class PRadHVChannel;
+class PRadHVSystem;
 
 //class GEM;
 class TCanvas;
@@ -99,9 +99,9 @@ private slots:
     bool connectETClient();
     void startOnlineMode();
     void stopOnlineMode();
-    void connectHVChannel();
-    void initHVChannel();
-    void disconnectHVChannel();
+    void connectHVSystem();
+    void initHVSystem();
+    void disconnectHVSystem();
     void startHVMonitor();
     void handleRootEvents();
 
@@ -142,7 +142,7 @@ private:
     Spectrum *energySpectrum;
     //GEM *myGEM;
     PRadETChannel *etChannel;
-    PRadHVChannel *hvChannel;
+    PRadHVSystem *hvSystem;
     HyCalScene *HyCal;
     HyCalView *view;
     PRadHistCanvas *histCanvas;
