@@ -351,7 +351,7 @@ float PRadHVChannel::getLimit(const char *name)
 
 void PRadHVChannel::showError(const string &prefix, const int &err, ShowErrorType type)
 {
-    if(err == CAENHV_OK && type != ShowAnyThing)
+    if(err == CAENHV_OK && type != ShowAll)
         return;
 
     string result = prefix + " ERROR: ";
