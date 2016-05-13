@@ -101,8 +101,7 @@ struct ChannelAddress
 
 
 // some words defined in readout list
-//#define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
-#define ADC1881M_DATABEG 0
+#define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
 #define ADC1881M_DATAEND 0xfabc0005
 
 /* 32 bit event header structure
