@@ -5,11 +5,12 @@
 
 enum PRadEventType
 {
-    Unknown = 0,
-    LMS_Led = 0x01,
-    LMS_Alpha = 0x02,
-    PHYS_Pedestal = 0x03,
-    PHYS_TotalSum = 0x04,
+    Unknown = 0x0,
+    PHYS_Pedestal = 0x81,
+    PHYS_TotalSum = 0x82,
+    LMS_Led = 0x83,
+    LMS_Alpha = 0x84,
+    BEAM_Tagger = 0x85,
     CODA_Prestart = 0x11,
     CODA_Go = 0x12,
     CODA_End = 0x20,
@@ -17,8 +18,26 @@ enum PRadEventType
 
 enum PRadHeaderType
 {
-    UnsignedInt32bit = 0x01,
-    EvioBank = 0x10
+    Unknown_32bit = 0x0,
+    UnsignedInt_32bit = 0x01,
+    Float_32bit = 0x02,
+    CharString_8bit = 0x03,
+    SignedShort_16bit = 0x04,
+    UnsignedShort_16bit = 0x05,
+    SignedChar_8bit = 0x06,
+    UnsignedChar_8bit = 0x07,
+    Double_64bit = 0x08,
+    SignedInt_64bit = 0x09,
+    UnsignedInt_64bit = 0x0a,
+    SignedInt_32bit = 0x0b,
+    EvioTagSegment = 0x0c,
+    EvioSegment_B = 0x0d,    
+    EvioBank_B = 0x0e,
+    EvioComposite = 0x0f,
+    EvioBank = 0x10,
+    EvioSegment = 0x20,
+    EvioHollerit = 0x21,
+    EvioNValue = 0x22,
 };
 
 enum PRadROCID
@@ -28,7 +47,7 @@ enum PRadROCID
 // PRadROC_4 = 14,
 // PRadROC_5 = 12,
 // PRadROC_6 = 11,
-    PRadTS = 2,
+    PRadTS = 1,
     PRadROC_1 = 4,
     PRadROC_2 = 5,
     PRadROC_3 = 6,
@@ -36,10 +55,10 @@ enum PRadROCID
 
 enum PRadBankID
 {
-    TI_BANK = 0x4,
-    TDC_BANK = 0x5,
+    TI_BANK = 0xe10a,
+    TDC_BANK = 0xe121,
     DSC_BANK = 0x6,
-    FASTBUS_BANK = 0x7,
+    FASTBUS_BANK = 0xe120,
     GEM_FEC1_BANK = 0x8,
     GEM_FEC2_BANK = 0x9,
     GEM_FEC3_BANK = 0xA,
@@ -82,7 +101,8 @@ struct ChannelAddress
 
 
 // some words defined in readout list
-#define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
+//#define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
+#define ADC1881M_DATABEG 0
 #define ADC1881M_DATAEND 0xfabc0005
 
 /* 32 bit event header structure

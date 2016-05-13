@@ -29,6 +29,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
     case LMS_Alpha:
     case PHYS_Pedestal:
     case PHYS_TotalSum:
+    case BEAM_Tagger:
         break; // go on to process
     case CODA_Prestart:
     case CODA_Go:
@@ -56,6 +57,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
         switch(evtHeader->type)
         {
         case EvioBank: // Bank type header for ROC
+        case EvioBank_B:
             switch(evtHeader->tag)
             {
             case PRadROC_3: // Fastbus, ROC id 6
@@ -70,7 +72,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             }
             break;
 
-        case UnsignedInt32bit: // uint32 data bank
+        case UnsignedInt_32bit: // uint32 data bank
             switch(evtHeader->tag)
             {
             default:
@@ -89,16 +91,16 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                 break;
             case FASTBUS_BANK: // Bank 0x7, Fastbus data
                 // Self defined crate data header
-                if((buffer[index]&0xff0fff00) == ADC1881M_DATABEG) {
+                if((buffer[index+1]&0xff0fff00) == ADC1881M_DATABEG) {
 #ifdef MULTI_THREAD
                     // for LMS event, since every module is fired, each thread needs to modify the non-local
                     // variable E_total and the container for current event. Which means very frequent actions
                     // on mutex lock and unlock, it indeed undermine the performance
                     // TODO, separate thread for GEM and HyCal only, there won't be any shared object between
                     // these two sub-system
-                    bank_threads.push_back(thread(&PRadEvioParser::parseADC1881M, this, &buffer[index]));
+                    bank_threads.push_back(thread(&PRadEvioParser::parseADC1881M, this, &buffer[index+1], evtHeader->num));
 #else
-                    parseADC1881M(&buffer[index]);
+                    parseADC1881M(&buffer[index+1], evtHeader->num);
 #endif
                 } else {
                     cerr << "Incorrect Fastbus bank header!" << endl;
@@ -136,14 +138,15 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
     myHandler->EndofThisEvent(); // inform handler the end of event
 }
 
-void PRadEvioParser::parseADC1881M(const uint32_t *data)
+void PRadEvioParser::parseADC1881M(const uint32_t *data, const uint32_t &roc_id)
 {
     // number of boards given by the self defined info word in CODA readout list
     const unsigned char boardNum = data[0]&0xFF;
     unsigned int index = 1, wordCount;
     ADC1881MData adcData;
 
-    adcData.config.crate = (data[0]>>20)&0xF;
+//    adcData.config.crate = (data[0]>>20)&0xF;
+    adcData.config.crate = roc_id;
 
     // parse the data for all boards
     for(unsigned char i = 0; i < boardNum; ++i)

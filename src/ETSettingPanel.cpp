@@ -25,7 +25,7 @@ ETSettingPanel::ETSettingPanel(QWidget *parent)
     // Add settings for online mode
     QLabel *ipLabel = new QLabel("ET Host/Port");
     ipEdit = new QLineEdit(this);
-    ipEdit->setText("prad.jlab.org");
+    ipEdit->setText("clondaq6.jlab.org");
 
     portEdit = new QSpinBox(this);
     portEdit->setRange(1, 65535);
@@ -37,7 +37,7 @@ ETSettingPanel::ETSettingPanel(QWidget *parent)
 
     QLabel *fileLabel = new QLabel("ET File");
     fileEdit = new QLineEdit(this);
-    fileEdit->setText("/tmp/et_sys_PRAD01");
+    fileEdit->setText("/tmp/et_sys_clasprad");
 
     QLabel *stationLabel = new QLabel("Station Name");
     stationEdit = new QLineEdit(this);

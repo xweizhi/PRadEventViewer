@@ -11,7 +11,7 @@ class PRadEvioParser
 public:
     PRadEvioParser(PRadDataHandler* handler);
     void parseEventByHeader(PRadEventHeader *evtHeader);
-    void parseADC1881M(const uint32_t *data);
+    void parseADC1881M(const uint32_t *data, const uint32_t &roc_id);
     void parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id);
     void parseTDCData(const uint32_t *data);
     void parseDSCData(const uint32_t *data);

@@ -161,11 +161,7 @@ bool PRadETChannel::Read() throw(PRadException)
      }
 
     // copy the data buffer
-    void *data;
-    et_event_getdata(etEvent,&data);
-    et_event_getlength(etEvent, &bufferSize);
-
-    memcpy(buffer,(uint32_t*)data,bufferSize);
+    copyEvent();
 
     // put back the event
     status = et_event_put(et_id, att, etEvent);
@@ -181,6 +177,26 @@ bool PRadETChannel::Read() throw(PRadException)
     }
 
     return true;
+}
+
+void PRadETChannel::copyEvent()
+{
+    void *data;
+    et_event_getdata(etEvent, &data);
+    et_event_getlength(etEvent, &bufferSize);
+
+    uint32_t *data_buffer = (uint32_t*) data;
+    size_t index = 0;
+    // check if it is a block header
+    if(bufferSize >= 8 && data_buffer[7] == 0xc0da0100) {
+        index += 8;
+        bufferSize -= 8;
+    }
+
+    for(size_t i = 0; i < bufferSize; ++i)
+    {
+        buffer[i] = data_buffer[index+i];
+    }
 }
 
 

@@ -15,7 +15,7 @@
 #include "PRadTDCGroup.h"
 #include "TH1.h"
 
-#define recon_test
+//#define recon_test
 
 #ifdef recon_test
 #include <fstream>

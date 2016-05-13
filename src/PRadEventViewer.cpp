@@ -1186,6 +1186,7 @@ void PRadEventViewer::onlineUpdate()
             currentEvent = (int)myParser->GetCurrentEventNb();
         }
 
+        cout << "Retrieve " << num << " events from ET." << endl;
         if(num) {
             UpdateHistCanvas();
             Refresh();

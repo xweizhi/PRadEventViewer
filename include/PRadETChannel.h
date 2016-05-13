@@ -73,6 +73,7 @@ private:
     et_event *etEvent;
     uint32_t *buffer;
     size_t bufferSize;
+    void copyEvent();
 };
 
 #endif
