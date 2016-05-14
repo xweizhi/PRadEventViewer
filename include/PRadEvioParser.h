@@ -15,6 +15,7 @@ public:
     void parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id);
     void parseTDCData(const uint32_t *data);
     void parseDSCData(const uint32_t *data);
+    void parseTIData(const uint32_t *data);
     unsigned int GetCurrentEventNb() {return eventNb;};
 
 private:

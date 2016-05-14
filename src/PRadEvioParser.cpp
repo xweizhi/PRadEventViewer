@@ -80,8 +80,8 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             case EVINFO_BANK: // Bank contains the event information
                 eventNb = buffer[index];
                 break;
-            case TI_BANK: // Bank 0x4, TI data, not interested
-                // skip the whole segment
+            case TI_BANK: // Bank 0x4, TI data, contains live time and event type information
+                parseTIData(&buffer[index]);
                 break;
             case TDC_BANK:
                 parseTDCData(&buffer[index]);
@@ -106,15 +106,8 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                     cerr << "Incorrect Fastbus bank header!" << endl;
                 }
                 break;
-            case GEM_FEC1_BANK: // Bank 0x8, gem data, single FEC right now
-            case GEM_FEC2_BANK:
-            case GEM_FEC3_BANK:
-            case GEM_FEC4_BANK:
-            case GEM_FEC5_BANK:
-            case GEM_FEC6_BANK:
-            case GEM_FEC7_BANK:
-            case GEM_FEC8_BANK:
-                parseGEMData(&buffer[index], dataSize, (int)(evtHeader->tag - GEM_FEC1_BANK));
+            case GEM_BANK: // Bank 0x8, gem data, single FEC right now
+                parseGEMData(&buffer[index], dataSize, evtHeader->num);
                 break;
             }
             break;
@@ -234,6 +227,11 @@ void PRadEvioParser::parseTDCData(const uint32_t * /*data*/)
 }
 
 void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
+{
+    // place holder
+}
+
+void PRadEvioParser::parseTIData(const uint32_t * /*data*/)
 {
     // place holder
 }

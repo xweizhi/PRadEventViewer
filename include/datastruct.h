@@ -31,7 +31,7 @@ enum PRadHeaderType
     UnsignedInt_64bit = 0x0a,
     SignedInt_32bit = 0x0b,
     EvioTagSegment = 0x0c,
-    EvioSegment_B = 0x0d,    
+    EvioSegment_B = 0x0d,
     EvioBank_B = 0x0e,
     EvioComposite = 0x0f,
     EvioBank = 0x10,
@@ -56,18 +56,11 @@ enum PRadROCID
 enum PRadBankID
 {
     TI_BANK = 0xe10a,
-    TDC_BANK = 0xe121,
-    DSC_BANK = 0x6,
+    GEM_BANK = 0xe11f,
     FASTBUS_BANK = 0xe120,
-    GEM_FEC1_BANK = 0x8,
-    GEM_FEC2_BANK = 0x9,
-    GEM_FEC3_BANK = 0xA,
-    GEM_FEC4_BANK = 0xB,
-    GEM_FEC5_BANK = 0xC,
-    GEM_FEC6_BANK = 0xD,
-    GEM_FEC7_BANK = 0xE,
-    GEM_FEC8_BANK = 0xF,
-    EVINFO_BANK = 0xC000,
+    TDC_BANK = 0xe121,
+    DSC_BANK = 0xe122,
+    EVINFO_BANK = 0xc000,
 };
 
 
