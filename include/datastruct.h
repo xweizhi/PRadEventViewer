@@ -53,9 +53,9 @@ enum PRadROCID
     PRadROC_1 = 4,
     PRadROC_2 = 5,
     PRadROC_3 = 6,
-    PRadTagE = 7,
-    PRadSRS_1 = 8,
-    PRadSRS_2 = 9,
+    PRadSRS_1 = 7,
+    PRadSRS_2 = 8,
+    PRadTagE = 9,
 };
 
 enum PRadBankID
