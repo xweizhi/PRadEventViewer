@@ -50,26 +50,29 @@ typedef unordered_map< ChannelAddress, PRadTDCGroup* >::iterator tdc_daq_iter;
 class PRadDataHandler
 {
 public:
-    struct ChannelData {
-        unsigned short id;
-        unsigned short adcValue;
-        ChannelData() : id(0), adcValue(0) {};
+    typedef struct ChannelData {
+        unsigned short channel_id;
+        unsigned short value;
+        ChannelData() : channel_id(0), value(0) {};
         ChannelData(const unsigned short &i, const unsigned short &v)
-        : id(i), adcValue(v) {};       
-    };
+        : channel_id(i), value(v) {};       
+    } TDC_Data, ADC_Data;
 
     struct EventData {
         unsigned char type;
+        unsigned char lms_phase;
         unsigned int time;
-        vector< ChannelData > channels;
-        EventData() : type(0), time(0) {};
-        EventData(const unsigned char &t) : type(t), time(0) {};
-        EventData(const unsigned char &t, vector< ChannelData > &v)
-        : type(t), time(0), channels(v) {};
-        void clear() {type = 0; channels.clear();};
-        void push_back(const ChannelData &word) {channels.push_back(word);};
+        vector< ADC_Data > adc_data;
+        vector< TDC_Data > tdc_data;
+        EventData() : type(0), lms_phase(0), time(0) {};
+        EventData(const PRadTriggerType &t) : type((unsigned char)t), lms_phase(0), time(0) {};
+        EventData(const PRadTriggerType &t, vector< ADC_Data > &adc, vector< TDC_Data > &tdc)
+        : type((unsigned char)t), lms_phase(0), time(0), adc_data(adc), tdc_data(tdc){};
+        void clear() {type = 0; adc_data.clear(); tdc_data.clear();};
         void update_type(const unsigned char &t) {type = t;};
         void update_time(const unsigned int &t) {time = t;};
+        void add_adc(const ADC_Data &a) {adc_data.push_back(a);};
+        void add_tdc(const TDC_Data &t) {tdc_data.push_back(t);};
     };
 
     PRadDataHandler();

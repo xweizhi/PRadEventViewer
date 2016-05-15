@@ -12,6 +12,7 @@
 #include <thread>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 
 #define HEADER_SIZE 2
 
@@ -25,11 +26,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
     // first check event type
     switch(header->tag)
     {
-    case LMS_Led:
-    case LMS_Alpha:
-    case PHYS_Pedestal:
-    case PHYS_TotalSum:
-    case BEAM_Tagger:
+    case CODA_Event:
         break; // go on to process
     case CODA_Prestart:
     case CODA_Go:
@@ -60,6 +57,9 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
         case EvioBank_B:
             switch(evtHeader->tag)
             {
+            case PRadTagE:  // Tagger E, ROC id 7
+            case PRadSRS_2: // SRS, ROC id 9
+            case PRadSRS_1: // SRS, ROC id 8
             case PRadROC_3: // Fastbus, ROC id 6
             case PRadROC_2: // Fastbus, ROC id 5
             case PRadROC_1: // Fastbus, ROC id 4
@@ -81,10 +81,10 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                 eventNb = buffer[index];
                 break;
             case TI_BANK: // Bank 0x4, TI data, contains live time and event type information
-                parseTIData(&buffer[index]);
+                parseTIData(&buffer[index], dataSize, evtHeader->num);
                 break;
             case TDC_BANK:
-                parseTDCData(&buffer[index]);
+                parseTDCData(&buffer[index], dataSize);
                 break;
             case DSC_BANK:
                 parseDSCData(&buffer[index]);
@@ -103,7 +103,9 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                     parseADC1881M(&buffer[index]);
 #endif
                 } else {
-                    cerr << "Incorrect Fastbus bank header!" << endl;
+                    cerr << "Incorrect Fastbus bank header!"
+                         << "0x" << hex << setw(8) << setfill('0')
+                         <<  buffer[index] << endl;
                 }
                 break;
             case GEM_BANK: // Bank 0x8, gem data, single FEC right now
@@ -214,16 +216,39 @@ void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size, cons
     }
 }
 
-void PRadEvioParser::parseTDCData(const uint32_t * /*data*/)
+void PRadEvioParser::parseTDCData(const uint32_t * data, const size_t &size)
 {
     // place holder
     TDCV767Data tdcData;
     tdcData.config.crate = 2;
     tdcData.config.slot = 0;
-    tdcData.config.channel = 10;
-    tdcData.val = 1000;
 
-    myHandler->FeedData(tdcData);
+    if(!(data[0]&V767_HEADER_BIT)) {
+        cerr << "Unrecognized V767 header word: "
+             << "0x" << hex << setw(8) << setfill('0') << data[0]
+             << endl;
+        return;
+    }
+    if(!(data[size-1]&V767_END_BIT)) {
+        cerr << "Unrecognized V767 EOB word: "
+             << "0x" << hex << setw(8) << setfill('0') << data[size-1]
+             << endl;
+        return;
+    }
+
+    for(size_t i = 1; i < size - 1; ++i)
+    {
+        if(data[i]&V767_INVALID_BIT) {
+            cerr << "Event: "<< dec << eventNb
+                 << ", invalid data word: "
+                 << "0x" << hex << setw(8) << setfill('0') << data[i]
+                 << endl;
+            continue;
+        }
+        tdcData.config.channel = (data[i]>>24)&0x7f;
+        tdcData.val = data[i]&0xfffff;
+        myHandler->FeedData(tdcData);
+    }
 }
 
 void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
@@ -231,7 +256,18 @@ void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
     // place holder
 }
 
-void PRadEvioParser::parseTIData(const uint32_t * /*data*/)
+void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const int &roc_id)
 {
-    // place holder
+    // not interested in TI-slaves
+    if(roc_id != PRadTS)
+        return;
+    if(size < 9) {
+        cerr << "Too small data size for TI bank, expecting 9, receiving " << size << endl;
+        return;
+    }
+        
+    JLabTIData tiData;
+    tiData.trigger_type = (data[3]&0xff);
+    tiData.lms_phase = ((data[8]&0xff0000)>>20);
+    myHandler->FeedData(tiData);
 }

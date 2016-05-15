@@ -3,6 +3,8 @@
 
 #include <QTextEdit>
 
+#define MAX_NEWLOG_LENGTH 512
+
 class QFileSystemWatcher;
 
 class PRadLogBox : public QTextEdit

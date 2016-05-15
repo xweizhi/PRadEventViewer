@@ -357,6 +357,7 @@ float PRadHVSystem::getLimit(const char *name)
     if(name[0] == 'G') return 1700;
     if(name[0] == 'W') return 1200;
     if(name[0] == 'L') return 2000;
+    if(name[0] == 'S') return 2000;
     if(name[0] == 'P') return 3000;
     return 1200;
 }

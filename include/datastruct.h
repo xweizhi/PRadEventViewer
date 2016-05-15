@@ -5,18 +5,25 @@
 
 enum PRadEventType
 {
-    Unknown = 0x0,
-    PHYS_Pedestal = 0x81,
-    PHYS_TotalSum = 0x82,
-    LMS_Led = 0x83,
-    LMS_Alpha = 0x84,
-    BEAM_Tagger = 0x85,
+    CODA_Unknown = 0x0,
+    CODA_Event = 0x81,
     CODA_Prestart = 0x11,
     CODA_Go = 0x12,
     CODA_End = 0x20,
 };
 
-enum PRadHeaderType
+enum PRadTriggerType
+{
+    TI_Internal = 0,
+    PHYS_Pedestal = 1 << 1,
+    PHYS_TotalSum = 1 << 2,
+    LMS_Led = 1 << 3,
+    LMS_Alpha = 1 << 4,
+    PHYS_TaggerE = 1 << 5,
+    PULS_CLOCK = 1 << 6,
+};
+
+enum EvioBankType
 {
     Unknown_32bit = 0x0,
     UnsignedInt_32bit = 0x01,
@@ -42,15 +49,13 @@ enum PRadHeaderType
 
 enum PRadROCID
 {
-// test data at early stage using different IDs for coda components
-// PRadTS = 1,
-// PRadROC_4 = 14,
-// PRadROC_5 = 12,
-// PRadROC_6 = 11,
     PRadTS = 1,
     PRadROC_1 = 4,
     PRadROC_2 = 5,
     PRadROC_3 = 6,
+    PRadTagE = 7,
+    PRadSRS_1 = 8,
+    PRadSRS_2 = 9,
 };
 
 enum PRadBankID
@@ -97,6 +102,10 @@ struct ChannelAddress
 #define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
 #define ADC1881M_DATAEND 0xfabc0005
 
+#define V767_HEADER_BIT  1 << 22
+#define V767_END_BIT     1 << 21
+#define V767_INVALID_BIT (V767_HEADER_BIT | V767_END_BIT)
+ 
 /* 32 bit event header structure
  * -------------------
  * |     length      |
@@ -116,7 +125,8 @@ struct JLabTIData
 {
     unsigned int time_gated;
     unsigned int time_ungated;
-    unsigned int trigger_type;
+    unsigned char trigger_type;
+    unsigned char lms_phase;
 };
 
 struct ADC1881MData

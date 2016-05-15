@@ -81,8 +81,19 @@ void PRadLogBox::ShowStdOut()
 {
     QFile file("logs/system.log");
     file.open(QFile::ReadOnly | QFile::Text);
-    file.seek(outpos);
-    outpos = file.size();
+    qint64 curpos = file.size();
+    if((curpos - outpos) < 0 ||
+       ((curpos - outpos) > MAX_NEWLOG_LENGTH))
+    {
+        QString line = "<font color=\"Black\">Too many log messages, please check system log for more info!</font><br>";
+        QTextEdit::moveCursor(QTextCursor::End);
+        QTextEdit::insertHtml(line);
+        outpos = curpos;
+        return;
+    }
+
+    file.seek(outpos); 
+    outpos = curpos;
 
     QString header = "<font color=\"Black\">";
     QString end = "</font><br>";
@@ -95,6 +106,7 @@ void PRadLogBox::ShowStdOut()
         QTextEdit::moveCursor(QTextCursor::End);
         QTextEdit::insertHtml(header+line+end);
     }
+    file.close();
 }
 
 
@@ -102,8 +114,20 @@ void PRadLogBox::ShowStdErr()
 {
     QFile file("logs/error.log");
     file.open(QFile::ReadOnly | QFile::Text);
+    qint64 curpos = file.size();
+
+    if((curpos - errpos) < 0 ||
+       ((curpos - errpos) > MAX_NEWLOG_LENGTH))
+    {
+        QString line = "<font color=\"Red\">Too many error messages, please check error log for more info!</font><br>";
+        QTextEdit::moveCursor(QTextCursor::End);
+        QTextEdit::insertHtml(line);
+        errpos = curpos;
+        return;
+    }
+
     file.seek(errpos);
-    errpos = file.size();
+    errpos = curpos;
 
     QString header = "<font color=\"Red\">";
     QString end = "</font><br>";
@@ -116,4 +140,5 @@ void PRadLogBox::ShowStdErr()
         QTextEdit::moveCursor(QTextCursor::End);
         QTextEdit::insertHtml(header+line+end);
     }
+    file.close();
 }

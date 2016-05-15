@@ -13,9 +13,9 @@ public:
     void parseEventByHeader(PRadEventHeader *evtHeader);
     void parseADC1881M(const uint32_t *data);
     void parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id);
-    void parseTDCData(const uint32_t *data);
+    void parseTDCData(const uint32_t *data, const size_t &size);
     void parseDSCData(const uint32_t *data);
-    void parseTIData(const uint32_t *data);
+    void parseTIData(const uint32_t *data, const size_t &size, const int &roc_id);
     unsigned int GetCurrentEventNb() {return eventNb;};
 
 private:

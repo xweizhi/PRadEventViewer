@@ -975,13 +975,14 @@ void PRadEventViewer::saveHistToFile()
 
 void PRadEventViewer::fitEventsForPedestal()
 {
-    logBox->TurnOffLog();
+//    logBox->TurnOffLog();
 
     ofstream pedestalmap("config/pedestal.dat");
 
     QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
+        if(module->GetHist()->GetEntries() < 1000) continue;
         module->GetHist()->Fit("gaus");
         TF1 *myfit = (TF1*) module->GetHist()->GetFunction("gaus");
         double p0 = myfit->GetParameter(1);
@@ -997,7 +998,7 @@ void PRadEventViewer::fitEventsForPedestal()
 
     pedestalmap.close();
 
-    logBox->TurnOnLog();
+//    logBox->TurnOnLog();
 }
 
 void PRadEventViewer::takeSnapShot()

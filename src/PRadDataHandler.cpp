@@ -102,9 +102,10 @@ void PRadDataHandler::Clear()
     energyHist->Reset();
 }
 
-void PRadDataHandler::FeedData(JLabTIData &/*tiData*/)
+void PRadDataHandler::FeedData(JLabTIData &tiData)
 {
-    // place holder
+    newEvent.type = tiData.trigger_type;
+    newEvent.lms_phase = tiData.lms_phase;
 }
 
 // feed ADC1881M data
@@ -128,14 +129,14 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
 
     if(sparVal) // only store events above pedestal in memory
     {
-        ChannelData word(channel->GetID(), sparVal); // save id because it saves memory
+        ADC_Data word(channel->GetID(), sparVal); // save id because it saves memory
 #ifdef MULTI_THREAD
         // unfortunately, we have some non-local variable to deal with
         // so lock the thread to prevent concurrent access
         myLock.lock();
 #endif
         totalE += channel->Calibration(sparVal); // calculate total energy of this event
-        newEvent.push_back(word); // store this data word
+        newEvent.add_adc(word); // store this data word
 #ifdef MULTI_THREAD
         myLock.unlock();
 #endif
@@ -198,11 +199,11 @@ void PRadDataHandler::EndofThisEvent()
     outfile.open("HyCal_Hits.txt", ofstream::app);
     // reconstruct it
     HyCalClusters cluster;
-    for(auto &channel : newEvent.channels)
+    for(auto &adc : newEvent.adc_data)
     {
-        HyCalModule *module = dynamic_cast<HyCalModule*>(FindChannel(channel.id));
+        HyCalModule *module = dynamic_cast<HyCalModule*>(FindChannel(adc.channel_id));
         if(module)
-            cluster.AddModule(module->GetGeometry().x, module->GetGeometry().y, module->Calibration(channel.adcValue));
+            cluster.AddModule(module->GetGeometry().x, module->GetGeometry().y, module->Calibration(adc.value));
     }
     vector<HyCalClusters::HyCal_Hits> hits = cluster.ReconstructHits();
     for(auto &hit : hits)
@@ -237,9 +238,9 @@ void PRadDataHandler::UpdateEvent(int idx)
         event = energyData[idx];
     }
 
-    for(auto &channel : event.channels)
+    for(auto &adc : event.adc_data)
     {
-        channelList[channel.id]->UpdateEnergy(channel.adcValue);
+        channelList[adc.channel_id]->UpdateEnergy(adc.value);
     }
 
 }
