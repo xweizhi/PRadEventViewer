@@ -37,7 +37,7 @@ public:
     TH1I *GetADCHist() {return adcHist;};
     TH1I *GetPEDHist() {return pedHist;};
     TH1I *GetLMSHist() {return lmsHist;};
-    virtual unsigned short Sparsification(const unsigned short &adcVal);
+    virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count);
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
 
 protected:

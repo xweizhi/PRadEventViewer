@@ -159,7 +159,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     }
 
     // zero suppression
-    unsigned short sparVal = channel->Sparsification(adcData.val);
+    unsigned short sparVal = channel->Sparsification(adcData.val, newEvent.type&PHYS_TYPE);
 
     if(sparVal) // only store events above pedestal in memory
     {

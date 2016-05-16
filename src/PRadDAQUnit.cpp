@@ -76,12 +76,13 @@ void PRadDAQUnit::CleanBuffer()
 
 // zero suppression, triggered when adc value is statistically
 // above pedestal (5 sigma)
-unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal)
+unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal, const bool &count)
 {
     if(adcVal < sparsify)
         return 0;
     else {
-        ++occupancy;
+        if(count)
+            ++occupancy;
         return adcVal - sparsify;
     }
 }
