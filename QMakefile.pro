@@ -63,7 +63,8 @@ SOURCES += src/main.cpp \
            src/PRadHistCanvas.cpp \
            src/QRootCanvas.cpp
 
-LIBS += -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx \
+LIBS += -lexpat \
+        -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx \
         -L$$(ET_LIB) -let \
         -L$$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist \
                           -lGraf -lGraf3d -lGpad -lTree \
