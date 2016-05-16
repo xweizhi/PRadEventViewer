@@ -38,9 +38,9 @@ PRadDataHandler::~PRadDataHandler()
         delete ele, ele = nullptr;
     }
 
-    for(auto &it : map_name_tdc)
+    for(auto &tdc : tdcList)
     {
-        delete it.second, it.second = nullptr;
+        delete tdc, tdc = nullptr;
     }
 }
 
@@ -60,6 +60,9 @@ void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
 
 void PRadDataHandler::AddTDCGroup(PRadTDCGroup *group)
 {
+    group->AssignID(tdcList.size());
+    tdcList.push_back(group);
+
     map_name_tdc[group->GetName()] = group;
     map_daq_tdc[group->GetAddress()] = group;
 }
@@ -100,9 +103,15 @@ void PRadDataHandler::Clear()
     totalE = 0;
     newEvent.clear();
     energyHist->Reset();
+
     for(auto &channel : channelList)
     {
         channel->CleanBuffer();
+    }
+
+    for(auto &tdc : tdcList)
+    {
+        tdc->CleanBuffer();
     }
 }
 
@@ -183,6 +192,8 @@ void PRadDataHandler::FeedData(TDCV767Data &tdcData)
 
     PRadTDCGroup *tdc = it->second;
     tdc->GetHist()->Fill(tdcData.val);
+
+    newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
 }
 
 // update High Voltage

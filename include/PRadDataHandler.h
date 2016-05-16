@@ -115,6 +115,7 @@ private:
     unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
     vector< PRadDAQUnit* > channelList;
     vector< PRadDAQUnit* > freeList;
+    vector< PRadTDCGroup* > tdcList;
     deque< EventData > energyData;
     EventData newEvent, lastEvent;
     TH1D *energyHist;
