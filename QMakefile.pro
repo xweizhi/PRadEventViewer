@@ -9,6 +9,7 @@ CONFIG += c++11
 QMAKE_CXXFLAGS += -std=c++11
 
 OBJECTS_DIR = obj
+MOC_DIR = qt_moc
 
 TEMPLATE = app
 TARGET = PRadEventViewer

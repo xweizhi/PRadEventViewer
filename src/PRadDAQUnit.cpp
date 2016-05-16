@@ -24,7 +24,8 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
 
 PRadDAQUnit::~PRadDAQUnit()
 {
-    for(auto &ele : histograms) {
+    for(auto &ele : histograms)
+    {
         delete ele.second, ele.second = nullptr;
     }
 }
@@ -66,7 +67,8 @@ double PRadDAQUnit::Calibration(const unsigned short & /*adcVal*/)
 void PRadDAQUnit::CleanBuffer()
 {
     occupancy = 0;
-    for(auto &ele : histograms) {
+    for(auto &ele : histograms)
+    {
         if(ele.second)
             ele.second->Reset();
     }

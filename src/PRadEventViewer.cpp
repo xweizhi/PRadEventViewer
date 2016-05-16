@@ -685,7 +685,6 @@ void PRadEventViewer::Refresh()
 void PRadEventViewer::eraseModuleBuffer()
 {
     handler->Clear();
-    ModuleAction(&HyCalModule::CleanBuffer);
     updateEventRange();
 }
 

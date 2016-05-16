@@ -100,6 +100,10 @@ void PRadDataHandler::Clear()
     totalE = 0;
     newEvent.clear();
     energyHist->Reset();
+    for(auto &channel : channelList)
+    {
+        channel->CleanBuffer();
+    }
 }
 
 void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
