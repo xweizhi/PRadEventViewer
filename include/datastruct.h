@@ -15,13 +15,17 @@ enum PRadEventType
 enum PRadTriggerType
 {
     TI_Internal = 0,
-    PHYS_Pedestal = 1 << 1,
-    PHYS_TotalSum = 1 << 2,
-    LMS_Led = 1 << 3,
-    LMS_Alpha = 1 << 4,
-    PHYS_TaggerE = 1 << 5,
-    PULS_CLOCK = 1 << 6,
+    PULS_Pedestal = 1,
+    PHYS_TotalSum = 1 << 1,
+    LMS_Led = 1 << 2,
+    LMS_Alpha = 1 << 3,
+    PHYS_TaggerE = 1 << 4,
+    PULS_Clock = 1 << 5,
 };
+
+#define PHYS_TYPE (PHYS_TotalSum | PHYS_TaggerE)
+#define LMS_TYPE (LMS_Led | LMS_Alpha)
+#define PULS_TYPE (PULS_Pedestal | PULS_Clock)
 
 enum EvioBankType
 {

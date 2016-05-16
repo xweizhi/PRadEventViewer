@@ -102,10 +102,19 @@ void PRadDataHandler::Clear()
     energyHist->Reset();
 }
 
-void PRadDataHandler::FeedData(JLabTIData &tiData)
+void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
 {
-    newEvent.type = tiData.trigger_type;
-    newEvent.lms_phase = tiData.lms_phase;
+    newEvent.type = trg;
+}
+
+void PRadDataHandler::UpdateLMSPhase(const unsigned char &ph)
+{
+    newEvent.lms_phase = ph;
+}
+
+void PRadDataHandler::FeedData(JLabTIData & /*tiData*/)
+{
+   // place holder
 }
 
 // feed ADC1881M data
@@ -121,8 +130,20 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // get the channel
     PRadDAQUnit *channel = it->second;
 
-    // fill adc value histogram
-    channel->GetHist()->Fill(adcData.val);
+    // fill histogram
+    switch(newEvent.type)
+    {
+    case PULS_Pedestal:
+        channel->GetPEDHist()->Fill(adcData.val); break;
+    case LMS_Led:
+    case LMS_Alpha:
+        channel->GetLMSHist()->Fill(adcData.val); break;
+    case PHYS_TotalSum:
+    case PHYS_TaggerE:
+        channel->GetADCHist()->Fill(adcData.val); break;
+    default:
+        break;
+    }
 
     // zero suppression
     unsigned short sparVal = channel->Sparsification(adcData.val);
@@ -192,7 +213,8 @@ void PRadDataHandler::EndofThisEvent()
         energyData.push_back(newEvent); // save event
     }
 
-    energyHist->Fill(totalE); // fill energy histogram
+    if(newEvent.type & PHYS_TYPE)
+        energyHist->Fill(totalE); // fill energy histogram
 
 #ifdef recon_test
     ofstream outfile;

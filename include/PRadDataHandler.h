@@ -86,6 +86,8 @@ public:
     void FeedData(TDCV767Data &tdcData);
     void FeedData(CAENHVData &hvData);
     void UpdateEvent(int idx = 0);
+    void UpdateTrgType(const unsigned char &trg);
+    void UpdateLMSPhase(const unsigned char &ph);
     int GetEventCount() {return energyData.size();};
     TH1D *GetEnergyHist() {return energyHist;};
     void Clear();

@@ -8,6 +8,8 @@ greaterThan(4, QT_MAJOR_VERSION):
 CONFIG += c++11
 QMAKE_CXXFLAGS += -std=c++11
 
+OBJECTS_DIR = obj
+
 TEMPLATE = app
 TARGET = PRadEventViewer
 DEPENDPATH += 

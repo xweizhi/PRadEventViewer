@@ -8,7 +8,7 @@
 #include "PRadException.h"
 #include "PRadETStation.h"
 
-#define ET_CHUNK_SIZE 10
+#define ET_CHUNK_SIZE 100
 
 class PRadETChannel
 {

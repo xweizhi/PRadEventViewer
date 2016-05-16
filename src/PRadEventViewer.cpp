@@ -33,6 +33,7 @@
 #include "Spectrum.h"
 #include "SpectrumSettingPanel.h"
 #include "HtmlDelegate.h"
+
 #include "PRadETChannel.h"
 #include "PRadHVSystem.h"
 #include "ETSettingPanel.h"
@@ -169,11 +170,15 @@ void PRadEventViewer::createMainMenu()
     openDataAction = fileMenu->addAction(tr("&Open Data File"));
     openDataAction->setShortcuts(QKeySequence::Open);
 
-    QAction *saveHistAction = fileMenu->addAction(tr("&Save Histograms"));
-    saveHistAction->setShortcuts(QKeySequence::Save);
-
-    openPedAction = fileMenu->addAction(tr("Load &Pedestal"));
+    QAction *openPedAction = fileMenu->addAction(tr("Open &Pedestal File"));
     openPedAction->setShortcuts(QKeySequence::Print);
+    
+    QAction *saveHistAction = fileMenu->addAction(tr("Save &Histograms"));
+    saveHistAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
+
+    QAction *savePedAction = fileMenu->addAction(tr("&Save Pedestal File"));
+    savePedAction->setShortcuts(QKeySequence::Save);
+    
 
     QAction *quitAction = fileMenu->addAction(tr("&Quit"));
     quitAction->setShortcuts(QKeySequence::Quit);
@@ -181,6 +186,7 @@ void PRadEventViewer::createMainMenu()
     connect(openDataAction, SIGNAL(triggered()), this, SLOT(openFile()));
     connect(openPedAction, SIGNAL(triggered()), this, SLOT(openPedFile()));
     connect(saveHistAction, SIGNAL(triggered()), this, SLOT(saveHistToFile()));
+    connect(savePedAction, SIGNAL(triggered()), this, SLOT(savePedestalFile()));
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     menuBar()->addMenu(fileMenu);
 
@@ -196,7 +202,7 @@ void PRadEventViewer::createMainMenu()
     menuBar()->addMenu(onlineMenu);
 
     // high voltage menu
-    QMenu *hvMenu = new QMenu(tr("High Voltage"));
+    QMenu *hvMenu = new QMenu(tr("High &Voltage"));
     hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
     hvMonitorAction = hvMenu->addAction(tr("Start HV Monitor"));
     hvMonitorAction->setEnabled(false);
@@ -211,14 +217,19 @@ void PRadEventViewer::createMainMenu()
     // tool menu, useful tools
     QMenu *toolMenu = new QMenu(tr("&Tools"));
 
-    QAction *snapShotAction = toolMenu->addAction(tr("Take SnapShot"));
-    snapShotAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_S));
+    QAction *fitPedAction = toolMenu->addAction(tr("Fit Pedestal"));
+    fitPedAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_F));
 
     QAction *eraseAction = toolMenu->addAction(tr("Erase Buffer"));
     eraseAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_X));
 
-    connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
+    QAction *snapShotAction = toolMenu->addAction(tr("Take SnapShot"));
+    snapShotAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_S));
+
+    connect(fitPedAction, SIGNAL(triggered()), this, SLOT(fitPedestal()));
     connect(eraseAction, SIGNAL(triggered()), this, SLOT(eraseBufferAction()));
+    connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
+
     menuBar()->addMenu(toolMenu);
 
 }
@@ -234,6 +245,8 @@ void PRadEventViewer::createControlPanel()
 
     histTypeBox = new QComboBox();
     histTypeBox->addItem(tr("Module Hist"));
+    histTypeBox->addItem(tr("Energy&TDC Hist"));
+    histTypeBox->addItem(tr("Dynode Hist"));
     histTypeBox->addItem(tr("LMS Hist"));
     annoTypeBox = new QComboBox();
     annoTypeBox->addItem(tr("No Annotation"));
@@ -720,9 +733,7 @@ void PRadEventViewer::openPedFile()
                            "");
 
     if (!fileName.isEmpty()) {
-        readEventFromFile(fileName);
-        fitEventsForPedestal();
-        UpdateStatusBar(NO_INPUT);
+        readPedestalData(fileName);
     }
 }
 
@@ -807,22 +818,46 @@ void PRadEventViewer::UpdateHistCanvas()
     default:
     case ModuleHist:
         if(selection != nullptr) {
+            histCanvas->UpdateHist(1, selection->GetADCHist());
+            histCanvas->UpdateHist(2, selection->GetLMSHist());
             PRadDAQUnit::Pedestal ped = selection->GetPedestal();
             int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
             int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
-            histCanvas->UpdateHist(1, selection->GetHist(), fit_min, fit_max);
+            histCanvas->UpdateHist(3, selection->GetPEDHist(), fit_min, fit_max);
+        }
+        break;
+
+    case EnergyTDCHist:
+        if(selection != nullptr) {
+            PRadDAQUnit::Pedestal ped = selection->GetPedestal();
+            int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
+            int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
+            histCanvas->UpdateHist(1, selection->GetADCHist(), fit_min, fit_max);
             PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
             if(tdc)
                 histCanvas->UpdateHist(2, tdc->GetHist());
         }
         histCanvas->UpdateHist(3, handler->GetEnergyHist());
         break;
+
+    case DynodeSumHist: {
+        PRadDAQUnit *dsum = handler->FindChannel("DSUM");
+        if(handler->FindChannel("DSUM") != nullptr) {
+            histCanvas->UpdateHist(1, dsum->GetADCHist());
+            PRadDAQUnit::Pedestal ped = dsum->GetPedestal();
+            int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
+            int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
+            histCanvas->UpdateHist(2, dsum->GetPEDHist(), fit_min, fit_max);
+            histCanvas->UpdateHist(3, dsum->GetLMSHist());
+        }
+        break; }
+
     case LMSHist:
         for(int i = 1; i <= 3; ++i)
         {
             PRadDAQUnit *lmsChannel = handler->FindChannel("LMS" + std::to_string(i));
             if(lmsChannel)
-                histCanvas->UpdateHist(i, lmsChannel->GetHist());
+                histCanvas->UpdateHist(i, lmsChannel->GetLMSHist());
         }
         break;
     }
@@ -967,38 +1002,49 @@ void PRadEventViewer::saveHistToFile()
     QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
-        module->GetHist()->Write();
+        module->GetADCHist()->Write();
     }
     f->Close();
     rStatusLabel->setText(tr("All histograms are saved to ") + rootFile);
 }
 
-void PRadEventViewer::fitEventsForPedestal()
+void PRadEventViewer::savePedestalFile()
 {
-//    logBox->TurnOffLog();
+    QString pedFile = getFileName(tr("Save pedestal to file"),
+                                  tr("config/"),
+                                  {tr("data files (*.dat)")},
+                                  tr("dat"),
+                                  QFileDialog::AcceptSave);
+    if(pedFile.isEmpty())
+        return;
 
-    ofstream pedestalmap("config/pedestal.dat");
+    ofstream pedestalmap(pedFile.toStdString());
 
-    QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
-    for(auto &module : moduleList)
+    for(auto &channel : handler->GetChannelList())
     {
-        if(module->GetHist()->GetEntries() < 1000) continue;
-        module->GetHist()->Fit("gaus");
-        TF1 *myfit = (TF1*) module->GetHist()->GetFunction("gaus");
-        double p0 = myfit->GetParameter(1);
-        double p1 = myfit->GetParameter(2);
-        module->UpdatePedestal(p0, p1);
-        ChannelAddress daqInfo = module->GetDAQInfo();
+        ChannelAddress daqInfo = channel->GetDAQInfo();
+        PRadDAQUnit::Pedestal ped = channel->GetPedestal();
         pedestalmap << daqInfo.crate << "  "
                     << daqInfo.slot << "  "
                     << daqInfo.channel << "  "
-                    << p0 << "  "
-                    << p1 << std::endl;
+                    << ped.mean << "  "
+                    << ped.sigma << std::endl;
     }
 
     pedestalmap.close();
+}
 
-//    logBox->TurnOnLog();
+void PRadEventViewer::fitPedestal()
+{
+    for(auto &channel : handler->GetChannelList())
+    {
+        if(channel->GetPEDHist()->GetEntries() < 1000) continue;
+        channel->GetPEDHist()->Fit("gaus");
+        TF1 *myfit = (TF1*) channel->GetPEDHist()->GetFunction("gaus");
+        double p0 = myfit->GetParameter(1);
+        double p1 = myfit->GetParameter(2);
+        channel->UpdatePedestal(p0, p1);
+    }
 }
 
 void PRadEventViewer::takeSnapShot()
@@ -1093,7 +1139,6 @@ void PRadEventViewer::initOnlineMode()
     // Disable buttons
     onlineEnAction->setEnabled(false);
     openDataAction->setEnabled(false);
-    openPedAction->setEnabled(false);
     eventSpin->setEnabled(false);
     future = QtConcurrent::run(this, &PRadEventViewer::connectETClient);
     watcher.setFuture(future);
@@ -1127,7 +1172,6 @@ void PRadEventViewer::startOnlineMode()
         rStatusLabel->setText(tr("Failed to start Online Mode!"));
         onlineEnAction->setEnabled(true);
         openDataAction->setEnabled(true);
-        openPedAction->setEnabled(true);
         eventSpin->setEnabled(true);
         return;
     }
@@ -1165,7 +1209,6 @@ void PRadEventViewer::stopOnlineMode()
     // Enable buttons
     onlineEnAction->setEnabled(true);
     openDataAction->setEnabled(true);
-    openPedAction->setEnabled(true);
     onlineDisAction->setEnabled(false);
     eventSpin->setEnabled(true);
 
@@ -1179,7 +1222,7 @@ void PRadEventViewer::onlineUpdate()
         int num;
         PRadEvioParser *myParser = new PRadEvioParser(handler);
 
-        for(num = 0; etChannel->Read() && num < 10; ++num)
+        for(num = 0; etChannel->Read() && num < 100; ++num)
         {
             PRadEventHeader *evt = (PRadEventHeader*)etChannel->GetBuffer();
             myParser->parseEventByHeader(evt);

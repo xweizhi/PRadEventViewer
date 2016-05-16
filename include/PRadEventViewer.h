@@ -39,6 +39,8 @@ QT_END_NAMESPACE
 
 enum HistType {
     ModuleHist,
+    EnergyTDCHist,
+    DynodeSumHist,
     LMSHist,
 };
 
@@ -87,6 +89,8 @@ private slots:
     void openFile();
     void openPedFile();
     void saveHistToFile();
+    void savePedestalFile();
+    void fitPedestal();
     void takeSnapShot();
     void changeHistType(int index);
     void changeAnnoType(int index);
@@ -124,7 +128,6 @@ private:
     void setupInfoWindow();
     void updateEventRange();
     void readEventFromFile(const QString &filepath);
-    void fitEventsForPedestal();
     bool onlineSettings();
     QString getFileName(const QString &title,
                         const QString &dir,
@@ -169,7 +172,6 @@ private:
     QLabel *rStatusLabel;
 
     QAction *openDataAction;
-    QAction *openPedAction;
     QAction *onlineEnAction;
     QAction *onlineDisAction;
     QAction *hvEnableAction;

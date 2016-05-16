@@ -49,6 +49,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
         PRadEventHeader* evtHeader = (PRadEventHeader*) &buffer[index];
         dataSize = evtHeader->length - 1;
         index += HEADER_SIZE; // header info is read
+        if(!dataSize) continue;
 
         // check the header, skip uninterested ones
         switch(evtHeader->type)
@@ -256,18 +257,9 @@ void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
     // place holder
 }
 
-void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const int &roc_id)
+void PRadEvioParser::parseTIData(const uint32_t *data, const size_t & /*size*/, const int &roc_id)
 {
-    // not interested in TI-slaves
-    if(roc_id != PRadTS)
-        return;
-    if(size < 9) {
-        cerr << "Too small data size for TI bank, expecting 9, receiving " << size << endl;
-        return;
-    }
-        
-    JLabTIData tiData;
-    tiData.trigger_type = (data[3]&0xff);
-    tiData.lms_phase = ((data[8]&0xff0000)>>20);
-    myHandler->FeedData(tiData);
+    myHandler->UpdateTrgType(data[2]&0xff);
+    if(roc_id == PRadTS)
+        myHandler->UpdateLMSPhase((data[8]&0xff0000)>>16);
 }
