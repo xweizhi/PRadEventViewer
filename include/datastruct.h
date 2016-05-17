@@ -65,6 +65,7 @@ enum PRadROCID
 enum PRadBankID
 {
     TI_BANK = 0xe10a,
+    TAG_BANK = 0xe10b,
     GEM_BANK = 0xe11f,
     FASTBUS_BANK = 0xe120,
     TDC_BANK = 0xe121,
@@ -106,10 +107,21 @@ struct ChannelAddress
 #define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
 #define ADC1881M_DATAEND 0xfabc0005
 
-#define V767_HEADER_BIT  1 << 22
-#define V767_END_BIT     1 << 21
+#define V767_HEADER_BIT  (1 << 22)
+#define V767_END_BIT     (1 << 21)
 #define V767_INVALID_BIT (V767_HEADER_BIT | V767_END_BIT)
- 
+
+// v1190 type check (data >> 27)
+enum V1190WordType {
+  V1190_GLOBAL_HEADER = 0x08,  // 01000
+  V1190_GLOBAL_TRAILER = 0x10, // 10000
+  V1190_GLOBAL_TIMETAG = 0x11, // 10001
+  V1190_TDC_HEADER = 0x01,     // 00001
+  V1190_TDC_TRAILER = 0x03,    // 00011
+  V1190_TDC_ERROR = 0x04,      // 00100
+  V1190_TDC_MEASURE = 0x00,    // 00000
+};
+
 /* 32 bit event header structure
  * -------------------
  * |     length      |
@@ -142,7 +154,13 @@ struct ADC1881MData
 struct TDCV767Data
 {
     ChannelAddress config;
-    unsigned short val;
+    unsigned int val;
+};
+
+struct TDCV1190Data
+{
+    ChannelAddress config;
+    unsigned int val;
 };
 
 struct GEMAPVData

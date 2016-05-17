@@ -196,6 +196,19 @@ void PRadDataHandler::FeedData(TDCV767Data &tdcData)
     newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
 }
 
+void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
+{
+    tdc_daq_iter it = map_daq_tdc.find(tdcData.config);
+    if(it == map_daq_tdc.end())
+        return;
+
+    PRadTDCGroup *tdc = it->second;
+    tdc->GetHist()->Fill(tdcData.val);
+
+    newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
+}
+
+
 // update High Voltage
 void PRadDataHandler::FeedData(CAENHVData &hvData)
 {

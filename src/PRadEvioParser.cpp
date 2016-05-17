@@ -47,10 +47,11 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
     while(index < evtSize)
     {
         PRadEventHeader* evtHeader = (PRadEventHeader*) &buffer[index];
-        dataSize = evtHeader->length - 1;
         index += HEADER_SIZE; // header info is read
-        if(!dataSize) continue;
+        if(evtHeader->length < 2)
+           continue;
 
+        dataSize = evtHeader->length - 1;
         // check the header, skip uninterested ones
         switch(evtHeader->type)
         {
@@ -85,7 +86,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                 parseTIData(&buffer[index], dataSize, evtHeader->num);
                 break;
             case TDC_BANK:
-                parseTDCData(&buffer[index], dataSize);
+                parseTDCV767(&buffer[index], dataSize, evtHeader->num);
                 break;
             case DSC_BANK:
                 parseDSCData(&buffer[index]);
@@ -217,13 +218,9 @@ void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size, cons
     }
 }
 
-void PRadEvioParser::parseTDCData(const uint32_t * data, const size_t &size)
+// parse CAEN V767 Data
+void PRadEvioParser::parseTDCV767(const uint32_t *data, const size_t &size, const int &roc_id)
 {
-    // place holder
-    TDCV767Data tdcData;
-    tdcData.config.crate = 2;
-    tdcData.config.slot = 0;
-
     if(!(data[0]&V767_HEADER_BIT)) {
         cerr << "Unrecognized V767 header word: "
              << "0x" << hex << setw(8) << setfill('0') << data[0]
@@ -237,6 +234,9 @@ void PRadEvioParser::parseTDCData(const uint32_t * data, const size_t &size)
         return;
     }
 
+    TDCV767Data tdcData;
+    tdcData.config.crate = roc_id;
+    tdcData.config.slot = data[0]>>27;
     for(size_t i = 1; i < size - 1; ++i)
     {
         if(data[i]&V767_INVALID_BIT) {
@@ -249,6 +249,47 @@ void PRadEvioParser::parseTDCData(const uint32_t * data, const size_t &size)
         tdcData.config.channel = (data[i]>>24)&0x7f;
         tdcData.val = data[i]&0xfffff;
         myHandler->FeedData(tdcData);
+    }
+}
+
+// parse CAEN V1190 Data
+void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, const int &roc_id)
+{
+    if((data[0]>>27) != V1190_GLOBAL_HEADER) {
+        cerr << "Unrecognized V1190 header word: "
+             << "0x" << hex << setw(8) << setfill('0') << data[0]
+             << endl;
+        return;
+    }
+    if((data[size-1]>>27) != V1190_GLOBAL_TRAILER) {
+        cerr << "Unrecognized V1190 trailer word: "
+             << "0x" << hex << setw(8) << setfill('0') << data[size-1]
+             << endl;
+        return;
+    }
+
+    TDCV1190Data tdcData;
+    tdcData.config.crate = roc_id;
+    tdcData.config.slot = data[0]&0x1f;
+
+    for(size_t i = 1; i < size-1; ++i)
+    {
+        switch(data[i]>>27)
+        {
+        case V1190_TDC_MEASURE:
+            tdcData.config.channel = (data[i]>>19)&0x7f;
+            tdcData.val = (data[i]&0x7ffff);
+            myHandler->FeedData(tdcData);
+            break;
+        case V1190_TDC_ERROR:
+            cerr << "V1190 Error Word: "
+                 << "0x" << hex << setw(8) << setfill('0') << data[i]
+                 << endl;
+            break;
+        default:
+            break;
+        }
+
     }
 }
 

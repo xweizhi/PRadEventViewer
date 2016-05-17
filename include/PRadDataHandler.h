@@ -84,6 +84,7 @@ public:
     void FeedData(ADC1881MData &adcData);
     void FeedData(GEMAPVData &gemData);
     void FeedData(TDCV767Data &tdcData);
+    void FeedData(TDCV1190Data &tdcData);
     void FeedData(CAENHVData &hvData);
     void UpdateEvent(int idx = 0);
     void UpdateTrgType(const unsigned char &trg);
