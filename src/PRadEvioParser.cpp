@@ -86,7 +86,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                 parseTIData(&buffer[index], dataSize, evtHeader->num);
                 break;
             case TDC_BANK:
-                parseTDCV767(&buffer[index], dataSize, evtHeader->num);
+                parseTDCV1190(&buffer[index], dataSize, evtHeader->num);
                 break;
             case DSC_BANK:
                 parseDSCData(&buffer[index]);
@@ -255,15 +255,18 @@ void PRadEvioParser::parseTDCV767(const uint32_t *data, const size_t &size, cons
 // parse CAEN V1190 Data
 void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, const int &roc_id)
 {
-    if((data[0]>>27) != V1190_GLOBAL_HEADER) {
+    if(roc_id != PRadTS) return;
+
+    size_t index = 0;
+    while((data[index]>>27) == V1190_FILLER_WORD) {
+        ++index;
+        if(index >= size)
+            return;
+    }
+
+    if((data[index++]>>27) != V1190_GLOBAL_HEADER) {
         cerr << "Unrecognized V1190 header word: "
              << "0x" << hex << setw(8) << setfill('0') << data[0]
-             << endl;
-        return;
-    }
-    if((data[size-1]>>27) != V1190_GLOBAL_TRAILER) {
-        cerr << "Unrecognized V1190 trailer word: "
-             << "0x" << hex << setw(8) << setfill('0') << data[size-1]
              << endl;
         return;
     }
@@ -272,7 +275,7 @@ void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, con
     tdcData.config.crate = roc_id;
     tdcData.config.slot = data[0]&0x1f;
 
-    for(size_t i = 1; i < size-1; ++i)
+    for(size_t i = index; i < size; ++i)
     {
         switch(data[i]>>27)
         {
@@ -286,11 +289,17 @@ void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, con
                  << "0x" << hex << setw(8) << setfill('0') << data[i]
                  << endl;
             break;
+        case V1190_GLOBAL_TRAILER:
+            return;
+        case V1190_FILLER_WORD:
         default:
             break;
         }
-
     }
+
+    cerr << "Event: " << dec << eventNb
+         <<". Didn't find V1190 global trailer word!"
+         <<endl;
 }
 
 void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)

@@ -6,7 +6,7 @@ PRadTDCGroup::PRadTDCGroup(const std::string &name, const ChannelAddress &addr, 
 : groupName(name), address(addr), groupID(id)
 {
     std::string tdc_name = "TDC_" + name;
-    tdcHist = new TH1I(tdc_name.c_str(), "TDC Value", 8192, 0, 8191);
+    tdcHist = new TH1I(tdc_name.c_str(), "TDC Value", 2048, 0, 0x7fffe);
 }
 
 PRadTDCGroup::~PRadTDCGroup()

@@ -54,12 +54,12 @@ enum EvioBankType
 enum PRadROCID
 {
     PRadTS = 1,
+    PRadTagE = 2,
     PRadROC_1 = 4,
     PRadROC_2 = 5,
     PRadROC_3 = 6,
     PRadSRS_1 = 7,
     PRadSRS_2 = 8,
-    PRadTagE = 9,
 };
 
 enum PRadBankID
@@ -120,6 +120,7 @@ enum V1190WordType {
   V1190_TDC_TRAILER = 0x03,    // 00011
   V1190_TDC_ERROR = 0x04,      // 00100
   V1190_TDC_MEASURE = 0x00,    // 00000
+  V1190_FILLER_WORD = 0x18,    // 11000
 };
 
 /* 32 bit event header structure

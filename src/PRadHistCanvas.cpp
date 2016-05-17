@@ -56,8 +56,9 @@ void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int rang
 
     int firstBin = hist->FindFirstBinAbove(0,1)*0.7;
     int lastBin = hist->FindLastBinAbove(0,1)*1.3;
+    std::cout << firstBin << "  " << lastBin << std::endl;
 
-    hist->GetXaxis()->SetRangeUser(firstBin, lastBin);
+    hist->GetXaxis()->SetRange(firstBin, lastBin);
 
     hist->GetXaxis()->SetLabelSize(HIST_LABEL_SIZE);
     hist->GetYaxis()->SetLabelSize(HIST_LABEL_SIZE);
@@ -76,3 +77,4 @@ void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int rang
     hist->Draw();
     canvases[index]->Refresh();
 }
+
