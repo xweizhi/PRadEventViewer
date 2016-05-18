@@ -181,10 +181,12 @@ void PRadHVSystem::queryLoop()
     unsigned int loopCount = 0;
     while(alive)
     {
-        if(!(loopCount%60))
+        if(!(loopCount%5))
             ReadVoltage();
-        else if(!(loopCount%15))
-            heartBeat();
+
+        if(!(loopCount%30))
+            checkStatus();
+
         ++loopCount;
         this_thread::sleep_for(chrono::seconds(1));
     }
@@ -201,6 +203,44 @@ void PRadHVSystem::heartBeat()
         char sw[30];
         int err = CAENHV_GetSysProp(crate.handle, "SwRelease", sw);
         showError("HV Heartbeat", err);
+    }
+    locker.unlock();
+}
+
+void PRadHVSystem::checkStatus()
+{
+    locker.lock();
+    int err;
+    for(auto &crate : crateList)
+    {
+        if(crate.handle < 0)
+            continue;
+
+        for(auto &board : crate.boardList)
+        {
+            //TODO, change this hard coded exception
+            if(crate.id == 5 && board.slot == 14) continue;
+            int size = board.nChan;
+            unsigned int status[size];
+            unsigned short list[size];
+            char nameList[size][MAX_CH_NAME];
+
+            for(int k = 0; k < size; ++k)
+            {
+                list[k] = k;
+                status[k] = 0;
+            }
+            err = CAENHV_GetChName(crate.handle, board.slot, size, list, nameList);
+            showError("HV Read Voltage", err);
+
+            err = CAENHV_GetChParam(crate.handle, board.slot, "Status", size, list, status);
+            showError("HV Status Monitor", err);
+
+            for(int i = 0; i < size; ++i)
+            {
+                showChError(nameList[i], status[i]);
+            }
+        }
     }
     locker.unlock();
 }
@@ -280,8 +320,8 @@ void PRadHVSystem::ReadVoltage()
             int size = board.nChan;
             float monVals[size], setVals[size];
             unsigned int pwON[size];
-            char nameList[size][MAX_CH_NAME];
             unsigned short list[size];
+            char nameList[size][MAX_CH_NAME];
 
             for(int k = 0; k < size; ++k)
                 list[k] = k;
@@ -337,6 +377,7 @@ void PRadHVSystem::PrintOut()
 
 void PRadHVSystem::checkVoltage(const CAENHVData &hvData)
 {
+/* status will tell if it is over voltage or under voltage
     if(hvData.name.at(0) == 'G' || hvData.name.at(0) == 'W' || hvData.name.at(0) == 'L') {
         float diff = (hvData.ON)?(hvData.Vmon - hvData.Vset):0;
         if(diff > 15 || diff < -15) {
@@ -344,7 +385,7 @@ void PRadHVSystem::checkVoltage(const CAENHVData &hvData)
                  << hvData << endl;
         }
     }
-
+*/
     float limit = getLimit(hvData.name.c_str());
     if(hvData.Vmon > limit) {
         cerr << "WARNING: voltage exceeds safe limit!" << endl
@@ -410,4 +451,20 @@ void PRadHVSystem::showError(const string &prefix, const int &err, ShowErrorType
     }
 
     cerr << result << endl;
+}
+
+void PRadHVSystem::showChError(const char *n, const unsigned int &err_bit)
+{
+    if(err_bit&(1 << 3)) cerr << "Channel " << n << " is in overcurrent!" << endl;
+    if(err_bit&(1 << 4)) cerr << "Channel " << n << " is in overvoltage!" << endl;
+    if(err_bit&(1 << 5)) cerr << "Channel " << n << " is in undervoltage!" << endl;
+    if(err_bit&(1 << 6)) cerr << "Channel " << n << " is in external trip!" << endl;
+    if(err_bit&(1 << 7)) cerr << "Channel " << n << " is in max voltage!" << endl;
+    if(err_bit&(1 << 8)) cerr << "Channel " << n << " is in external disable!" << endl;
+    if(err_bit&(1 << 9)) cerr << "Channel " << n << " is in internal trip!" << endl;
+    if(err_bit&(1 << 10)) cerr << "Channel " << n << " is in calibration error!" << endl;
+    if(err_bit&(1 << 11)) cerr << "Channel " << n << " is unplugged!" << endl;
+    if(err_bit&(1 << 13)) cerr << "Channel " << n << " is in overvoltage protection!" << endl;
+    if(err_bit&(1 << 14)) cerr << "Channel " << n << " is in power fail!" << endl;
+    if(err_bit&(1 << 15)) cerr << "Channel " << n << " is in temperature error!" << endl;
 }

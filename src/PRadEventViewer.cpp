@@ -331,8 +331,8 @@ void PRadEventViewer::setupInfoWindow()
     QStringList statusInfoTitle;
     QFont font("arial", 10 , QFont::Bold );
 
-    statusInfoTitle << tr("  Module Property  ") << tr("  Value  ")
-                    << tr("  Module Property  ") << tr("  Value  ");
+    statusInfoTitle << tr("  Module Property") << tr("  Value  ")
+                    << tr("  Module Property") << tr("  Value  ");
     statusInfoWidget->setHeaderLabels(statusInfoTitle);
     statusInfoWidget->setItemDelegate(new HtmlDelegate());
     statusInfoWidget->setIndentation(0);
@@ -1237,10 +1237,8 @@ void PRadEventViewer::onlineUpdate()
 
         delete myParser;
     } catch(PRadException e) {
-        QMessageBox::critical(this,
-                              QString::fromStdString(e.FailureType()),
-                              QString::fromStdString(e.FailureDesc()));
-        stopOnlineMode();
+        std::cerr << e.FailureType() << ": "
+                  << e.FailureDesc() << std::endl;
         return;
     }
 }

@@ -100,8 +100,10 @@ private:
     void getCrateMap(CAEN_Crate &crate);
     void heartBeat();
     void queryLoop();
+    void checkStatus();
     void checkVoltage(const CAENHVData &hvData);
     void showError(const string &prefix, const int &err, ShowErrorType type = ShowError);
+    void showChError(const char *n, const unsigned int &ebit);
     float getLimit(const char *name = "");
 };
 
