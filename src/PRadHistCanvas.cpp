@@ -52,6 +52,7 @@ void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int rang
     canvases[index]->SetGrid();
     gPad->SetLogy();
 
+    histLocker.lock();
     TH1 *hist = (TH1*)tob;
 
     int firstBin = hist->FindFirstBinAbove(0,1)*0.7;
@@ -74,6 +75,8 @@ void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int rang
 
     hist->SetFillColor(fillColors[index]);
     hist->Draw();
+    histLocker.unlock();
+
     canvases[index]->Refresh();
 }
 
