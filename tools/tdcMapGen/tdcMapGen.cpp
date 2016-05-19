@@ -86,6 +86,13 @@ int main()
 
     infile.open("dsc_map.txt");
     ofstream outfile("tdc_group_list.txt");
+    outfile << "#"
+            << setw(11) << "name"
+            << setw(12) << "crate"
+            << setw(12) << "slot"
+            << setw(12) << "channel"
+            << endl;
+
     while(getline(infile, line))
     {
         trim_line = trim(line);
@@ -102,10 +109,10 @@ int main()
             cout << "cannot find tdc channel for discriminator id " << dsc_id << " channel " << dsc_channel << endl;
             continue;
         } else {
-            outfile << setw(8) << tdc_name
-                    << setw(6) << crate
-                    << setw(6) << slot
-                    << setw(6) << it->second
+            outfile << setw(12) << tdc_name
+                    << setw(12) << crate
+                    << setw(12) << slot
+                    << setw(12) << it->second
                     << endl;
         }
     }
