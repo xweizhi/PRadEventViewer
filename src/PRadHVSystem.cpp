@@ -6,12 +6,16 @@
 // 02/17/2016                                                                 //
 //============================================================================//
 
+#include "PRadHVSystem.h"
+#include "PRadEventViewer.h"
+#include "PRadDataHandler.h"
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <chrono>
-#include "PRadHVSystem.h"
-#include "PRadDataHandler.h"
+
+using namespace std;
+using namespace CAENHV;
 
 ostream &operator<<(ostream &os, PRadHVSystem::CAEN_Board const &b)
 {
@@ -29,8 +33,8 @@ ostream &operator<<(ostream &os, CAENHVData const &data)
               << endl;
 }
 
-PRadHVSystem::PRadHVSystem(PRadDataHandler *h)
-: myHandler(h), alive(false)
+PRadHVSystem::PRadHVSystem(PRadEventViewer *p)
+: console(p), alive(false)
 {}
 
 PRadHVSystem::~PRadHVSystem()
@@ -149,6 +153,9 @@ void PRadHVSystem::getCrateMap(CAEN_Crate &crate)
         for(int slot = 0; slot < NbofSlot; ++slot, m += strlen(m) + 1, d += strlen(d) + 1) {
             if(!NbofChList[slot])
                 continue;
+            //TODO, change this hard coded exception
+            if(crate.id == 5 && slot == 14)
+                continue;
             CAEN_Board newBoard(m, d, slot, NbofChList[slot], serNumList[slot], fmwMinList[slot], fmwMaxList[slot]);
             crate.boardList.push_back(newBoard);
         }
@@ -218,8 +225,6 @@ void PRadHVSystem::checkStatus()
 
         for(auto &board : crate.boardList)
         {
-            //TODO, change this hard coded exception
-            if(crate.id == 5 && board.slot == 14) continue;
             int size = board.nChan;
             unsigned int status[size];
             unsigned short list[size];
@@ -349,12 +354,13 @@ void PRadHVSystem::ReadVoltage()
 
                     checkVoltage(hvData);
 
-                    myHandler->FeedData(hvData);
+                    console->GetHandler()->FeedData(hvData);
             }
 
         }
     }
     locker.unlock();
+    console->Refresh();
 }
 
 void PRadHVSystem::PrintOut()

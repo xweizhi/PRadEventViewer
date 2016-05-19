@@ -45,6 +45,7 @@ extern void Sleep(unsigned int x);
 #define HV_DEPRECATED(func) func
 #endif
 
+/*
 #ifndef uchar
 #define uchar unsigned char
 #endif
@@ -54,6 +55,7 @@ extern void Sleep(unsigned int x);
 #ifndef ulong
 #define ulong unsigned int
 #endif
+*/
 
 #define MAX_CH_NAME                12
 
@@ -207,10 +209,13 @@ extern void Sleep(unsigned int x);
 typedef int CAENHVRESULT;
 #define __CAENHVRESULT__
 #endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
+namespace CAENHV {
+typedef unsigned char uchar;
+typedef unsigned short ushort;
+typedef unsigned int ulong;
 
 typedef union {
 	char			StringValue[1024];
@@ -364,7 +369,7 @@ CAENHVLIB_API CAENHVRESULT CAENHV_Free(void *arg);
 
 
 /********************************************/
-
+};
 #ifdef __cplusplus
 }
 #endif // __cplusplus

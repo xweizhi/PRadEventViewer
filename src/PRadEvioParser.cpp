@@ -309,7 +309,7 @@ void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
 
 void PRadEvioParser::parseTIData(const uint32_t *data, const size_t & /*size*/, const int &roc_id)
 {
-    myHandler->UpdateTrgType(data[2]&0xff);
+    myHandler->UpdateTrgType(data[2]>>24);
     if(roc_id == PRadTS)
         myHandler->UpdateLMSPhase((data[8]&0xff0000)>>16);
 }

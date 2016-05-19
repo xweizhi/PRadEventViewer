@@ -9,9 +9,7 @@
 #include "PRadException.h"
 #include "datastruct.h"
 
-using namespace std;
-
-class PRadDataHandler;
+class PRadEventViewer;
 
 class PRadHVSystem
 {
@@ -19,8 +17,8 @@ public:
     class CAEN_Board
     {
     public:
-        string model;
-        string desc;
+        std::string model;
+        std::string desc;
         unsigned short slot;
         unsigned short nChan;
         unsigned short serNum;
@@ -29,7 +27,7 @@ public:
 
         // constructor
         CAEN_Board() {};
-        CAEN_Board(string m, string d, unsigned short s, unsigned short n,
+        CAEN_Board(std::string m, std::string d, unsigned short s, unsigned short n,
                    unsigned short ser, unsigned char lsb, unsigned char msb)
         : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb)
         {};
@@ -43,20 +41,21 @@ public:
     {
     public:
         unsigned char id;
-        string name;
-        string ip;
-        CAENHV_SYSTEM_TYPE_t sysType;
+        std::string name;
+        std::string ip;
+        CAENHV::CAENHV_SYSTEM_TYPE_t sysType;
         int linkType;
-        string username;
-        string password;
+        std::string username;
+        std::string password;
         int handle;
         bool mapped;
-        vector<CAEN_Board> boardList;
+        std::vector<CAEN_Board> boardList;
 
         // constructor
         CAEN_Crate() {};
-        CAEN_Crate(unsigned char i, string n, string p, CAENHV_SYSTEM_TYPE_t type,
-                   int link, string user, string pwd)
+        CAEN_Crate(unsigned char i, std::string n, std::string p,
+                   CAENHV:: CAENHV_SYSTEM_TYPE_t type, int link,
+                   std::string user, std::string pwd)
         : id(i), name(n), ip(p), sysType(type), linkType(link),
           username(user), password(pwd), handle(-1), mapped(false) {};
 //        void Initialize() throw(PRadException);
@@ -70,15 +69,15 @@ public:
         ShowAll,
     };
 
-    PRadHVSystem(PRadDataHandler *h);
+    PRadHVSystem(PRadEventViewer *p);
     virtual ~PRadHVSystem();
-    void AddCrate(const string &name,
-                  const string &ip,
+    void AddCrate(const std::string &name,
+                  const std::string &ip,
                   const unsigned char &id,
-                  const CAENHV_SYSTEM_TYPE_t &type = SY1527,
+                  const CAENHV::CAENHV_SYSTEM_TYPE_t &type = CAENHV::SY1527,
                   const int &linkType = LINKTYPE_TCPIP,
-                  const string &username = "admin",
-                  const string &password = "admin");
+                  const std::string &username = "admin",
+                  const std::string &password = "admin");
     void Initialize();
     void DeInitialize();
     void Connect();
@@ -92,17 +91,17 @@ public:
     void PrintOut();
 
 private:
-    PRadDataHandler *myHandler;
-    vector<CAEN_Crate> crateList;
+    PRadEventViewer *console;
+    std::vector<CAEN_Crate> crateList;
     volatile bool alive;
-    thread queryThread;
-    mutex locker;
+    std::thread queryThread;
+    std::mutex locker;
     void getCrateMap(CAEN_Crate &crate);
     void heartBeat();
     void queryLoop();
     void checkStatus();
     void checkVoltage(const CAENHVData &hvData);
-    void showError(const string &prefix, const int &err, ShowErrorType type = ShowError);
+    void showError(const std::string &prefix, const int &err, ShowErrorType type = ShowError);
     void showChError(const char *n, const unsigned int &ebit);
     float getLimit(const char *name = "");
 };

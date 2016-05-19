@@ -72,7 +72,8 @@ class PRadEventViewer : public QMainWindow
 public:
     PRadEventViewer();
     virtual ~PRadEventViewer();
-    void ModuleAction(void (HyCalModule::*act)());
+    template<typename... Args>
+    void ModuleAction(void (HyCalModule::*act)(Args...), Args&&... args);
     void ListModules();
     ViewMode GetViewMode() {return viewMode;};
     AnnoType GetAnnoType() {return annoType;};
@@ -81,6 +82,10 @@ public:
     void UpdateStatusInfo();
     void UpdateHistCanvas();
     void SelectModule(HyCalModule* module);
+    PRadDataHandler *GetHandler() {return handler;};
+
+signals:
+    void HVSystemInitialized();
 
 public slots:
     void Refresh();
@@ -98,11 +103,11 @@ private slots:
     void changeSpectrumSetting();
     void changeCurrentEvent(int evt);
     void eraseBufferAction();
-    void onlineUpdate();
     void initOnlineMode();
     bool connectETClient();
     void startOnlineMode();
     void stopOnlineMode();
+    void handleOnlineTimer();
     void connectHVSystem();
     void initHVSystem();
     void disconnectHVSystem();
@@ -129,6 +134,7 @@ private:
     void updateEventRange();
     void readEventFromFile(const QString &filepath);
     bool onlineSettings();
+    void onlineUpdate(const size_t &max_events);
     QString getFileName(const QString &title,
                         const QString &dir,
                         const QStringList &filter,
@@ -175,7 +181,6 @@ private:
     QAction *onlineEnAction;
     QAction *onlineDisAction;
     QAction *hvEnableAction;
-    QAction *hvMonitorAction;
     QAction *hvDisableAction;
 
     QFileDialog *fileDialog;

@@ -64,7 +64,7 @@ public:
     void ShowOccupancy() {SetColor(occupancy);};
     void ShowEnergy() {SetColor(energy);};
     void ShowVoltage();
-    void UpdateHV(const float &Vmon, const float &Vset, const bool &ON) {hvSetup.volt.Vmon = Vmon; hvSetup.volt.Vset = Vset; hvSetup.volt.ON = ON;};
+    void UpdateHV(float Vmon, float Vset, bool on) {hvSetup.volt.Vmon = Vmon; hvSetup.volt.Vset = Vset; hvSetup.volt.ON = on;};
     void UpdateHVSetup(ChannelAddress &set) {hvSetup.config = set;};
     double Calibration(const unsigned short &val);
     QString GetReadID() {return name;};

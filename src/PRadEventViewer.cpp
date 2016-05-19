@@ -113,8 +113,8 @@ void PRadEventViewer::setupUI()
     mainSplitter = new QSplitter(Qt::Horizontal);
     mainSplitter->addWidget(view);
     mainSplitter->addWidget(rightPanel);
-    mainSplitter->setStretchFactor(0,1);
-    mainSplitter->setStretchFactor(1,1);
+    mainSplitter->setStretchFactor(0,2);
+    mainSplitter->setStretchFactor(1,3);
 
     setCentralWidget(mainSplitter);
 
@@ -204,13 +204,10 @@ void PRadEventViewer::createMainMenu()
     // high voltage menu
     QMenu *hvMenu = new QMenu(tr("High &Voltage"));
     hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
-    hvMonitorAction = hvMenu->addAction(tr("Start HV Monitor"));
-    hvMonitorAction->setEnabled(false);
     hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
     hvDisableAction->setEnabled(false);
 
     connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
-    connect(hvMonitorAction, SIGNAL(triggered()), this, SLOT(startHVMonitor()));
     connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVSystem()));
     menuBar()->addMenu(hvMenu);
 
@@ -608,12 +605,13 @@ void PRadEventViewer::readPedestalData(const QString &filename)
 //============================================================================//
 
 // do the action for all modules
-void PRadEventViewer::ModuleAction(void (HyCalModule::*act)())
+template<typename... Args>
+void PRadEventViewer::ModuleAction(void (HyCalModule::*act)(Args...), Args&&... args)
 {
     QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
-        (module->*act)();
+        (module->*act)(std::forward<Args>(args)...);
     }
 }
 
@@ -677,7 +675,7 @@ void PRadEventViewer::Refresh()
 
     UpdateStatusInfo();
 
-    QWidget * viewport = view->viewport();
+    QWidget *viewport = view->viewport();
     viewport->update();
 }
 
@@ -1082,7 +1080,6 @@ void PRadEventViewer::handleRootEvents()
     gSystem->ProcessEvents();
 }
 
-
 //============================================================================//
 // Online mode functions                                                      //
 //============================================================================//
@@ -1090,13 +1087,13 @@ void PRadEventViewer::setupOnlineMode()
 {
     etSetting = new ETSettingPanel(this);
     onlineTimer = new QTimer(this);
-    connect(onlineTimer, SIGNAL(timeout()), this, SLOT(onlineUpdate()));
-
+    connect(onlineTimer, SIGNAL(timeout()), this, SLOT(handleOnlineTimer()));
+    connect(this, SIGNAL(HVSystemInitialized()), this, SLOT(startHVMonitor()));
     // future watcher for online mode
     connect(&watcher, SIGNAL(finished()), this, SLOT(startOnlineMode()));
 
     etChannel = new PRadETChannel();
-    hvSystem = new PRadHVSystem(handler);
+    hvSystem = new PRadHVSystem(this);
 
     QFile hvCrateList("config/hv_crate_list.txt");
 
@@ -1215,13 +1212,18 @@ void PRadEventViewer::stopOnlineMode()
     UpdateStatusBar(NO_INPUT);
 }
 
-void PRadEventViewer::onlineUpdate()
+void PRadEventViewer::handleOnlineTimer()
+{
+   QtConcurrent::run(this, &PRadEventViewer::onlineUpdate, ET_CHUNK_SIZE);
+}
+
+void PRadEventViewer::onlineUpdate(const size_t &max_events)
 {
     try {
-        int num;
+        size_t num;
         PRadEvioParser *myParser = new PRadEvioParser(handler);
 
-        for(num = 0; etChannel->Read() && num < 100; ++num)
+        for(num = 0; etChannel->Read() && num < max_events; ++num)
         {
             PRadEventHeader *evt = (PRadEventHeader*)etChannel->GetBuffer();
             myParser->parseEventByHeader(evt);
@@ -1258,20 +1260,20 @@ void PRadEventViewer::connectHVSystem()
 void PRadEventViewer::initHVSystem()
 {
     hvSystem->Connect();
-    hvDisableAction->setEnabled(true);
-    hvMonitorAction->setEnabled(true);
+    emit HVSystemInitialized();
 }
 
 void PRadEventViewer::startHVMonitor()
 {
     hvSystem->StartMonitor();
-    hvMonitorAction->setEnabled(false);
+    hvDisableAction->setEnabled(true);
 }
 
 void PRadEventViewer::disconnectHVSystem()
 {
     hvSystem->Disconnect();
+    ModuleAction(&HyCalModule::UpdateHV, (float)0, (float)0, false);
     hvEnableAction->setEnabled(true);
     hvDisableAction->setEnabled(false);
-    hvMonitorAction->setEnabled(false);
+    Refresh();
 }
