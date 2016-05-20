@@ -749,6 +749,7 @@ void PRadEventViewer::changeAnnoType(int index)
 void PRadEventViewer::changeViewMode(int index)
 {
     viewMode = (ViewMode)index;
+    specSetting->ChoosePreSetting(index);
     Refresh();
 }
 
@@ -1035,7 +1036,7 @@ void PRadEventViewer::fitPedestal()
 {
     for(auto &channel : handler->GetChannelList())
     {
-        if(channel->GetPEDHist()->GetEntries() < 1000) continue;
+        if(channel->GetPEDHist()->Integral() < 1000) continue;
         channel->GetPEDHist()->Fit("gaus");
         TF1 *myfit = (TF1*) channel->GetPEDHist()->GetFunction("gaus");
         double p0 = myfit->GetParameter(1);

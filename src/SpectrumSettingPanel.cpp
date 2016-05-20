@@ -17,12 +17,13 @@
 #include <QLabel>
 
 SpectrumSettingPanel::SpectrumSettingPanel(QWidget *parent)
-: QDialog(parent), spectrum(nullptr)
+: QDialog(parent), spectrum(nullptr), preset(false)
 {
     QGridLayout *grid = new QGridLayout;
     grid->addWidget(createScaleGroup(), 0, 0);
     grid->addWidget(createTypeGroup(), 0, 1);
     grid->addWidget(createRangeGroup(), 1, 0, 1, 2);
+    grid->addWidget(createPreSetGroup(), 2, 0, 1, 2);
     setLayout(grid);
     setWindowTitle(tr("Spectrum Settings"));
 }
@@ -40,6 +41,9 @@ void SpectrumSettingPanel::ConnectSpectrum(Spectrum *s)
         connect(greyscale, SIGNAL(clicked()), this, SLOT(changeType()));
         connect(minSpin, SIGNAL(valueChanged(int)), this, SLOT(changeRangeMin(int)));
         connect(maxSpin, SIGNAL(valueChanged(int)), this, SLOT(changeRangeMax(int)));
+        connect(energyView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
+        connect(occupancyView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
+        connect(voltageView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
     }
 
     spectrum = s;
@@ -127,8 +131,35 @@ QGroupBox *SpectrumSettingPanel::createRangeGroup()
     return rangeGroup;
 }
 
+QGroupBox *SpectrumSettingPanel::createPreSetGroup()
+{
+    QGroupBox *presetGroup = new QGroupBox(tr("Spectrum Pre-Settings"));
+
+    energyView = new QRadioButton("Energy View");
+    occupancyView = new QRadioButton("Occupancy View");
+    pedestalView = new QRadioButton("Pedestal View");
+    sigmaView = new QRadioButton("Ped. Sigma View");
+    voltageView = new QRadioButton("High Voltage View");
+    customView = new QRadioButton("Custom View");
+
+    QGridLayout *layout = new QGridLayout;
+    layout->addWidget(energyView, 0, 0);
+    layout->addWidget(occupancyView, 0, 1);
+    layout->addWidget(pedestalView, 1, 0);
+    layout->addWidget(sigmaView, 1, 1);
+    layout->addWidget(voltageView, 2, 0);
+    layout->addWidget(customView, 2, 1);
+
+    presetGroup->setLayout(layout);
+
+    return presetGroup;
+}
+
 void SpectrumSettingPanel::changeScale()
 {
+    if(!preset)
+        customView->setChecked(true);
+
     if(linearScale->isChecked())
         spectrum->SetSpectrumScale(Spectrum::LinearScale);
     else
@@ -137,6 +168,9 @@ void SpectrumSettingPanel::changeScale()
 
 void SpectrumSettingPanel::changeType()
 {
+    if(!preset)
+        customView->setChecked(true);
+
     if(rainbow1->isChecked())
         spectrum->SetSpectrumType(Spectrum::Rainbow1);
     else if(rainbow2->isChecked())
@@ -147,14 +181,73 @@ void SpectrumSettingPanel::changeType()
 
 void SpectrumSettingPanel::changeRangeMin(int value)
 {
+    if(!preset)
+        customView->setChecked(true);
+
     minSlider->setValue(value);
     spectrum->SetSpectrumRangeMin(value);
 }
 
 void SpectrumSettingPanel::changeRangeMax(int value)
 {
+    if(!preset)
+        customView->setChecked(true);
+
     maxSlider->setValue(value);
     minSlider->setRange(0, value - 10);
     minSpin->setRange(0, value - 10);
     spectrum->SetSpectrumRangeMax(value);
+}
+
+void SpectrumSettingPanel::changePreSetting()
+{
+    preset = true;
+    if(energyView->isChecked()) {
+        maxSpin->setValue(3000);
+        minSpin->setValue(1);
+        logScale->setChecked(true);
+    } else if(occupancyView->isChecked()) {
+        maxSpin->setValue(100000);
+        minSpin->setValue(1);
+        logScale->setChecked(true);
+    } else if(voltageView->isChecked()) {
+        maxSpin->setValue(1700);
+        minSpin->setValue(900);
+        linearScale->setChecked(true);
+    } else if(pedestalView->isChecked()) {
+        maxSpin->setValue(1000);
+        minSpin->setValue(200);
+        linearScale->setChecked(true);
+    } else if(sigmaView->isChecked()) {
+        maxSpin->setValue(30);
+        minSpin->setValue(0);
+        linearScale->setChecked(true);
+    }
+
+    changeScale();
+    preset = false;
+}
+
+void SpectrumSettingPanel::ChoosePreSetting(int val)
+{
+    switch(val)
+    {
+    case 0:
+        energyView->setChecked(true);
+        break;
+    case 1:
+        occupancyView->setChecked(true);
+        break;
+    case 2:
+        pedestalView->setChecked(true);
+        break;
+    case 3:
+        sigmaView->setChecked(true);
+        break; 
+    case 4:
+        voltageView->setChecked(true);
+        break;
+    default: return;
+    }
+    changePreSetting();
 }

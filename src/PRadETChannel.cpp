@@ -184,6 +184,7 @@ void PRadETChannel::copyEvent()
     void *data;
     et_event_getdata(etEvent, &data);
     et_event_getlength(etEvent, &bufferSize);
+    bufferSize /= 4; // from byte to int32 words
 
     uint32_t *data_buffer = (uint32_t*) data;
     size_t index = 0;
