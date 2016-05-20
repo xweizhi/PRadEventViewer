@@ -43,6 +43,8 @@ void SpectrumSettingPanel::ConnectSpectrum(Spectrum *s)
         connect(maxSpin, SIGNAL(valueChanged(int)), this, SLOT(changeRangeMax(int)));
         connect(energyView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
         connect(occupancyView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
+        connect(pedestalView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
+        connect(sigmaView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
         connect(voltageView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
     }
 
