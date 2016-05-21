@@ -3,7 +3,6 @@
 #define PRAD_HIST_CANVAS_H
 
 #include <QWidget>
-#include <mutex>
 
 class QRootCanvas;
 class QGridLayout;
@@ -28,7 +27,6 @@ protected:
     TColor *frmColor;
     QVector<QRootCanvas *> canvases;
     QVector<int> fillColors;
-    std::mutex histLocker;
 };
 
 #endif

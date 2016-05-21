@@ -25,8 +25,8 @@ public:
         CAEN_PrimaryChannel() : handle(-1), slot(-1), channel(-1), initialized(false) {};
         CAEN_PrimaryChannel(const int &h, const unsigned short &s, const unsigned short &c = 0)
         : handle(h), slot(s), channel(c), initialized(true) {};
-        int SetPower(bool&& on);
-        int SetVoltage(float&& v);
+        int SetPower(const bool& on);
+        int SetVoltage(const float& v);
     };
 
     class CAEN_Board

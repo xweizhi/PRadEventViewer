@@ -48,14 +48,14 @@ string trim(const string& str,
     return str.substr(strBegin, strRange);
 }
 
-int PRadHVSystem::CAEN_PrimaryChannel::SetPower(bool&& on)
+int PRadHVSystem::CAEN_PrimaryChannel::SetPower(const bool& on)
 {
     if(!initialized) return 0;
     unsigned int val = on ? 1 : 0;
     return CAENHV_SetChParam(handle, slot, "Pw", 1, &channel, &val);
 }
 
-int PRadHVSystem::CAEN_PrimaryChannel::SetVoltage(float&& v)
+int PRadHVSystem::CAEN_PrimaryChannel::SetVoltage(const float& v)
 {
     if(!initialized) return 0;
     float val = v;
@@ -196,7 +196,7 @@ void PRadHVSystem::getCrateMap(CAEN_Crate &crate)
             if(crate.id == 5 && slot == 14)
                 continue;
             CAEN_Board newBoard(m, d, slot, NbofChList[slot], serNumList[slot], fmwMinList[slot], fmwMaxList[slot]);
-            if(newBoard.model.find("1832") != string::npos)
+            if(newBoard.model.find("1932") != string::npos)
                 newBoard.primaryCh = CAEN_PrimaryChannel(crate.handle, slot);
             crate.boardList.push_back(newBoard);
         }
@@ -373,16 +373,16 @@ void PRadHVSystem::ReadVoltage()
                 list[k] = k;
 
             err = CAENHV_GetChName(crate.handle, board.slot, size, list, nameList);
-            showError("HV Read Voltage", err);
+            showError("HV Read Name", err);
 
             err = CAENHV_GetChParam(crate.handle, board.slot, "Pw", size, list, pwON);
-            showError("HV Read Voltage", err);
+            showError("HV Read Power", err);
 
             err = CAENHV_GetChParam(crate.handle, board.slot, "VMon", size, list, monVals);
             showError("HV Read Voltage", err);
 
             err = CAENHV_GetChParam(crate.handle, board.slot, "V0Set", size, list, setVals);
-            showError("HV Read Voltage", err);
+            showError("HV Read Voltage Set", err);
 
             hvData.config.slot = (unsigned char)board.slot;
             for(int k = 0; k < size; ++k)
@@ -433,7 +433,7 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
 
             err = CAENHV_GetChName(crate.handle, board.slot, size, list, nameList);
             if(err != CAENHV_OK) {
-                showError("HV Read Voltage", err);
+                showError("HV Read Name", err);
                 continue;
             }
 

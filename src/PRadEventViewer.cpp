@@ -1225,7 +1225,8 @@ void PRadEventViewer::stopOnlineMode()
 
 void PRadEventViewer::handleOnlineTimer()
 {
-   QtConcurrent::run(this, &PRadEventViewer::onlineUpdate, ET_CHUNK_SIZE);
+//   QtConcurrent::run(this, &PRadEventViewer::onlineUpdate, ET_CHUNK_SIZE);
+    onlineUpdate(ET_CHUNK_SIZE);
 }
 
 void PRadEventViewer::onlineUpdate(const size_t &max_events)
