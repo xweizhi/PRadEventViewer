@@ -14,6 +14,21 @@ class PRadEventViewer;
 class PRadHVSystem
 {
 public:
+    class CAEN_PrimaryChannel
+    {
+    public:
+        int handle;
+        unsigned short slot;
+        unsigned short channel;
+        bool initialized;
+
+        CAEN_PrimaryChannel() : handle(-1), slot(-1), channel(-1), initialized(false) {};
+        CAEN_PrimaryChannel(const int &h, const unsigned short &s, const unsigned short &c = 0)
+        : handle(h), slot(s), channel(c), initialized(true) {};
+        int SetPower(bool&& on);
+        int SetVoltage(float&& v);
+    };
+
     class CAEN_Board
     {
     public:
@@ -24,16 +39,18 @@ public:
         unsigned short serNum;
         unsigned char fmwLSB;
         unsigned char fmwMSB;
-
+        CAEN_PrimaryChannel primaryCh;
         // constructor
         CAEN_Board() {};
         CAEN_Board(std::string m, std::string d, unsigned short s, unsigned short n,
                    unsigned short ser, unsigned char lsb, unsigned char msb)
-        : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb)
+        : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb),
+          primaryCh(CAEN_PrimaryChannel())
         {};
         CAEN_Board(char* m, char* d, unsigned short s, unsigned short n,
                    unsigned short ser, unsigned char lsb, unsigned char msb)
-        : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb)
+        : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb),
+          primaryCh(CAEN_PrimaryChannel())
         {};
      };
 
@@ -82,12 +99,15 @@ public:
     void DeInitialize();
     void Connect();
     void Disconnect();
+    int GetCrateHandle(const std::string &name);
     void StartMonitor();
     void StopMonitor();
-    void SetPowerOn(bool &val);
-    void SetPowerOn(ChannelAddress &config, bool &val);
-    void SetVoltage(const char *name, ChannelAddress &config, float &val);
+    void SetPower(const bool &val);
+    void SetPower(const ChannelAddress &config, const bool &val);
+    void SetVoltage(const char *name, const ChannelAddress &config, const float &val);
     void ReadVoltage();
+    void SaveCurrentSetting(const std::string &path);
+    void RestoreSetting(const std::string &path);
     void PrintOut();
 
 private:

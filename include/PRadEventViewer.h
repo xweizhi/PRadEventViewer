@@ -113,6 +113,8 @@ private slots:
     void disconnectHVSystem();
     void startHVMonitor();
     void handleRootEvents();
+    void saveHVSetting();
+    void restoreHVSetting();
 
 private:
     void initView();
@@ -182,6 +184,8 @@ private:
     QAction *onlineDisAction;
     QAction *hvEnableAction;
     QAction *hvDisableAction;
+    QAction *hvSaveAction;
+    QAction *hvRestoreAction;
 
     QFileDialog *fileDialog;
     ETSettingPanel *etSetting;

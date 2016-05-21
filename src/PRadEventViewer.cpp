@@ -206,9 +206,13 @@ void PRadEventViewer::createMainMenu()
     hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
     hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
     hvDisableAction->setEnabled(false);
+    hvSaveAction = hvMenu->addAction(tr("Save HV Setting"));
+    hvRestoreAction = hvMenu->addAction(tr("restore HV Setting"));
 
     connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
     connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVSystem()));
+    connect(hvSaveAction, SIGNAL(triggered()), this, SLOT(saveHVSetting()));
+    connect(hvRestoreAction, SIGNAL(triggered()), this, SLOT(restoreHVSetting()));
     menuBar()->addMenu(hvMenu);
 
     // tool menu, useful tools
@@ -1255,6 +1259,8 @@ void PRadEventViewer::connectHVSystem()
 {
     hvEnableAction->setEnabled(false);
     hvDisableAction->setEnabled(false);
+    hvSaveAction->setEnabled(false);
+    hvRestoreAction->setEnabled(false);
     QtConcurrent::run(this, &PRadEventViewer::initHVSystem);
 }
 
@@ -1276,5 +1282,39 @@ void PRadEventViewer::disconnectHVSystem()
     ModuleAction(&HyCalModule::UpdateHV, (float)0, (float)0, false);
     hvEnableAction->setEnabled(true);
     hvDisableAction->setEnabled(false);
+    hvSaveAction->setEnabled(true);
+    hvRestoreAction->setEnabled(true);
     Refresh();
+}
+
+void PRadEventViewer::saveHVSetting()
+{
+    QString hvFile = getFileName(tr("Save High Voltage Settings to file"),
+                                 tr("high_voltage/"),
+                                 {tr("text files (*.txt)")},
+                                 tr("txt"),
+                                 QFileDialog::AcceptSave);
+
+    if(hvFile.isEmpty()) // did not open a file
+        return;
+
+    hvSystem->Initialize();
+    hvSystem->SaveCurrentSetting(hvFile.toStdString());
+    hvSystem->DeInitialize();
+}
+
+void PRadEventViewer::restoreHVSetting()
+{
+    QString hvFile = getFileName(tr("Restore High Voltage Settings from file"),
+                                 tr("high_voltage/"),
+                                 {tr("text files (*.txt)")},
+                                 tr("txt"),
+                                 QFileDialog::AcceptSave);
+
+    if(hvFile.isEmpty()) // did not open a file
+        return;
+
+    hvSystem->Initialize();
+    hvSystem->RestoreSetting(hvFile.toStdString());
+    hvSystem->DeInitialize();
 }
