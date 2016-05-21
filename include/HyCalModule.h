@@ -64,6 +64,7 @@ public:
     void ShowOccupancy() {SetColor(occupancy);};
     void ShowEnergy() {SetColor(energy);};
     void ShowVoltage();
+    void ShowVSet();
     void UpdateHV(float Vmon, float Vset, bool on) {hvSetup.volt.Vmon = Vmon; hvSetup.volt.Vset = Vset; hvSetup.volt.ON = on;};
     void UpdateHVSetup(ChannelAddress &set) {hvSetup.config = set;};
     double Calibration(const unsigned short &val);

@@ -57,6 +57,7 @@ enum ViewMode {
     PedestalView,
     SigmaView,
     HighVoltageView,
+    VoltageSetView,
 };
 
 enum ViewerStatus {

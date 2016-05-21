@@ -173,6 +173,11 @@ void HyCalModule::ShowVoltage()
     // some warning if currentHV is far away from setHV
 }
 
+void HyCalModule::ShowVSet()
+{
+    SetColor(hvSetup.volt.Vset);
+}
+
 // calculate module position according to its id
 // also calculate trigger group because we grouped them by positions
 // this function is not needed anymore since we will read all the information from list

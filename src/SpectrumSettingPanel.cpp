@@ -247,6 +247,7 @@ void SpectrumSettingPanel::ChoosePreSetting(int val)
         sigmaView->setChecked(true);
         break; 
     case 4:
+    case 5:
         voltageView->setChecked(true);
         break;
     default: return;

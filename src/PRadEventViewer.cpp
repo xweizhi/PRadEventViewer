@@ -207,7 +207,9 @@ void PRadEventViewer::createMainMenu()
     hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
     hvDisableAction->setEnabled(false);
     hvSaveAction = hvMenu->addAction(tr("Save HV Setting"));
+    hvSaveAction->setEnabled(false);
     hvRestoreAction = hvMenu->addAction(tr("restore HV Setting"));
+    hvRestoreAction->setEnabled(false);
 
     connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
     connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVSystem()));
@@ -260,6 +262,7 @@ void PRadEventViewer::createControlPanel()
     viewModeBox->addItem(tr("Pedestal View"));
     viewModeBox->addItem(tr("Ped. Sigma View"));
     viewModeBox->addItem(tr("High Voltage View"));
+    viewModeBox->addItem(tr("HV Setting View"));
 
     spectrumSettingButton = new QPushButton("Spectrum Settings");
 
@@ -670,6 +673,9 @@ void PRadEventViewer::Refresh()
         break;
     case HighVoltageView:
         ModuleAction(&HyCalModule::ShowVoltage);
+        break;
+    case VoltageSetView:
+        ModuleAction(&HyCalModule::ShowVSet);
         break;
     case EnergyView:
         handler->UpdateEvent(event_index); // fetch data from handler
@@ -1274,6 +1280,8 @@ void PRadEventViewer::startHVMonitor()
 {
     hvSystem->StartMonitor();
     hvDisableAction->setEnabled(true);
+    hvSaveAction->setEnabled(true);
+    hvRestoreAction->setEnabled(true);
 }
 
 void PRadEventViewer::disconnectHVSystem()
@@ -1282,8 +1290,8 @@ void PRadEventViewer::disconnectHVSystem()
     ModuleAction(&HyCalModule::UpdateHV, (float)0, (float)0, false);
     hvEnableAction->setEnabled(true);
     hvDisableAction->setEnabled(false);
-    hvSaveAction->setEnabled(true);
-    hvRestoreAction->setEnabled(true);
+    hvSaveAction->setEnabled(false);
+    hvRestoreAction->setEnabled(false);
     Refresh();
 }
 
@@ -1298,9 +1306,9 @@ void PRadEventViewer::saveHVSetting()
     if(hvFile.isEmpty()) // did not open a file
         return;
 
-    hvSystem->Initialize();
+    hvSystem->StopMonitor();
     hvSystem->SaveCurrentSetting(hvFile.toStdString());
-    hvSystem->DeInitialize();
+    hvSystem->StartMonitor();
 }
 
 void PRadEventViewer::restoreHVSetting()
@@ -1309,12 +1317,12 @@ void PRadEventViewer::restoreHVSetting()
                                  tr("high_voltage/"),
                                  {tr("text files (*.txt)")},
                                  tr("txt"),
-                                 QFileDialog::AcceptSave);
+                                 QFileDialog::AcceptOpen);
 
     if(hvFile.isEmpty()) // did not open a file
         return;
 
-    hvSystem->Initialize();
+    hvSystem->StopMonitor();
     hvSystem->RestoreSetting(hvFile.toStdString());
-    hvSystem->DeInitialize();
+    hvSystem->StartMonitor();
 }

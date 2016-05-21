@@ -166,6 +166,7 @@ int PRadHVSystem::GetCrateHandle(const string &name)
         if(crate.name == name)
             return crate.handle;
     }
+    return -1;
 }
 
 void PRadHVSystem::getCrateMap(CAEN_Crate &crate)
@@ -406,8 +407,6 @@ void PRadHVSystem::ReadVoltage()
 
 void PRadHVSystem::SaveCurrentSetting(const string &path)
 {
-    StopMonitor();
-
     ofstream hv_out(path);
     hv_out << "#" << setw(11) << "crate"
            << setw(8) << "slot"
@@ -450,7 +449,8 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
                        << setw(8) << board.slot
                        << setw(8) << k
                        << setw(16) << nameList[k]
-                       << setw(10) << setVals[k];
+                       << setw(10) << setVals[k]
+                       << endl;
             }
         }
     }
@@ -460,7 +460,6 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
 
 void PRadHVSystem::RestoreSetting(const string &path)
 {
-    StopMonitor();
     SetPower(false);
 
     ifstream hv_in(path);
