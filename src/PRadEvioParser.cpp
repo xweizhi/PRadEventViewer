@@ -286,7 +286,7 @@ void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, con
             break;
         case V1190_TDC_ERROR:
             cerr << "V1190 Error Word: "
-                 << "0x" << hex << setw(8) << setfill('0') << data[i]
+		 << "0x" << hex << setw(8) << setfill('0') << data[i]
                  << endl;
             break;
         case V1190_GLOBAL_TRAILER:
@@ -312,16 +312,19 @@ void PRadEvioParser::parseTIData(const uint32_t *data, const size_t & /*size*/, 
     unsigned int trigger_bit = data[2]>>24;
     int trg = (int) TI_Internal;
 
-    for(; (trigger_bit >> 1) > 0; ++trg)
+    for(; (trigger_bit >> trg) > 0; ++trg)
     {
         if(trg >= MAX_Trigger) {
-            cout << "Unexpected trigger type" << data[2] << endl;
+            cout << "Unexpected trigger type" 
+                 << "0x" << hex << (data[2]>>24)
+                 << endl;
             trg = 0;
             break;
         }
     }
 
     myHandler->UpdateTrgType((PRadTriggerType)trg);
+
     if(roc_id == PRadTS)
         myHandler->UpdateLMSPhase((data[8]&0xff0000)>>16);
 }

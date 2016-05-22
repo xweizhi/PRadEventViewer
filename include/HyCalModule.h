@@ -17,6 +17,7 @@ public:
     {
         LeadGlass,
         LeadTungstate,
+        Scintillator,
     };
 
     struct GeoInfo
@@ -67,7 +68,6 @@ public:
     void ShowVSet();
     void UpdateHV(float Vmon, float Vset, bool on) {hvSetup.volt.Vmon = Vmon; hvSetup.volt.Vset = Vset; hvSetup.volt.ON = on;};
     void UpdateHVSetup(ChannelAddress &set) {hvSetup.config = set;};
-    double Calibration(const unsigned short &val);
     QString GetReadID() {return name;};
     Voltage GetVoltage() {return hvSetup.volt;};
     ChannelAddress GetHVInfo() {return hvSetup.config;};

@@ -897,10 +897,20 @@ void PRadEventViewer::UpdateStatusInfo()
     ChannelAddress hvInfo = selection->GetHVInfo();
     HyCalModule::GeoInfo geoInfo = selection->GetGeometry();
 
-    if(geoInfo.type == HyCalModule::LeadTungstate) {
+    switch(geoInfo.type)
+    {
+    case HyCalModule::LeadTungstate:
         typeInfo = tr("<center><p><b>PbWO<sub>4</sub></b></p></center>");
-    } else {
+        break;
+    case HyCalModule::LeadGlass:
         typeInfo = tr("<center><p><b>Pb-Glass</b></p></center>");
+        break;
+    case HyCalModule::Scintillator:
+        typeInfo = tr("<center><p><b>Scintillator</b></p></center>");
+        break;
+    default:
+        typeInfo = tr("<center><p><b>Unknown</b></p></center>");
+        break;
     }
 
     // first value column

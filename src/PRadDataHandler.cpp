@@ -156,7 +156,8 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
         // so lock the thread to prevent concurrent access
         myLock.lock();
 #endif
-        totalE += channel->Calibration(sparVal); // calculate total energy of this event
+        if(channel->IsHyCalChannel())
+            totalE += channel->Calibration(sparVal); // calculate total energy of this event
         newEvent.add_adc(word); // store this data word
 #ifdef MULTI_THREAD
         myLock.unlock();

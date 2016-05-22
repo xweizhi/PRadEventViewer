@@ -32,6 +32,11 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
     // detect if mouse is hovering on this item
     setAcceptHoverEvents(true);
 
+    // temp calibration factor
+    UpdateCalibrationFactor(1.);
+
+    if(geo.type == LeadGlass || geo.type == LeadTungstate)
+        in_hycal = true;
 }
 
 HyCalModule::~HyCalModule()
@@ -152,13 +157,6 @@ void HyCalModule::setSelected(bool selected)
 void HyCalModule::SetColor(const double &val)
 {
     color = console->GetColor(val);
-}
-
-// convert ADC value after sparsification to energy
-// TODO implement calibration
-double HyCalModule::Calibration(const unsigned short &val)
-{
-    return (double) val/3.;
 }
 
 // update high voltage

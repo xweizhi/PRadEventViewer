@@ -25,6 +25,7 @@ public:
     Pedestal GetPedestal() {return pedestal;};
     std::string GetTDCName() {return tdcGroup;};
     void UpdatePedestal(const double &m, const double &s);
+    void UpdateCalibrationFactor(const double &c) {calf = c;};
     void UpdateEnergy(const unsigned short &adcVal);
     void CleanBuffer();
     void AddHist(const std::string &name);
@@ -37,9 +38,11 @@ public:
     std::string &GetName() {return channelName;};
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
+    const bool &IsHyCalChannel() {return in_hycal;};
+    const double &GetCalibrationFactor() {return calf;};
     const double &GetEnergy() {return energy;};
-    virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
+    virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
 
 protected:
     std::string channelName;
@@ -49,7 +52,9 @@ protected:
     int occupancy;
     unsigned short sparsify;
     unsigned short channelID;
+    double calf;
     double energy;
+    bool in_hycal;
     TH1 *hist[MAX_Trigger];
     std::unordered_map<std::string, TH1*> histograms;
 };
