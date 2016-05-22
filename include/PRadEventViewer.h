@@ -97,6 +97,7 @@ private slots:
     void openPedFile();
     void saveHistToFile();
     void savePedestalFile();
+    void findPeak();
     void fitPedestal();
     void takeSnapShot();
     void changeHistType(int index);

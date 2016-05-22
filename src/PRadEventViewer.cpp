@@ -12,6 +12,7 @@
 #include "TFile.h"
 #include "TH1.h"
 #include "TF1.h"
+#include "TSpectrum.h"
 
 #include "evioUtil.hxx"
 #include "evioFileChannel.hxx"
@@ -59,7 +60,6 @@ PRadEventViewer::PRadEventViewer()
 {
     initView();
     setupUI();
-    ListModules();
 }
 
 PRadEventViewer::~PRadEventViewer()
@@ -224,14 +224,18 @@ void PRadEventViewer::createMainMenu()
 
     QAction *eraseAction = toolMenu->addAction(tr("Erase Buffer"));
     eraseAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_X));
-    
+   
+    QAction *findPeakAction = toolMenu->addAction(tr("Find Peak"));
+    findPeakAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_F));
+ 
     QAction *fitPedAction = toolMenu->addAction(tr("Fit Pedestal"));
-    fitPedAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_F));
+    fitPedAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_P));
 
     QAction *snapShotAction = toolMenu->addAction(tr("Take SnapShot"));
     snapShotAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_S));
 
     connect(eraseAction, SIGNAL(triggered()), this, SLOT(eraseBufferAction()));
+    connect(findPeakAction, SIGNAL(triggered()), this, SLOT(findPeak()));
     connect(fitPedAction, SIGNAL(triggered()), this, SLOT(fitPedestal()));
     connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
 
@@ -1071,6 +1075,23 @@ void PRadEventViewer::savePedestalFile()
     }
 
     pedestalmap.close();
+}
+
+void PRadEventViewer::findPeak()
+{
+    if(selection == nullptr) return;
+    TH1 *h = selection->GetHist("PHYS");
+    //Use TSpectrum to find the peak candidates
+    TSpectrum *s = new TSpectrum(10);
+    int nfound = s->Search(h, 5 , "", 0.05);
+    float *xpeaks = s->GetPositionX();
+    for (int p = 0; p < nfound; ++p)
+    {
+        double xp = xpeaks[p];
+        std::cout << p + 1 << ". Possible peak location: "
+                  << xp << std::endl;
+    }
+    delete s;
 }
 
 void PRadEventViewer::fitPedestal()

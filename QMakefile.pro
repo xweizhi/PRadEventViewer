@@ -69,4 +69,4 @@ LIBS += -lexpat \
         -L$$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist \
                           -lGraf -lGraf3d -lGpad -lTree \
                           -lPostscript -lMatrix -lPhysics \
-                          -lMathCore -lThread -lGui
+                          -lMathCore -lThread -lGui -lSpectrum

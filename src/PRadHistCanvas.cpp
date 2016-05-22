@@ -71,6 +71,7 @@ void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int rang
         fit->SetLineColor(kRed);
         fit->SetLineWidth(2);
         hist->Fit(fit,"qlR");
+        delete fit;
     }
 
     hist->SetFillColor(fillColors[index]);
