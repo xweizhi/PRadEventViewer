@@ -1082,16 +1082,13 @@ void PRadEventViewer::findPeak()
     if(selection == nullptr) return;
     TH1 *h = selection->GetHist("PHYS");
     //Use TSpectrum to find the peak candidates
-    TSpectrum *s = new TSpectrum(10);
-    int nfound = s->Search(h, 5 , "", 0.05);
-    float *xpeaks = s->GetPositionX();
-    for (int p = 0; p < nfound; ++p)
-    {
-        double xp = xpeaks[p];
-        std::cout << p + 1 << ". Possible peak location: "
-                  << xp << std::endl;
+    TSpectrum s(10);
+    int nfound = s.Search(h, 20 , "", 0.05);
+    if(nfound) {
+        float *xpeaks = s.GetPositionX();
+        std::cout <<"Main peak location: " << xpeaks[0] << std::endl;
+        UpdateHistCanvas();
     }
-    delete s;
 }
 
 void PRadEventViewer::fitPedestal()
