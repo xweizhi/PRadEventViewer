@@ -16,6 +16,7 @@
 #include "evioUtil.hxx"
 #include "evioFileChannel.hxx"
 
+#include <utility>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -220,17 +221,17 @@ void PRadEventViewer::createMainMenu()
     // tool menu, useful tools
     QMenu *toolMenu = new QMenu(tr("&Tools"));
 
-    QAction *fitPedAction = toolMenu->addAction(tr("Fit Pedestal"));
-    fitPedAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_F));
-
     QAction *eraseAction = toolMenu->addAction(tr("Erase Buffer"));
     eraseAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_X));
+    
+    QAction *fitPedAction = toolMenu->addAction(tr("Fit Pedestal"));
+    fitPedAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_F));
 
     QAction *snapShotAction = toolMenu->addAction(tr("Take SnapShot"));
     snapShotAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_S));
 
-    connect(fitPedAction, SIGNAL(triggered()), this, SLOT(fitPedestal()));
     connect(eraseAction, SIGNAL(triggered()), this, SLOT(eraseBufferAction()));
+    connect(fitPedAction, SIGNAL(triggered()), this, SLOT(fitPedestal()));
     connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
 
     menuBar()->addMenu(toolMenu);
@@ -251,6 +252,7 @@ void PRadEventViewer::createControlPanel()
     histTypeBox->addItem(tr("Energy&TDC Hist"));
     histTypeBox->addItem(tr("Dynode Hist"));
     histTypeBox->addItem(tr("LMS Hist"));
+    histTypeBox->addItem(tr("LMS Alpha Hist"));
     annoTypeBox = new QComboBox();
     annoTypeBox->addItem(tr("No Annotation"));
     annoTypeBox->addItem(tr("Module ID"));
@@ -499,7 +501,8 @@ void PRadEventViewer::readSpecialChannels()
             hvInfo.config.slot = (unsigned char)fields.takeFirst().toInt();
             hvInfo.config.channel = (unsigned char)fields.takeFirst().toInt();
 */
-            handler->AddChannel(new PRadDAQUnit(moduleName.toStdString(), daqAddr, tdcGroup.toStdString()));
+            PRadDAQUnit *specialCh = new PRadDAQUnit(moduleName.toStdString(), daqAddr, tdcGroup.toStdString());
+            handler->AddChannel(specialCh);
         } else {
             std::cout << "Unrecognized input format in configuration file, skipped one line!"
                       << std::endl;
@@ -826,21 +829,15 @@ void PRadEventViewer::UpdateHistCanvas()
     default:
     case ModuleHist:
         if(selection != nullptr) {
-            histCanvas->UpdateHist(1, selection->GetADCHist());
-            histCanvas->UpdateHist(2, selection->GetLMSHist());
-            PRadDAQUnit::Pedestal ped = selection->GetPedestal();
-            int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
-            int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
-            histCanvas->UpdateHist(3, selection->GetPEDHist(), fit_min, fit_max);
+            histCanvas->UpdateHist(1, selection->GetHist("PHYS"));
+            histCanvas->UpdateHist(2, selection->GetHist("LMS"));
+            histCanvas->UpdateHist(3, selection->GetHist("PED"));
         }
         break;
 
     case EnergyTDCHist:
         if(selection != nullptr) {
-            PRadDAQUnit::Pedestal ped = selection->GetPedestal();
-            int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
-            int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
-            histCanvas->UpdateHist(1, selection->GetADCHist(), fit_min, fit_max);
+            histCanvas->UpdateHist(1, selection->GetHist("PHYS"));
             PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
             if(tdc)
                 histCanvas->UpdateHist(2, tdc->GetHist());
@@ -851,12 +848,12 @@ void PRadEventViewer::UpdateHistCanvas()
     case DynodeSumHist: {
         PRadDAQUnit *dsum = handler->FindChannel("DSUM");
         if(handler->FindChannel("DSUM") != nullptr) {
-            histCanvas->UpdateHist(1, dsum->GetADCHist());
+            histCanvas->UpdateHist(1, dsum->GetHist("PHYS"));
             PRadDAQUnit::Pedestal ped = dsum->GetPedestal();
             int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
             int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
-            histCanvas->UpdateHist(2, dsum->GetPEDHist(), fit_min, fit_max);
-            histCanvas->UpdateHist(3, dsum->GetLMSHist());
+            histCanvas->UpdateHist(2, dsum->GetHist("PED"), fit_min, fit_max);
+            histCanvas->UpdateHist(3, dsum->GetHist("LMS"));
         }
         break; }
 
@@ -865,10 +862,20 @@ void PRadEventViewer::UpdateHistCanvas()
         {
             PRadDAQUnit *lmsChannel = handler->FindChannel("LMS" + std::to_string(i));
             if(lmsChannel)
-                histCanvas->UpdateHist(i, lmsChannel->GetLMSHist());
+                histCanvas->UpdateHist(i, lmsChannel->GetHist("LMS"));
         }
         break;
-    }
+
+    case LMSAlphaHist:
+        for(int i = 1; i <= 3; ++i)
+        {
+            PRadDAQUnit *lmsChannel = handler->FindChannel("LMS" + std::to_string(i));
+            if(lmsChannel)
+                histCanvas->UpdateHist(i, lmsChannel->GetHist("PHYS"));
+        }
+        break;
+
+     }
 }
 
 void PRadEventViewer::SelectModule(HyCalModule* module)
@@ -1010,7 +1017,7 @@ void PRadEventViewer::saveHistToFile()
     QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     for(auto &module : moduleList)
     {
-        module->GetADCHist()->Write();
+        module->GetHist("PHYS")->Write();
     }
     f->Close();
     rStatusLabel->setText(tr("All histograms are saved to ") + rootFile);
@@ -1046,9 +1053,10 @@ void PRadEventViewer::fitPedestal()
 {
     for(auto &channel : handler->GetChannelList())
     {
-        if(channel->GetPEDHist()->Integral() < 1000) continue;
-        channel->GetPEDHist()->Fit("gaus");
-        TF1 *myfit = (TF1*) channel->GetPEDHist()->GetFunction("gaus");
+        TH1 *pedHist = channel->GetHist("PED");
+        if(pedHist->Integral() < 1000) continue;
+        pedHist->Fit("gaus");
+        TF1 *myfit = (TF1*) pedHist->GetFunction("gaus");
         double p0 = myfit->GetParameter(1);
         double p1 = myfit->GetParameter(2);
         channel->UpdatePedestal(p0, p1);

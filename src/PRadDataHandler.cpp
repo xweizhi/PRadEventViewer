@@ -143,20 +143,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // get the channel
     PRadDAQUnit *channel = it->second;
 
-    // fill histogram
-    switch(newEvent.type)
-    {
-    case PULS_Pedestal:
-        channel->GetPEDHist()->Fill(adcData.val); break;
-    case LMS_Led:
-    case LMS_Alpha:
-        channel->GetLMSHist()->Fill(adcData.val); break;
-    case PHYS_TotalSum:
-    case PHYS_TaggerE:
-        channel->GetADCHist()->Fill(adcData.val); break;
-    default:
-        break;
-    }
+    channel->GetHist((PRadTriggerType)newEvent.type)->Fill(adcData.val);
 
     // zero suppression
     unsigned short sparVal = channel->Sparsification(adcData.val, newEvent.type&PHYS_TYPE);

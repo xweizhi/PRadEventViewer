@@ -15,12 +15,13 @@ enum PRadEventType
 enum PRadTriggerType
 {
     TI_Internal = 0,
-    PULS_Pedestal = 1,
-    PHYS_TotalSum = 1 << 1,
-    LMS_Led = 1 << 2,
-    LMS_Alpha = 1 << 3,
-    PHYS_TaggerE = 1 << 4,
-    PULS_Clock = 1 << 5,
+    PULS_Pedestal,
+    PHYS_TotalSum,
+    LMS_Led,
+    LMS_Alpha,
+    PHYS_TaggerE,
+    PULS_Clock,
+    MAX_Trigger,
 };
 
 #define PHYS_TYPE (PHYS_TotalSum | PHYS_TaggerE)

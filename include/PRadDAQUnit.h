@@ -28,30 +28,29 @@ public:
     void UpdateEnergy(const unsigned short &adcVal);
     void CleanBuffer();
     void AddHist(const std::string &name);
+    template<typename... Args>
+    void AddHist(const std::string &name, const std::string &type, Args&&... args);
+    void MapHist(const std::string &name, PRadTriggerType type);
     TH1 *GetHist(const std::string &name = "ADC");
+    TH1 *GetHist(PRadTriggerType type) {return hist[(size_t)type];};
     int GetOccupancy() {return occupancy;};
     std::string &GetName() {return channelName;};
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
     const double &GetEnergy() {return energy;};
-    TH1I *GetADCHist() {return adcHist;};
-    TH1I *GetPEDHist() {return pedHist;};
-    TH1I *GetLMSHist() {return lmsHist;};
     virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
 
 protected:
+    std::string channelName;
     ChannelAddress address;
     Pedestal pedestal;
     std::string tdcGroup;
-    std::string channelName;
     int occupancy;
     unsigned short sparsify;
     unsigned short channelID;
     double energy;
-    TH1I *adcHist;
-    TH1I *pedHist;
-    TH1I *lmsHist;
+    TH1 *hist[MAX_Trigger];
     std::unordered_map<std::string, TH1*> histograms;
 };
 

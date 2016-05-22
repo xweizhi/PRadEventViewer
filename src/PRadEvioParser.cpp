@@ -309,7 +309,19 @@ void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
 
 void PRadEvioParser::parseTIData(const uint32_t *data, const size_t & /*size*/, const int &roc_id)
 {
-    myHandler->UpdateTrgType(data[2]>>24);
+    unsigned int trigger_bit = data[2]>>24;
+    int trg = (int) TI_Internal;
+
+    for(; (trigger_bit >> 1) > 0; ++trg)
+    {
+        if(trg >= MAX_Trigger) {
+            cout << "Unexpected trigger type" << data[2] << endl;
+            trg = 0;
+            break;
+        }
+    }
+
+    myHandler->UpdateTrgType((PRadTriggerType)trg);
     if(roc_id == PRadTS)
         myHandler->UpdateLMSPhase((data[8]&0xff0000)>>16);
 }
