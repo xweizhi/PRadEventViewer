@@ -1,6 +1,5 @@
-#  it lists all the configuration for HyCal modules
-#  type 0 -> lead-glass, type 1 -> lead-tungstate
-#  geometry and tdc can also be calculated in the program
+#  Lists all the configuration for HyCal modules
+#  Type 0 -> Lead-Glass, type 1 -> Lead-Tungstate, type 2 -> Scintillator
 #  id  DAQ crate  slot  chan   TDC      type      size       x       y  HV crate  slot  chan
   G176         6    23     0    G5         0      38.2   405.6  -358.4         1     0    41
   G175         6    23     1    G5         0      38.2   367.4  -358.4         1     0    47
@@ -1730,3 +1729,5 @@
   G751         4     4    61   G21         0      38.2  -558.6   396.4         5     8    45
   G726         4     4    62   G21         0      38.2  -367.6   358.2         5     8    40
   G725         4     4    63   G21         0      38.2  -405.8   358.2         5     8    35
+  SCIN1        6     4     4    S1         2      40.0   -20.0   620.0         5    12     4
+  SCIN2        6     4     5    S2         2      40.0    20.0   620.0         5    12     5
