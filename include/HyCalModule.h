@@ -23,12 +23,13 @@ public:
     struct GeoInfo
     {
         ModuleType type;
-        double cellSize;
+        double size_x;
+        double size_y;
         double x;
         double y;
         GeoInfo() {};
-        GeoInfo(ModuleType t, double s, double xx, double yy)
-        : type(t), cellSize(s), x(xx), y(yy) {};
+        GeoInfo(ModuleType t, double sx, double sy, double xx, double yy)
+        : type(t), size_x(sx), size_y(sy), x(xx), y(yy) {};
     };
 
     struct Voltage

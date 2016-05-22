@@ -57,15 +57,17 @@ void HyCalModule::Initialize()
         font.setPixelSize(9);
 
     // graphical shape
-    double size = geometry.cellSize;
-    shape.addRect(-size/2.,-size/2.,size,size);
+    double size_x = geometry.size_x;
+    double size_y = geometry.size_y;
+    shape.addRect(-size_x/2., -size_y/2., size_x, size_y);
 }
 
 // define the bound of this item
 QRectF HyCalModule::boundingRect() const
 {
-    double size = geometry.cellSize;
-    return QRectF(-size/2., -size/2., size, size);
+    double size_x = geometry.size_x;
+    double size_y = geometry.size_y;
+    return QRectF(-size_x/2., -size_y/2., size_x, size_y);
 }
 
 // how to paint this item
@@ -191,7 +193,8 @@ void HyCalModule::CalcGeometry()
         yIndex = copyNo / 34;
         size = 20.5;
         geometry.type = LeadTungstate;
-        geometry.cellSize = size;
+        geometry.size_x = size/2.;
+        geometry.size_y = size/2.;
         geometry.x = (double)(xIndex - 16)*size - size/2.;
         geometry.y = (double)(yIndex - 17)*size + size/2.;
     } else {
@@ -201,7 +204,8 @@ void HyCalModule::CalcGeometry()
         yIndex = copyNo/30;
         size = 38.2;
         geometry.type = LeadGlass;
-        geometry.cellSize = size;
+        geometry.size_x = size/2.;
+        geometry.size_y = size/2.;
 
         // Determine 4 groups of Lead glass modules
         // 1. north, 2. west, 3. south, 4. east

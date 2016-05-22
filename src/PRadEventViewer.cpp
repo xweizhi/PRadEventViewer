@@ -59,6 +59,7 @@ PRadEventViewer::PRadEventViewer()
 {
     initView();
     setupUI();
+    ListModules();
 }
 
 PRadEventViewer::~PRadEventViewer()
@@ -440,7 +441,7 @@ void PRadEventViewer::readModuleList()
         if(line.at(0) == '#')
             continue;
         QStringList fields = line.split(QRegExp("\\s+"));
-        if(fields.size() == 12) {
+        if(fields.size() == 13) {
             moduleName = fields.takeFirst();
             daqAddr.crate = (unsigned char)fields.takeFirst().toInt();
             daqAddr.slot = (unsigned char)fields.takeFirst().toInt();
@@ -448,7 +449,9 @@ void PRadEventViewer::readModuleList()
             tdcGroup = fields.takeFirst();
 
             geometry.type = (HyCalModule::ModuleType)fields.takeFirst().toInt();
-            geometry.cellSize = fields.takeFirst().toDouble();
+            geometry.size_x = fields.takeFirst().toDouble();
+            geometry.size_y = fields.takeFirst().toDouble();
+//            geometry.size_y = fields.takeFirst().toDouble();
             geometry.x = fields.takeFirst().toDouble();
             geometry.y = fields.takeFirst().toDouble();
 
@@ -553,15 +556,10 @@ void PRadEventViewer::buildModuleMap()
 
             has_module = true;
             HyCalModule::GeoInfo geo = module->GetGeometry();
-            if((geo.x + geo.cellSize/2.) > xmax)
-                xmax = geo.x + geo.cellSize/2.;
-            if((geo.x - geo.cellSize/2.) < xmin)
-                xmin = geo.x - geo.cellSize/2.;
-
-            if((geo.y + geo.cellSize/2.) > ymax)
-                ymax = geo.y + geo.cellSize/2.;
-            if((geo.y - geo.cellSize/2.) < ymin)
-                ymin = geo.y - geo.cellSize/2.;
+            xmax = std::max(geo.x + geo.size_x, xmax);
+            xmin = std::min(geo.x - geo.size_x, xmin);
+            ymax = std::max(geo.y + geo.size_y, ymax);
+            ymin = std::min(geo.y - geo.size_y, ymin);
         }
         QRectF groupBox = QRectF(xmin - HYCAL_SHIFT, ymin, xmax-xmin, ymax-ymin);
         if(has_module)
@@ -629,16 +627,32 @@ void PRadEventViewer::ListModules()
 {
     QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
     std::ofstream outf("config/current_list.txt");
+    outf << "#" << std::setw(9) << "Name"
+         << std::setw(10) << "DAQ Crate"
+         << std::setw(6) << "Slot"
+         << std::setw(6) << "Chan"
+         << std::setw(6) << "TDC"
+         << std::setw(10) << "Type"
+         << std::setw(8) << "size_x"
+         << std::setw(8) << "size_y"
+         << std::setw(8) << "x"
+         << std::setw(8) << "y"
+         << std::setw(10) << "HV Crate"
+         << std::setw(6) << "Slot"
+         << std::setw(6) << "Chan"
+         << std::endl;
+
 
     for(auto &module : moduleList)
     {
-        outf << std::setw(6)  << module->GetReadID().toStdString()
+        outf << std::setw(10) << module->GetReadID().toStdString()
              << std::setw(10) << module->GetDAQInfo().crate
              << std::setw(6)  << module->GetDAQInfo().slot
              << std::setw(6)  << module->GetDAQInfo().channel
              << std::setw(6)  << module->GetTDCName()
              << std::setw(10) << (int)module->GetGeometry().type
-             << std::setw(10) << module->GetGeometry().cellSize
+             << std::setw(8)  << module->GetGeometry().size_x
+             << std::setw(8)  << module->GetGeometry().size_y
              << std::setw(8)  << module->GetGeometry().x
              << std::setw(8)  << module->GetGeometry().y
 //             << std::setw(10) << module->GetPedestal().mean
