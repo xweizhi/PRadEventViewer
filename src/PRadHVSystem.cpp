@@ -595,7 +595,7 @@ void PRadHVSystem::showError(const string &prefix, const int &err, ShowErrorType
 void PRadHVSystem::showChError(const char *n, const unsigned int &err_bit)
 {
     // TODO, add an exception list instead of this hard coded thing
-    if(!strcmp(n, "W305") || !strcmp(n, "G900") return;
+    if(!strcmp(n, "W305") || !strcmp(n, "G900")) return;
 
     if(err_bit&(1 << 3)) cerr << "Channel " << n << " is in overcurrent!" << endl;
     if(err_bit&(1 << 4)) cerr << "Channel " << n << " is in overvoltage!" << endl;
