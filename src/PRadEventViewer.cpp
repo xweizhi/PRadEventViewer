@@ -227,6 +227,9 @@ void PRadEventViewer::createMainMenu()
    
     QAction *findPeakAction = toolMenu->addAction(tr("Find Peak"));
     findPeakAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_F));
+
+    QAction *fitHistAction = toolMenu->addAction(tr("Fit Histogram"));
+    fitHistAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_H));
  
     QAction *fitPedAction = toolMenu->addAction(tr("Fit Pedestal"));
     fitPedAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_P));
@@ -236,6 +239,7 @@ void PRadEventViewer::createMainMenu()
 
     connect(eraseAction, SIGNAL(triggered()), this, SLOT(eraseBufferAction()));
     connect(findPeakAction, SIGNAL(triggered()), this, SLOT(findPeak()));
+    connect(fitHistAction, SIGNAL(triggered()), this, SLOT(fitHistogram()));
     connect(fitPedAction, SIGNAL(triggered()), this, SLOT(fitPedestal()));
     connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
 
@@ -867,10 +871,7 @@ void PRadEventViewer::UpdateHistCanvas()
         PRadDAQUnit *dsum = handler->FindChannel("DSUM");
         if(handler->FindChannel("DSUM") != nullptr) {
             histCanvas->UpdateHist(1, dsum->GetHist("PHYS"));
-            PRadDAQUnit::Pedestal ped = dsum->GetPedestal();
-            int fit_min = int(ped.mean - 5*ped.sigma + 0.5);
-            int fit_max = int(ped.mean + 5*ped.sigma + 0.5);
-            histCanvas->UpdateHist(2, dsum->GetHist("PED"), fit_min, fit_max);
+            histCanvas->UpdateHist(2, dsum->GetHist("PED"));
             histCanvas->UpdateHist(3, dsum->GetHist("LMS"));
         }
         break; }
@@ -1105,6 +1106,89 @@ void PRadEventViewer::fitPedestal()
         double p0 = myfit->GetParameter(1);
         double p1 = myfit->GetParameter(2);
         channel->UpdatePedestal(p0, p1);
+    }
+}
+
+void PRadEventViewer::fitHistogram()
+{
+    QDialog dialog(this);
+    // Use a layout allowing to have a label next to each field
+    QFormLayout form(&dialog);
+
+    // Add some text above the fields
+    form.addRow(new QLabel("Select histogram and range:"));
+
+    // Add the lineEdits with their respective labels
+    QVector<QLineEdit *> fields;
+    QStringList label, de_value;
+
+    label << tr("Channel")
+          << tr("Histogram Name")
+          << tr("Range Min.")
+          << tr("Range Max.");
+
+    de_value << ((selection) ? QString::fromStdString(selection->GetName()) : "W1")
+             << "PHYS"
+             << "0"
+             << "8000";
+
+    for(int i = 0; i < 4; ++i)
+    {
+        QLineEdit *lineEdit = new QLineEdit(&dialog);
+        lineEdit->setText(de_value.at(i));
+        form.addRow(label.at(i), lineEdit);
+        fields.push_back(lineEdit);
+    }
+
+    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                               Qt::Horizontal, &dialog);
+    form.addRow(&buttonBox);
+    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+    QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+
+    // Show the dialog as modal
+    if (dialog.exec() == QDialog::Accepted) {
+        // If the user didn't dismiss the dialog, do something with the fields
+        QString ch_name = fields.at(0)->text();
+        PRadDAQUnit *ch = handler->FindChannel(ch_name.toStdString());
+        if(ch == nullptr) {
+            QMessageBox::critical(this,
+                                  "Fit Histogram Failure",
+                                  "Channel " + ch_name + " does not exist!");
+            return;
+        }
+
+        QString h_name = fields.at(1)->text();
+        TH1 *hist = ch->GetHist(h_name.toStdString());
+        if(hist == nullptr) {
+            QMessageBox::critical(this,
+                                  "Fit Histogram Failure",
+                                  "Histogram " + h_name + " does not exist!");
+            return;
+        }
+        
+        int fit_min = fields.at(2)->text().toInt();
+        int fit_max = fields.at(3)->text().toInt();
+
+        if(!hist->Integral(fit_min, fit_max)) {
+            QMessageBox::critical(this,
+                                  "Fit Histogram Failure",
+                                  "Histogram does not have entries in specified range!");
+            return; 
+        }
+
+        TF1 *fit = new TF1("newfit", "gaus", fit_min, fit_max);
+        hist->Fit(fit,"qlR");
+        TF1 *myfit = (TF1*) hist->GetFunction("newfit");
+        double p0 = myfit->GetParameter(1);
+        double p1 = myfit->GetParameter(2);
+        std::cout << "Fit histogram " << hist->GetTitle()
+                  << ", mean: " << p0
+                  << ", sigma: " << p1
+                  << std::endl;
+        UpdateHistCanvas(); 
+        delete fit;
     }
 }
 

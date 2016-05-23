@@ -99,6 +99,7 @@ private slots:
     void savePedestalFile();
     void findPeak();
     void fitPedestal();
+    void fitHistogram();
     void takeSnapShot();
     void changeHistType(int index);
     void changeAnnoType(int index);
