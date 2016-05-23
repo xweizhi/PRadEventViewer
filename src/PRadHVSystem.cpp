@@ -533,8 +533,8 @@ void PRadHVSystem::checkVoltage(const CAENHVData &hvData)
 
 float PRadHVSystem::getLimit(const char *name)
 {
-    if(name[0] == 'G') return 1700;
-    if(name[0] == 'W') return 1300;
+    if(name[0] == 'G') return 1800;
+    if(name[0] == 'W') return 1400;
     if(name[0] == 'L') return 2000;
     if(name[0] == 'S') return 2000;
     if(name[0] == 'P') return 3000;

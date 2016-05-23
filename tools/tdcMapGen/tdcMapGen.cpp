@@ -43,6 +43,17 @@ string trim(const string& str,
     return str.substr(strBegin, strRange);
 }
 
+string comment_out(const string &str,
+                   const string &comment_mark = "#")
+{
+    if(comment_mark.empty()) {
+        return str;
+    }
+
+    const auto cmtEnd = str.find(comment_mark);
+    return str.substr(0, cmtEnd);
+}
+
 int main()
 {
     int crate, slot;
@@ -55,8 +66,8 @@ int main()
     // read tdc map
     while(getline(infile, line))
     {
-        trim_line = trim(line);
-        if(trim_line.at(0) == '#' || trim_line.empty())
+        trim_line = trim(comment_out(line));
+        if(trim_line.empty())
             continue;
         istringstream iss(trim_line);
         if(read_crate == false) {
