@@ -80,6 +80,7 @@ public:
     void AddChannel(PRadDAQUnit *channel);
     void AddTDCGroup(PRadTDCGroup *group);
     void RegisterChannel(PRadDAQUnit *channel);
+    void Decode(const void *buffer);
     void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);
     void FeedData(GEMAPVData &gemData);
@@ -87,9 +88,11 @@ public:
     void FeedData(TDCV1190Data &tdcData);
     void FeedData(CAENHVData &hvData);
     void UpdateEvent(int idx = 0);
+    void UpdateEventNb(const unsigned int &n) {eventNb = n;};
     void UpdateTrgType(const unsigned char &trg);
     void UpdateLMSPhase(const unsigned char &ph);
-    int GetEventCount() {return energyData.size();};
+    unsigned int GetEventCount() {return energyData.size();};
+    int GetCurrentEventNb();
     TH1D *GetEnergyHist() {return energyHist;};
     void Clear();
     void EndofThisEvent();
@@ -105,7 +108,9 @@ public:
     const vector< PRadDAQUnit* > &GetChannelList() {return channelList;};
 
 private:
+    PRadEvioParser *parser;
     double totalE;
+    unsigned int eventNb;
     bool onlineMode;
 #ifdef MULTI_THREAD
     mutex myLock;

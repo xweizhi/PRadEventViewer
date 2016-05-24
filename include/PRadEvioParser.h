@@ -17,11 +17,10 @@ public:
     void parseTDCV1190(const uint32_t *data, const size_t &size, const int &roc_id);
     void parseDSCData(const uint32_t *data);
     void parseTIData(const uint32_t *data, const size_t &size, const int &roc_id);
-    unsigned int GetCurrentEventNb() {return eventNb;};
+    unsigned int eventNb;
 
 private:
     PRadDataHandler *myHandler;
-    unsigned int eventNb;
 };
 
 #endif

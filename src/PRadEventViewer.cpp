@@ -564,10 +564,10 @@ void PRadEventViewer::buildModuleMap()
 
             has_module = true;
             HyCalModule::GeoInfo geo = module->GetGeometry();
-            xmax = std::max(geo.x + geo.size_x, xmax);
-            xmin = std::min(geo.x - geo.size_x, xmin);
-            ymax = std::max(geo.y + geo.size_y, ymax);
-            ymin = std::min(geo.y - geo.size_y, ymin);
+            xmax = std::max(geo.x + geo.size_x/2., xmax);
+            xmin = std::min(geo.x - geo.size_x/2., xmin);
+            ymax = std::max(geo.y + geo.size_y/2., ymax);
+            ymin = std::min(geo.y - geo.size_y/2., ymin);
         }
         QRectF groupBox = QRectF(xmin - HYCAL_SHIFT, ymin, xmax-xmin, ymax-ymin);
         if(has_module)
@@ -981,20 +981,16 @@ void PRadEventViewer::readEventFromFile(const QString &filepath)
         evio::evioFileChannel *chan = new evio::evioFileChannel(filepath.toStdString().c_str(),"r");
         chan->open();
 
-        PRadEvioParser *myParser = new PRadEvioParser(handler);
-        // Initialize
-
         eraseModuleBuffer();
 
         while(chan->read())
         {
-            PRadEventHeader *evt = (PRadEventHeader*)chan->getBuffer();
-            // check the event tag
-            myParser->parseEventByHeader(evt);
-         }
-        delete myParser;
+            handler->Decode(chan->getBuffer());
+        }
+
         chan->close();
         delete chan;
+
         updateEventRange();
     } catch (evio::evioException e) {
         std::cerr << e.toString() << endl;
@@ -1370,23 +1366,19 @@ void PRadEventViewer::onlineUpdate(const size_t &max_events)
 {
     try {
         size_t num;
-        PRadEvioParser *myParser = new PRadEvioParser(handler);
 
         for(num = 0; etChannel->Read() && num < max_events; ++num)
         {
-            PRadEventHeader *evt = (PRadEventHeader*)etChannel->GetBuffer();
-            myParser->parseEventByHeader(evt);
+            handler->Decode(etChannel->GetBuffer());
             // update current event information
-            currentEvent = (int)myParser->GetCurrentEventNb();
+            currentEvent = handler->GetCurrentEventNb();
         }
 
-        cout << "Retrieve " << num << " events from ET." << endl;
         if(num) {
             UpdateHistCanvas();
             Refresh();
         }
 
-        delete myParser;
     } catch(PRadException e) {
         std::cerr << e.FailureType() << ": "
                   << e.FailureDesc() << std::endl;

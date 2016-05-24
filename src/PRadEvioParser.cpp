@@ -19,7 +19,9 @@
 using namespace std;
 
 PRadEvioParser::PRadEvioParser(PRadDataHandler *handler) : myHandler(handler)
-{}
+{
+    eventNb = 0;
+}
 
 void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
 {

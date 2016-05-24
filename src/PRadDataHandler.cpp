@@ -23,7 +23,7 @@
 #endif
 
 PRadDataHandler::PRadDataHandler()
-: totalE(0), onlineMode(false)
+: parser(new PRadEvioParser(this)), totalE(0), onlineMode(false)
 {
     // total energy histogram
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
@@ -42,6 +42,15 @@ PRadDataHandler::~PRadDataHandler()
     {
         delete tdc, tdc = nullptr;
     }
+
+    delete parser;
+}
+
+// decode event buffer
+void PRadDataHandler::Decode(const void *buffer)
+{
+    PRadEventHeader *header = (PRadEventHeader *)buffer;
+    parser->parseEventByHeader(header);
 }
 
 // add DAQ channels
@@ -101,6 +110,7 @@ void PRadDataHandler::Clear()
     // used memory won't be released, but it can be used again for new data file
     energyData.erase(energyData.begin(), energyData.end());
     totalE = 0;
+    parser->eventNb = 0;
     newEvent.clear();
     energyHist->Reset();
 
@@ -187,8 +197,11 @@ void PRadDataHandler::FeedData(TDCV767Data &tdcData)
 void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
 {
     tdc_daq_iter it = map_daq_tdc.find(tdcData.config);
-    if(it == map_daq_tdc.end())
+    if(it == map_daq_tdc.end()) {
+        if(tdcData.config.channel > 5)
+            cout << tdcData.config.channel << endl;
         return;
+    }
 
     PRadTDCGroup *tdc = it->second;
     tdc->GetHist()->Fill(tdcData.val);
@@ -321,4 +334,9 @@ PRadTDCGroup *PRadDataHandler::GetTDCGroup(const ChannelAddress &addr)
     if(it == map_daq_tdc.end())
         return nullptr;
     return it->second;
+}
+
+int PRadDataHandler::GetCurrentEventNb()
+{
+    return (int)parser->eventNb;
 }
