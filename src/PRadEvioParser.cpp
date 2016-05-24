@@ -313,7 +313,6 @@ void PRadEvioParser::parseTIData(const uint32_t *data, const size_t & /*size*/, 
 {
     unsigned int trigger_bit = data[2]>>24;
     int trg = (int) TI_Internal;
-
     for(; (trigger_bit >> trg) > 0; ++trg)
     {
         if(trg >= MAX_Trigger) {

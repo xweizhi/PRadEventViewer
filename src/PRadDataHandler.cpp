@@ -127,6 +127,13 @@ void PRadDataHandler::Clear()
 
 void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
 {
+    if(newEvent.type && (newEvent.type != trg)) {
+        cerr << "ERROR: Trigger type mismatch at event "
+             << parser->eventNb
+             << ", was " << (int) newEvent.type
+             << " now " << (int) trg
+             << endl;
+    } 
     newEvent.type = trg;
 }
 
