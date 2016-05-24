@@ -39,7 +39,8 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadHVSystem.h \
            include/PRadException.h \
            include/PRadHistCanvas.h \
-           include/QRootCanvas.h
+           include/QRootCanvas.h \
+           include/ConfigParser.h
 
 SOURCES += src/main.cpp \
            src/PRadEventViewer.cpp \
@@ -61,7 +62,8 @@ SOURCES += src/main.cpp \
            src/PRadHVSystem.cpp \
            src/PRadException.cpp \
            src/PRadHistCanvas.cpp \
-           src/QRootCanvas.cpp
+           src/QRootCanvas.cpp \
+           src/ConfigParser.cpp
 
 LIBS += -lexpat \
         -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx \

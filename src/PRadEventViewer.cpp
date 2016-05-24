@@ -35,6 +35,7 @@
 #include "Spectrum.h"
 #include "SpectrumSettingPanel.h"
 #include "HtmlDelegate.h"
+#include "ConfigParser.h"
 
 #include "PRadETChannel.h"
 #include "PRadHVSystem.h"

@@ -108,7 +108,7 @@ void PRadDataHandler::BuildChannelMap()
 void PRadDataHandler::Clear()
 {
     // used memory won't be released, but it can be used again for new data file
-    energyData.erase(energyData.begin(), energyData.end());
+    energyData.clear();
     totalE = 0;
     parser->eventNb = 0;
     newEvent.clear();
