@@ -8,14 +8,15 @@
 class ConfigParser
 {
 public:
-    ConfigParser(const std::string &s = " ,.\t",  // splitters
+    ConfigParser(const std::string &s = " ,\t",  // splitters
                  const std::string &w = " \t",  // white_space
                  const std::string &c = "#"); // comment_mark
     virtual ~ConfigParser();
-    void OpenFile(const std::string &path);
-    void Close();
+    bool OpenFile(const std::string &path);
+    void CloseFile();
     bool ParseLine();
     void ParseLine(const std::string &line);
+    size_t NbofElements() {return elements.size();};
     std::string TakeFirst();
 
 private:

@@ -391,48 +391,48 @@ void PRadEventViewer::setupInfoWindow()
 // read tdc groups from file
 void PRadEventViewer::readTDCList()
 {
-    QFile list("config/tdc_group_list.txt");
-    if(!list.open(QFile::ReadOnly | QFile::Text)) {
+    ConfigParser c_parser;
+
+    if(!c_parser.OpenFile("config/tdc_group_list.txt")) {
         std::cout << "WARNING: Missing configuration file \"config/tdc_group_list.txt\""
                   << ", cannot create tdc groups!"
                   << std::endl;
     }
 
-    QTextStream in(&list);
-    QString name;
+    std::string name;
     ChannelAddress addr;
 
-    while (!in.atEnd())
+    while (c_parser.ParseLine())
     {
-        QString line = in.readLine().simplified();
-        if(line.at(0) == '#')
-            continue;
-        QStringList fields = line.split(QRegExp("\\s+"));
-        if(fields.size() == 4) {
-            name = fields.takeFirst();
-            addr.crate = (unsigned char)fields.takeFirst().toInt();
-            addr.slot = (unsigned char)fields.takeFirst().toInt();
-            addr.channel = (unsigned char)fields.takeFirst().toInt();
-            handler->AddTDCGroup(new PRadTDCGroup(name.toStdString(), addr));
+        if(!c_parser.NbofElements())
+            continue; // comment
+
+       if(c_parser.NbofElements() == 4) {
+            name = c_parser.TakeFirst();
+            addr.crate = std::stoi(c_parser.TakeFirst());
+            addr.slot = std::stoi(c_parser.TakeFirst());
+            addr.channel = std::stoi(c_parser.TakeFirst());
+            handler->AddTDCGroup(new PRadTDCGroup(name, addr));
         } else {
             std::cout << "Unrecognized input format in configuration file, skipped one line!"
                       << std::endl;
         }
     }
+
+    c_parser.CloseFile();
 }
 
 // read module list from file
 void PRadEventViewer::readModuleList()
 {
-    QFile list("config/module_list.txt");
-    if(!list.open(QFile::ReadOnly | QFile::Text)) {
+    ConfigParser c_parser;
+    if(!c_parser.OpenFile("config/module_list.txt")) {
         std::cerr << "ERROR: Missing configuration file \"config/module_list.txt\""
                   << ", cannot generate HyCal channels!"
                   << std::endl;
         exit(1);
     }
 
-    QTextStream in(&list);
     QString moduleName;
     ChannelAddress daqAddr;
     QString tdcGroup;
@@ -445,29 +445,27 @@ void PRadEventViewer::readModuleList()
     hvInfo.volt.Vset = 0;
     hvInfo.volt.ON = false;
 
-    while (!in.atEnd())
+    while (c_parser.ParseLine())
     {
-        QString line = in.readLine().simplified();
-        if(line.at(0) == '#')
-            continue;
-        QStringList fields = line.split(QRegExp("\\s+"));
-        if(fields.size() == 13) {
-            moduleName = fields.takeFirst();
-            daqAddr.crate = (unsigned char)fields.takeFirst().toInt();
-            daqAddr.slot = (unsigned char)fields.takeFirst().toInt();
-            daqAddr.channel = (unsigned char)fields.takeFirst().toInt();
-            tdcGroup = fields.takeFirst();
+        if(!c_parser.NbofElements())
+            continue; // comment
 
-            geometry.type = (HyCalModule::ModuleType)fields.takeFirst().toInt();
-            geometry.size_x = fields.takeFirst().toDouble();
-            geometry.size_y = fields.takeFirst().toDouble();
-//            geometry.size_y = fields.takeFirst().toDouble();
-            geometry.x = fields.takeFirst().toDouble();
-            geometry.y = fields.takeFirst().toDouble();
+        if(c_parser.NbofElements() == 13) {
+            moduleName = QString::fromStdString(c_parser.TakeFirst());
+            daqAddr.crate = std::stoi(c_parser.TakeFirst());
+            daqAddr.slot = std::stoi(c_parser.TakeFirst());
+            daqAddr.channel = std::stoi(c_parser.TakeFirst());
+            tdcGroup = QString::fromStdString(c_parser.TakeFirst());
 
-            hvInfo.config.crate = (unsigned char)fields.takeFirst().toInt();
-            hvInfo.config.slot = (unsigned char)fields.takeFirst().toInt();
-            hvInfo.config.channel = (unsigned char)fields.takeFirst().toInt();
+            geometry.type = (HyCalModule::ModuleType)std::stoi(c_parser.TakeFirst());
+            geometry.size_x = std::stod(c_parser.TakeFirst());
+            geometry.size_y = std::stod(c_parser.TakeFirst());
+            geometry.x = std::stod(c_parser.TakeFirst());
+            geometry.y = std::stod(c_parser.TakeFirst());
+
+            hvInfo.config.crate = std::stoi(c_parser.TakeFirst());
+            hvInfo.config.slot = std::stoi(c_parser.TakeFirst());
+            hvInfo.config.channel = std::stoi(c_parser.TakeFirst());
 
             HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, hvInfo, geometry);
             HyCal->addModule(newModule);
@@ -478,49 +476,45 @@ void PRadEventViewer::readModuleList()
         }
     }
 
-    list.close();
+    c_parser.CloseFile();
 }
 
 void PRadEventViewer::readSpecialChannels()
 {
-    QFile list("config/special_channels.txt");
-    if(!list.open(QFile::ReadOnly | QFile::Text)) {
+    ConfigParser c_parser;
+    
+    if(!c_parser.OpenFile("config/special_channels.txt")) {
         std::cerr << "WARNING: Missing configuration file \"config/special_channels.txt\"."
                   << std::endl;
         return;
     }
 
-    QTextStream in(&list);
-    QString moduleName;
+    std::string moduleName;
     ChannelAddress daqAddr;
-    QString tdcGroup;
+    std::string tdcGroup;
     HyCalModule::HVSetup hvInfo;
 
     // some info that is not read from list
-    while (!in.atEnd())
+    while (c_parser.ParseLine())
     {
-        QString line = in.readLine().simplified();
-        if(line.at(0) == '#')
+        if(!c_parser.NbofElements())
             continue;
-        QStringList fields = line.split(QRegExp("\\s+"));
-        if(fields.size() == 8) {
-            moduleName = fields.takeFirst();
-            daqAddr.crate = (unsigned char)fields.takeFirst().toInt();
-            daqAddr.slot = (unsigned char)fields.takeFirst().toInt();
-            daqAddr.channel = (unsigned char)fields.takeFirst().toInt();
-            tdcGroup = fields.takeFirst();
-/*
-            hvInfo.config.crate = (unsigned char)fields.takeFirst().toInt();
-            hvInfo.config.slot = (unsigned char)fields.takeFirst().toInt();
-            hvInfo.config.channel = (unsigned char)fields.takeFirst().toInt();
-*/
-            PRadDAQUnit *specialCh = new PRadDAQUnit(moduleName.toStdString(), daqAddr, tdcGroup.toStdString());
+        if(c_parser.NbofElements() == 8) {
+            moduleName = c_parser.TakeFirst();
+            daqAddr.crate = std::stoi(c_parser.TakeFirst());
+            daqAddr.slot = std::stoi(c_parser.TakeFirst());
+            daqAddr.channel = std::stoi(c_parser.TakeFirst());
+            tdcGroup = c_parser.TakeFirst();
+
+            PRadDAQUnit *specialCh = new PRadDAQUnit(moduleName, daqAddr, tdcGroup);
             handler->AddChannel(specialCh);
         } else {
             std::cout << "Unrecognized input format in configuration file, skipped one line!"
                       << std::endl;
         }
-    } 
+    }
+
+    c_parser.CloseFile();
 }
 
 // build module maps for speed access to module
@@ -580,69 +574,58 @@ void PRadEventViewer::buildModuleMap()
 // read the pedestal data from previous file
 void PRadEventViewer::readPedestalData(const QString &filename)
 {
-    QFile pedData(filename);
+    ConfigParser c_parser;
 
-    if(!pedData.open(QFile::ReadOnly | QFile::Text)) {
+    if(!c_parser.OpenFile(filename.toStdString())) {
         std::cout << "WARNING: Missing pedestal file \"" << filename.toStdString()
                   << "\", no pedestal data are read!" << std::endl;
         return;
     }
 
-    int crate, slot, channel;
     double val, sigma;
     ChannelAddress daqInfo;
     PRadDAQUnit *tmp;
 
-    QTextStream in(&pedData);
-
-    while(!in.atEnd())
+    while(c_parser.ParseLine())
     {
-        QString line = in.readLine().simplified();
-        if(line.at(0) == '#')
+        if(!c_parser.NbofElements())
             continue;
-        QStringList fields = line.split(QRegExp("\\s+"));
-        if(fields.size() == 5) {
-            crate = fields.takeFirst().toInt();
-            slot = fields.takeFirst().toInt();
-            channel = fields.takeFirst().toInt();
-            val = fields.takeFirst().toDouble();
-            sigma = fields.takeFirst().toDouble();
-            daqInfo.crate = crate;
-            daqInfo.slot = slot;
-            daqInfo.channel = channel;
+        if(c_parser.NbofElements() == 5) {
+            daqInfo.crate = std::stoi(c_parser.TakeFirst());
+            daqInfo.slot = std::stoi(c_parser.TakeFirst());
+            daqInfo.channel = std::stoi(c_parser.TakeFirst());
+            val = std::stod(c_parser.TakeFirst());
+            sigma = std::stod(c_parser.TakeFirst());
+
             if((tmp = handler->FindChannel(daqInfo)) != nullptr)
                 tmp->UpdatePedestal(val, sigma);
         }
     }
 
-    pedData.close();
+    c_parser.CloseFile();
 }
 
 void PRadEventViewer::readCalibrationData(const QString &filename)
 {
-    QFile calData(filename);
+    ConfigParser c_parser;
 
-    if(!calData.open(QFile::ReadOnly | QFile::Text)) {
+    if(!c_parser.OpenFile(filename.toStdString())) {
         std::cout << "WARNING: Missing calibration data file \"" << filename.toStdString()
                   << "\", use default calibration factors!" << std::endl;
         return;
     }
 
-    QTextStream in(&calData);
     std::string name;
     double calFactor;
 
-    while(!in.atEnd())
+    while(c_parser.ParseLine())
     {
-        QString line = in.readLine().simplified();
-        if(line.at(0) == '#')
+        if(!c_parser.NbofElements())
             continue;
 
-        QStringList fields = line.split(QRegExp("\\s+"));
-
-        if(fields.size() == 2) {
-            name = fields.takeFirst().toStdString();
-            calFactor = fields.takeFirst().toDouble();
+        if(c_parser.NbofElements() == 2) {
+            name = c_parser.TakeFirst();
+            calFactor = std::stod(c_parser.TakeFirst());
 
             PRadDAQUnit *channel = handler->FindChannel(name);
             if(channel != nullptr)
@@ -650,7 +633,7 @@ void PRadEventViewer::readCalibrationData(const QString &filename)
         }
     }
 
-    calData.close();
+    c_parser.CloseFile();
 }
 
 //============================================================================//

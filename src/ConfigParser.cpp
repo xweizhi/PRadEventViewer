@@ -11,16 +11,17 @@ ConfigParser::ConfigParser(const string &s, const string &w, const string &c)
 
 ConfigParser::~ConfigParser()
 {
-
+    CloseFile();
 }
 
-void ConfigParser::OpenFile(const string &path)
+bool ConfigParser::OpenFile(const string &path)
 {
     infile.open(path);
+    return infile.is_open();
 }
 
 
-void ConfigParser::Close()
+void ConfigParser::CloseFile()
 {
     infile.close();
 }
