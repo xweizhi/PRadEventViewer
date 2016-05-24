@@ -131,6 +131,7 @@ private:
     void readTDCList();
     void readSpecialChannels();
     void readPedestalData(const QString &filename);
+    void readCalibrationData(const QString &filename);
     void eraseModuleBuffer();
     void createMainMenu();
     void createControlPanel();

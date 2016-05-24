@@ -130,7 +130,7 @@ void PRadEventViewer::setupUI()
 // create spectrum
 void PRadEventViewer::generateSpectrum()
 {
-    energySpectrum = new Spectrum(40, 1100, 1, 3000);
+    energySpectrum = new Spectrum(40, 1100, 1, 1000);
     energySpectrum->setPos(600, 0);
     HyCal->addItem(energySpectrum);
 
@@ -151,6 +151,7 @@ void PRadEventViewer::generateHyCalModules()
     buildModuleMap();
 
     readPedestalData("config/pedestal.dat");
+    readCalibrationData("config/calibration_factors.txt");
 
     // Default setting
     selection = HyCal->GetModuleList().at(0);
@@ -614,6 +615,41 @@ void PRadEventViewer::readPedestalData(const QString &filename)
     }
 
     pedData.close();
+}
+
+void PRadEventViewer::readCalibrationData(const QString &filename)
+{
+    QFile calData(filename);
+
+    if(!calData.open(QFile::ReadOnly | QFile::Text)) {
+        std::cout << "WARNING: Missing calibration data file \"" << filename.toStdString()
+                  << "\", use default calibration factors!" << std::endl;
+        return;
+    }
+
+    QTextStream in(&calData);
+    std::string name;
+    double calFactor;
+
+    while(!in.atEnd())
+    {
+        QString line = in.readLine().simplified();
+        if(line.at(0) == '#')
+            continue;
+
+        QStringList fields = line.split(QRegExp("\\s+"));
+
+        if(fields.size() == 2) {
+            name = fields.takeFirst().toStdString();
+            calFactor = fields.takeFirst().toDouble();
+
+            PRadDAQUnit *channel = handler->FindChannel(name);
+            if(channel != nullptr)
+                channel->UpdateCalibrationFactor(calFactor);
+        }
+    }
+
+    calData.close();
 }
 
 //============================================================================//

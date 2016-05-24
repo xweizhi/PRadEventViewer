@@ -205,7 +205,7 @@ void SpectrumSettingPanel::changePreSetting()
 {
     preset = true;
     if(energyView->isChecked()) {
-        maxSpin->setValue(3000);
+        maxSpin->setValue(1000);
         minSpin->setValue(1);
         logScale->setChecked(true);
     } else if(occupancyView->isChecked()) {

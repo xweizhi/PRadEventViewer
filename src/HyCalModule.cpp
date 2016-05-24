@@ -32,8 +32,8 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
     // detect if mouse is hovering on this item
     setAcceptHoverEvents(true);
 
-    // temp calibration factor
-    UpdateCalibrationFactor(1.);
+    // default calibration factor
+    calf = 0.2;
 
     if(geo.type == LeadGlass || geo.type == LeadTungstate)
         in_hycal = true;
