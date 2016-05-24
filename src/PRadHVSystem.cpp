@@ -412,6 +412,7 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
            << setw(8) << "slot"
            << setw(8) << "channel"
            << setw(16) << "name"
+           << setw(10) << "VMon"
            << setw(10) << "VSet"
            << endl;
     int err;
@@ -424,7 +425,7 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
         for(auto &board : crate.boardList)
         {
             int size = board.nChan;
-            float setVals[size];
+            float setVals[size], monVals[size];
             unsigned short list[size];
             char nameList[size][MAX_CH_NAME];
 
@@ -439,7 +440,13 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
 
             err = CAENHV_GetChParam(crate.handle, board.slot, "V0Set", size, list, setVals);
             if(err != CAENHV_OK) {
-                showError("HV Read Voltage", err);
+                showError("HV Read Set Voltage", err);
+                continue;
+            }
+
+            err = CAENHV_GetChParam(crate.handle, board.slot, "VMon", size, list, monVals);
+            if(err != CAENHV_OK) {
+                showError("HV Read Current Voltage", err);
                 continue;
             }
 
@@ -449,6 +456,7 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
                        << setw(8) << board.slot
                        << setw(8) << k
                        << setw(16) << nameList[k]
+                       << setw(10) << monVals[k]
                        << setw(10) << setVals[k]
                        << endl;
             }
@@ -474,8 +482,8 @@ void PRadHVSystem::RestoreSetting(const string &path)
         string crate_name, channel_name;
         int handle, slot;
         unsigned short channel;
-        float VSet, limit;
-        iss >> crate_name >> slot >> channel >> channel_name >> VSet;
+        float VMon, VSet, limit;
+        iss >> crate_name >> slot >> channel >> channel_name >> VMon >> VSet;
         handle = GetCrateHandle(crate_name);
         limit = getLimit(channel_name.c_str());
         if(VSet > limit) {
