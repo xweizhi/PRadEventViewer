@@ -3,10 +3,11 @@
 
 using namespace std;
 
-ConfigParser::ConfigParser(const string &s, const string &w, const string &c)
-: splitters(s), white_space(w), comment_mark(c)
+ConfigParser::ConfigParser(const string &s,
+                           const string &w,
+                           const vector<string> &c)
+: splitters(s), white_space(w), comment_marks(c)
 {
-
 }
 
 ConfigParser::~ConfigParser()
@@ -20,6 +21,10 @@ bool ConfigParser::OpenFile(const string &path)
     return infile.is_open();
 }
 
+void ConfigParser::AddCommentMarks(const string &c)
+{
+    comment_marks.push_back(c);
+}
 
 void ConfigParser::CloseFile()
 {
@@ -40,7 +45,7 @@ bool ConfigParser::ParseLine()
 void ConfigParser::ParseLine(const string &line)
 {
     queue<string>().swap(elements);
-    string trim_line = trim(comment_out(line, comment_mark), white_space);
+    string trim_line = trim(comment_out(line), white_space);
     split(elements, trim_line, splitters);
 }
 
@@ -53,6 +58,17 @@ string ConfigParser::TakeFirst()
      elements.pop();
 
      return output;
+}
+
+string ConfigParser::comment_out(const string &str, size_t index)
+{
+    if(index >= comment_marks.size())
+        return str;
+    else {
+        string str_co = comment_out(str, comment_marks.at(index));
+        return comment_out(str_co, ++index);
+    }
+        
 }
 
 string ConfigParser::comment_out(const string &str,
