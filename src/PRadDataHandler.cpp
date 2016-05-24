@@ -198,8 +198,6 @@ void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
 {
     tdc_daq_iter it = map_daq_tdc.find(tdcData.config);
     if(it == map_daq_tdc.end()) {
-        if(tdcData.config.channel > 5)
-            cout << tdcData.config.channel << endl;
         return;
     }
 
