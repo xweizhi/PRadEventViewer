@@ -9,6 +9,7 @@
 //============================================================================//
 
 #include <iostream>
+#include <algorithm>
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
 #include "HyCalModule.h"
@@ -22,11 +23,18 @@
 #include "HyCalClusters.h"
 #endif
 
+static bool operator < (const int &e, const EPICSValue &v)
+{
+    return e < v.att_event;
+}
+
+
 PRadDataHandler::PRadDataHandler()
 : parser(new PRadEvioParser(this)), totalE(0), onlineMode(false)
 {
     // total energy histogram
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
+
 }
 
 PRadDataHandler::~PRadDataHandler()
@@ -140,6 +148,49 @@ void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
 void PRadDataHandler::UpdateLMSPhase(const unsigned char &ph)
 {
     newEvent.lms_phase = ph;
+}
+
+void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
+{
+    auto it = epics_channels.find(name);
+
+    if(it == epics_channels.end()) {
+        vector<EPICSValue> epics_ch;
+        epics_ch.push_back(EPICSValue((int)parser->eventNb, value));
+        epics_channels[name] = epics_ch;
+    } else {
+        (*it).second.push_back(EPICSValue(parser->eventNb, value));
+    }
+}
+
+
+float PRadDataHandler::FindEPICSValue(const string &name)
+{
+    auto it = epics_channels.find(name);
+    if(it == epics_channels.end())
+        return 0;
+
+    vector<EPICSValue> &data = (*it).second;
+    return data.back().value;
+}
+
+float PRadDataHandler::FindEPICSValue(const string &name, const int &event)
+{
+    auto it = epics_channels.find(name);
+    if(it == epics_channels.end())
+        return 0;
+
+    vector<EPICSValue> &data = (*it).second;
+
+    if(data.size() < 1)
+        return 0;
+
+    if(event < data.at(0))
+        return data.at(0).value;
+
+    auto idx = upper_bound(data.begin(), data.end(), event) - data.begin() - 1;
+
+    return data.at(idx).value;
 }
 
 void PRadDataHandler::FeedData(JLabTIData & /*tiData*/)
@@ -344,4 +395,16 @@ PRadTDCGroup *PRadDataHandler::GetTDCGroup(const ChannelAddress &addr)
 int PRadDataHandler::GetCurrentEventNb()
 {
     return (int)parser->eventNb;
+}
+
+void PRadDataHandler::PrintOutEPICS(const int &event)
+{
+    if(event) {
+        for(auto &epics_ch : epics_channels)
+        {
+            cout << epics_ch.first << ": "
+                 << epics_ch.second.back().value
+                 << endl;
+        }
+    }
 }

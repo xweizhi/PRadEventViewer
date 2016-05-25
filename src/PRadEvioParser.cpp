@@ -9,7 +9,9 @@
 
 #include "PRadEvioParser.h"
 #include "PRadDataHandler.h"
+#include "ConfigParser.h"
 #include <thread>
+#include <sstream>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -18,9 +20,36 @@
 
 using namespace std;
 
+PRadTriggerType bit_word_to_trigger_type(const unsigned int &bit)
+{
+    int trg = 0;
+    for(; (bit >> trg) > 0; ++trg)
+    {
+        if(trg >= MAX_Trigger) {
+            return TI_Error;
+        }
+    }
+
+    return (PRadTriggerType) trg; 
+}
+
+unsigned int trigger_type_to_bit_word(const PRadTriggerType &trg)
+{
+    if(trg == TI_Error)
+        return 0;
+    else
+        return 1 << (int) trg;
+}
+
 PRadEvioParser::PRadEvioParser(PRadDataHandler *handler) : myHandler(handler)
 {
+    c_parser = new ConfigParser();
     eventNb = 0;
+}
+
+PRadEvioParser::~PRadEvioParser()
+{
+    delete c_parser;
 }
 
 void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
@@ -29,6 +58,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
     switch(header->tag)
     {
     case CODA_Event:
+    case EPICS_Info:
         break; // go on to process
     case CODA_Prestart:
     case CODA_Go:
@@ -68,6 +98,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             case PRadROC_2: // Fastbus, ROC id 5
             case PRadROC_1: // Fastbus, ROC id 4
             case PRadTS: // VME, ROC id 2
+            case EPICS_IOC:
                 continue; // Interested in ROCs, to next header
 
             default: // unrecognized ROC
@@ -80,6 +111,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             switch(evtHeader->tag)
             {
             default:
+            case EPINFO_BANK: // bank contains the epics information
                 break;
             case EVINFO_BANK: // Bank contains the event information
                 eventNb = buffer[index];
@@ -88,7 +120,11 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                 parseTIData(&buffer[index], dataSize, evtHeader->num);
                 break;
             case TDC_BANK:
+#ifdef MULTI_THREAD
+                bank_threads.push_back(thread(&PRadEvioParser::parseTDCV1190, this, &buffer[index], dataSize, evtHeader->num));
+#else
                 parseTDCV1190(&buffer[index], dataSize, evtHeader->num);
+#endif
                 break;
             case DSC_BANK:
                 parseDSCData(&buffer[index]);
@@ -118,6 +154,21 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             }
             break;
 
+        case CharString_8bit: // string data bank
+            switch(evtHeader->tag)
+            {
+            case EPICS_BANK: // epics information
+#ifdef MULTI_THREAD
+                bank_threads.push_back(thread(&PRadEvioParser::parseEPICS, this, &buffer[index]));
+#else
+                parseEPICS(&buffer[index]);
+#endif
+                break;
+            case CONF_BANK: // configuration information
+            default:
+                break;
+            }
+            break;
         default:
             // Unknown header
             break;
@@ -311,21 +362,22 @@ void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
 
 void PRadEvioParser::parseTIData(const uint32_t *data, const size_t & /*size*/, const int &roc_id)
 {
-    unsigned int trigger_bit = data[2]>>24;
-    int trg = (int) TI_Internal;
-    for(; (trigger_bit >> trg) > 0; ++trg)
-    {
-        if(trg >= MAX_Trigger) {
-            cout << "Unexpected trigger type" 
-                 << "0x" << hex << (data[2]>>24)
-                 << endl;
-            trg = 0;
-            break;
-        }
-    }
-
-    myHandler->UpdateTrgType((PRadTriggerType)trg);
+    myHandler->UpdateTrgType(bit_word_to_trigger_type(data[2]>>24));
 
     if(roc_id == PRadTS)
         myHandler->UpdateLMSPhase((data[8]&0xff0000)>>16);
+}
+
+void PRadEvioParser::parseEPICS(const uint32_t *data)
+{
+    c_parser->OpenBuffer((char*) data);
+
+    while(c_parser->ParseLine())
+    {
+        if(c_parser->NbofElements() == 2) {
+            float number = stof(c_parser->TakeFirst());
+            string name = c_parser->TakeFirst();
+            myHandler->UpdateEPICS(name, number);
+        }
+    }
 }

@@ -6,6 +6,7 @@
 enum PRadEventType
 {
     CODA_Unknown = 0x0,
+    EPICS_Info = 0x1f,
     CODA_Event = 0x81,
     CODA_Prestart = 0x11,
     CODA_Go = 0x12,
@@ -14,7 +15,7 @@ enum PRadEventType
 
 enum PRadTriggerType
 {
-    TI_Internal = 0,
+    TI_Error = 0,
     PULS_Pedestal,
     PHYS_TotalSum,
     LMS_Led,
@@ -61,12 +62,16 @@ enum PRadROCID
     PRadROC_3 = 6,
     PRadSRS_1 = 7,
     PRadSRS_2 = 8,
+    EPICS_IOC = 129,
 };
 
 enum PRadBankID
 {
     TI_BANK = 0xe10a,
     TAG_BANK = 0xe10b,
+    CONF_BANK = 0xe10e,
+    EPINFO_BANK = 0xe112,
+    EPICS_BANK = 0xe114,
     GEM_BANK = 0xe11f,
     FASTBUS_BANK = 0xe120,
     TDC_BANK = 0xe121,

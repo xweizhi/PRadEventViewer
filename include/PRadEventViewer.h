@@ -38,8 +38,8 @@ class QAction;
 QT_END_NAMESPACE
 
 enum HistType {
-    ModuleHist,
     EnergyTDCHist,
+    ModuleHist,
     DynodeSumHist,
     LMSHist,
     LMSAlphaHist,

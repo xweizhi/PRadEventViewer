@@ -15,15 +15,15 @@ ConfigParser::~ConfigParser()
     CloseFile();
 }
 
+void ConfigParser::AddCommentMarks(const string &c)
+{
+    comment_marks.push_back(c);
+}
+
 bool ConfigParser::OpenFile(const string &path)
 {
     infile.open(path);
     return infile.is_open();
-}
-
-void ConfigParser::AddCommentMarks(const string &c)
-{
-    comment_marks.push_back(c);
 }
 
 void ConfigParser::CloseFile()
@@ -31,15 +31,54 @@ void ConfigParser::CloseFile()
     infile.close();
 }
 
+void ConfigParser::OpenBuffer(char *buf)
+{
+    string buffer = buf;
+
+    string line;
+    for(auto c : buffer)
+    {
+        if(c != '\n') {
+            line += c;
+        } else {
+            lines.push(line);
+            line = "";
+        }
+    }
+}
+
+void ConfigParser::ClearBuffer()
+{
+    queue<string>().swap(lines);
+}
+
+string ConfigParser::GetLine()
+{
+    if(lines.size()) {
+        string out = lines.front();
+        lines.pop();
+        return out;
+    }
+
+    return "";
+}
 
 bool ConfigParser::ParseLine()
 {
-    string line;
-    bool not_end = getline(infile, line);
-    if(not_end) {
-        ParseLine(line);
+    if(infile.is_open()) {
+        string line;
+        bool not_end = getline(infile, line);
+        if(not_end) {
+            ParseLine(line);
+        }
+        return not_end;
+    } else {
+        if(!lines.size())
+            return false;
+        ParseLine(lines.front());
+        lines.pop();
+        return true;
     }
-    return not_end;
 }
 
 void ConfigParser::ParseLine(const string &line)

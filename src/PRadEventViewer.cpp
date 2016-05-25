@@ -259,8 +259,8 @@ void PRadEventViewer::createControlPanel()
             this, SLOT(changeCurrentEvent(int)));
 
     histTypeBox = new QComboBox();
-    histTypeBox->addItem(tr("Module Hist"));
     histTypeBox->addItem(tr("Energy&TDC Hist"));
+    histTypeBox->addItem(tr("Module Hist"));
     histTypeBox->addItem(tr("Dynode Hist"));
     histTypeBox->addItem(tr("LMS Hist"));
     histTypeBox->addItem(tr("LMS Alpha Hist"));
@@ -724,6 +724,7 @@ void PRadEventViewer::Refresh()
         break;
     case EnergyView:
         handler->UpdateEvent(event_index); // fetch data from handler
+        handler->PrintOutEPICS(event_index);
         ModuleAction(&HyCalModule::ShowEnergy);
         break;
     }
@@ -869,14 +870,6 @@ void PRadEventViewer::UpdateHistCanvas()
     gSystem->ProcessEvents();
     switch(histType) {
     default:
-    case ModuleHist:
-        if(selection != nullptr) {
-            histCanvas->UpdateHist(1, selection->GetHist("PHYS"));
-            histCanvas->UpdateHist(2, selection->GetHist("LMS"));
-            histCanvas->UpdateHist(3, selection->GetHist("PED"));
-        }
-        break;
-
     case EnergyTDCHist:
         if(selection != nullptr) {
             histCanvas->UpdateHist(1, selection->GetHist("PHYS"));
@@ -885,6 +878,14 @@ void PRadEventViewer::UpdateHistCanvas()
                 histCanvas->UpdateHist(2, tdc->GetHist());
         }
         histCanvas->UpdateHist(3, handler->GetEnergyHist());
+        break;
+
+    case ModuleHist:
+        if(selection != nullptr) {
+            histCanvas->UpdateHist(1, selection->GetHist("PHYS"));
+            histCanvas->UpdateHist(2, selection->GetHist("LMS"));
+            histCanvas->UpdateHist(3, selection->GetHist("PED"));
+        }
         break;
 
     case DynodeSumHist: {

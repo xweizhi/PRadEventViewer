@@ -17,7 +17,7 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
     AddHist("LMS", "Integer", (channelName + " LED Source").c_str(), 2048, 0, 8191);
 
     // default hist-trigger mapping
-    MapHist("PED", TI_Internal);
+    MapHist("PED", TI_Error);
     MapHist("PED", PULS_Pedestal);
     MapHist("PED", PULS_Clock);
     MapHist("PHYS", PHYS_TotalSum);

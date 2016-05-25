@@ -16,15 +16,19 @@ public:
     void AddCommentMarks(const std::string &c);
     bool OpenFile(const std::string &path);
     void CloseFile();
+    void OpenBuffer(char *);
+    void ClearBuffer();
     bool ParseLine();
     void ParseLine(const std::string &line);
     size_t NbofElements() {return elements.size();};
+    std::string GetLine();
     std::string TakeFirst();
 
 private:
     std::string splitters;
     std::string white_space;
     std::vector<std::string> comment_marks;
+    std::queue<std::string> lines;
     std::queue<std::string> elements;
     std::ifstream infile;
 
