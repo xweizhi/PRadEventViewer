@@ -32,7 +32,7 @@ public:
     template<typename... Args>
     void AddHist(const std::string &name, const std::string &type, Args&&... args);
     void MapHist(const std::string &name, PRadTriggerType type);
-    TH1 *GetHist(const std::string &name = "ADC");
+    TH1 *GetHist(const std::string &name = "PHYS");
     TH1 *GetHist(PRadTriggerType type) {return hist[(size_t)type];};
     int GetOccupancy() {return occupancy;};
     std::string &GetName() {return channelName;};
