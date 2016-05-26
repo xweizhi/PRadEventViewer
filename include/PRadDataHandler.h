@@ -121,6 +121,7 @@ public:
     void OnlineMode() {onlineMode = true;};
     void OfflineMode() {onlineMode = false;};
     void BuildChannelMap();
+    void SaveHistograms(const string &path);
     PRadDAQUnit *FindChannel(const ChannelAddress &daqInfo);
     PRadDAQUnit *FindChannel(const string &name);
     PRadDAQUnit *FindChannel(const unsigned short &id);
@@ -148,7 +149,6 @@ private:
     deque< EventData > energyData;
     EventData newEvent, lastEvent;
     TH1D *energyHist;
-
 };
 
 #endif

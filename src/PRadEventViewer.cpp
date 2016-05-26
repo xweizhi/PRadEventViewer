@@ -9,8 +9,6 @@
 
 #include "TApplication.h"
 #include "TSystem.h"
-#include "TFile.h"
-#include "TList.h"
 #include "TH1.h"
 #include "TF1.h"
 #include "TSpectrum.h"
@@ -1057,29 +1055,9 @@ void PRadEventViewer::saveHistToFile()
     if(rootFile.isEmpty()) // did not open a file
         return;
 
-    TFile *f = new TFile(rootFile.toStdString().c_str(), "recreate");
-
-    handler->GetEnergyHist()->Write();
-
-    vector<PRadDAQUnit *> channelList = handler->GetChannelList();
-    auto comp_func = [](PRadDAQUnit *a, PRadDAQUnit *b) {return (*a) < (*b);};
-    sort(channelList.begin(), channelList.end(), comp_func);
-
-    for(auto channel : channelList)
-    {
-        TList hlist;
-        std::vector<TH1*> hists = channel->GetHistList();
-        for(auto hist : hists)
-        {
-            hlist.Add(hist);
-        }
-        hlist.Write(channel->GetName().c_str(), TObject::kSingleKey);
-    }
-
-    f->Write();
-    f->Close();
+    handler->SaveHistograms(rootFile.toStdString());
+    
     rStatusLabel->setText(tr("All histograms are saved to ") + rootFile);
-
 }
 
 void PRadEventViewer::savePedestalFile()

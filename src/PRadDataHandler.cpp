@@ -14,6 +14,8 @@
 #include "PRadEvioParser.h"
 #include "HyCalModule.h"
 #include "PRadTDCGroup.h"
+#include "TFile.h"
+#include "TList.h"
 #include "TH1.h"
 
 //#define recon_test
@@ -110,6 +112,9 @@ void PRadDataHandler::BuildChannelMap()
         }
         tdcGroup->AddChannel(channel);
     }
+
+    auto comp_func = [](PRadDAQUnit *a, PRadDAQUnit *b) {return (*a) < (*b);};
+    sort(channelList.begin(), channelList.end(), comp_func);
 }
 
 // erase the data container
@@ -223,8 +228,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
         // so lock the thread to prevent concurrent access
         myLock.lock();
 #endif
-        if(channel->IsHyCalChannel())
-            totalE += channel->Calibration(sparVal); // calculate total energy of this event
+        totalE += channel->Calibration(sparVal); // calculate total energy of this event
         newEvent.add_adc(word); // store this data word
 #ifdef MULTI_THREAD
         myLock.unlock();
@@ -409,4 +413,24 @@ void PRadDataHandler::PrintOutEPICS(const int &event)
                  << endl;
         }
     }
+}
+
+void PRadDataHandler::SaveHistograms(const string &path)
+{
+    TFile *f = new TFile(path.c_str(), "recreate");
+
+    energyHist->Write();
+
+    for(auto channel : channelList)
+    {
+        TList hlist;
+        std::vector<TH1*> hists = channel->GetHistList();
+        for(auto hist : hists)
+        {
+            hlist.Add(hist);
+        }
+        hlist.Write(channel->GetName().c_str(), TObject::kSingleKey);
+    }
+
+    f->Close();
 }
