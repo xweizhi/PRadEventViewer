@@ -112,6 +112,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             {
             default:
             case EPINFO_BANK: // bank contains the epics information
+            case TAG_BANK:
                 break;
             case EVINFO_BANK: // Bank contains the event information
                 eventNb = buffer[index];
