@@ -40,7 +40,6 @@ public:
     std::string &GetName() {return channelName;};
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
-    const bool &IsHyCalChannel() {return in_hycal;};
     const double &GetCalibrationFactor() {return calf;};
     const double &GetEnergy() {return energy;};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
@@ -72,7 +71,6 @@ protected:
     unsigned short channelID;
     double calf;
     double energy;
-    bool in_hycal;
     TH1 *hist[MAX_Trigger];
     std::unordered_map<std::string, TH1*> histograms;
 };

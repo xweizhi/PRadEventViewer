@@ -596,7 +596,7 @@ void PRadEventViewer::readPedestalData(const QString &filename)
             val = std::stod(c_parser.TakeFirst());
             sigma = std::stod(c_parser.TakeFirst());
 
-            if((tmp = handler->FindChannel(daqInfo)) != nullptr)
+            if((tmp = handler->GetChannel(daqInfo)) != nullptr)
                 tmp->UpdatePedestal(val, sigma);
         }
     }
@@ -626,7 +626,7 @@ void PRadEventViewer::readCalibrationData(const QString &filename)
             name = c_parser.TakeFirst();
             calFactor = std::stod(c_parser.TakeFirst());
 
-            PRadDAQUnit *channel = handler->FindChannel(name);
+            PRadDAQUnit *channel = handler->GetChannel(name);
             if(channel != nullptr)
                 channel->UpdateCalibrationFactor(calFactor);
         }
@@ -888,8 +888,8 @@ void PRadEventViewer::UpdateHistCanvas()
         break;
 
     case DynodeSumHist: {
-        PRadDAQUnit *dsum = handler->FindChannel("DSUM");
-        if(handler->FindChannel("DSUM") != nullptr) {
+        PRadDAQUnit *dsum = handler->GetChannel("DSUM");
+        if(handler->GetChannel("DSUM") != nullptr) {
             histCanvas->UpdateHist(1, dsum->GetHist("PHYS"));
             histCanvas->UpdateHist(2, dsum->GetHist("PED"));
             histCanvas->UpdateHist(3, dsum->GetHist("LMS"));
@@ -899,7 +899,7 @@ void PRadEventViewer::UpdateHistCanvas()
     case LMSHist:
         for(int i = 1; i <= 3; ++i)
         {
-            PRadDAQUnit *lmsChannel = handler->FindChannel("LMS" + std::to_string(i));
+            PRadDAQUnit *lmsChannel = handler->GetChannel("LMS" + std::to_string(i));
             if(lmsChannel)
                 histCanvas->UpdateHist(i, lmsChannel->GetHist("LMS"));
         }
@@ -908,7 +908,7 @@ void PRadEventViewer::UpdateHistCanvas()
     case LMSAlphaHist:
         for(int i = 1; i <= 3; ++i)
         {
-            PRadDAQUnit *lmsChannel = handler->FindChannel("LMS" + std::to_string(i));
+            PRadDAQUnit *lmsChannel = handler->GetChannel("LMS" + std::to_string(i));
             if(lmsChannel)
                 histCanvas->UpdateHist(i, lmsChannel->GetHist("PHYS"));
         }
@@ -1159,7 +1159,7 @@ void PRadEventViewer::fitHistogram()
     if (dialog.exec() == QDialog::Accepted) {
         // If the user didn't dismiss the dialog, do something with the fields
         QString ch_name = fields.at(0)->text();
-        PRadDAQUnit *ch = handler->FindChannel(ch_name.toStdString());
+        PRadDAQUnit *ch = handler->GetChannel(ch_name.toStdString());
         if(ch == nullptr) {
             QMessageBox::critical(this,
                                   "Fit Histogram Failure",

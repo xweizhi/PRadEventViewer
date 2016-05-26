@@ -314,7 +314,7 @@ void PRadDataHandler::EndofThisEvent()
     HyCalClusters cluster;
     for(auto &adc : newEvent.adc_data)
     {
-        HyCalModule *module = dynamic_cast<HyCalModule*>(FindChannel(adc.channel_id));
+        HyCalModule *module = dynamic_cast<HyCalModule*>(GetChannel(adc.channel_id));
         if(module)
             cluster.AddModule(module->GetGeometry().x, module->GetGeometry().y, module->Calibration(adc.value));
     }
@@ -359,7 +359,7 @@ void PRadDataHandler::UpdateEvent(int idx)
 }
 
 // find channels
-PRadDAQUnit *PRadDataHandler::FindChannel(const ChannelAddress &daqInfo)
+PRadDAQUnit *PRadDataHandler::GetChannel(const ChannelAddress &daqInfo)
 {
     daq_iter it = map_daq.find(daqInfo);
     if(it == map_daq.end())
@@ -367,7 +367,7 @@ PRadDAQUnit *PRadDataHandler::FindChannel(const ChannelAddress &daqInfo)
     return it->second;
 }
 
-PRadDAQUnit *PRadDataHandler::FindChannel(const string &name)
+PRadDAQUnit *PRadDataHandler::GetChannel(const string &name)
 {
     name_iter it = map_name.find(name);
     if(it == map_name.end())
@@ -375,7 +375,7 @@ PRadDAQUnit *PRadDataHandler::FindChannel(const string &name)
     return it->second;
 }
 
-PRadDAQUnit *PRadDataHandler::FindChannel(const unsigned short &id)
+PRadDAQUnit *PRadDataHandler::GetChannel(const unsigned short &id)
 {
     if(id >= channelList.size())
         return nullptr;

@@ -122,9 +122,9 @@ public:
     void OfflineMode() {onlineMode = false;};
     void BuildChannelMap();
     void SaveHistograms(const string &path);
-    PRadDAQUnit *FindChannel(const ChannelAddress &daqInfo);
-    PRadDAQUnit *FindChannel(const string &name);
-    PRadDAQUnit *FindChannel(const unsigned short &id);
+    PRadDAQUnit *GetChannel(const ChannelAddress &daqInfo);
+    PRadDAQUnit *GetChannel(const string &name);
+    PRadDAQUnit *GetChannel(const unsigned short &id);
     PRadTDCGroup *GetTDCGroup(const string &name);
     PRadTDCGroup *GetTDCGroup(const ChannelAddress &addr);
     const unordered_map< string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};

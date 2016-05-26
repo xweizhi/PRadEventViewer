@@ -7,7 +7,7 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const std::string &tdc)
 : channelName(name), address(daqAddr), pedestal(Pedestal(0, 0)),
   tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), calf(0),
-  energy(0), in_hycal(false)
+  energy(0)
 {
     std::string hist_name;
 
