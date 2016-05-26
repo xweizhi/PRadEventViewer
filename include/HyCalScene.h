@@ -36,7 +36,7 @@ public:
     void AddTextBox(QString &name, QRectF &textBox, QColor &bkgColor);
     void addModule(HyCalModule *module);
     void addItem(QGraphicsItem *item);
-    const QVector<HyCalModule *> &GetModuleList() {return moduleList;};
+    QVector<HyCalModule *> GetModuleList() {return moduleList;};
 
 protected:
     void drawForeground(QPainter *painter, const QRectF &rect);

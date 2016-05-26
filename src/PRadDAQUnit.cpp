@@ -98,6 +98,18 @@ TH1 *PRadDAQUnit::GetHist(const std::string &n)
     return it->second;
 }
 
+std::vector<TH1*> PRadDAQUnit::GetHistList()
+{
+    std::vector<TH1*> hlist;
+
+    for(auto &ele : histograms)
+    {
+        hlist.push_back(ele.second);
+    }
+
+    return hlist;
+}
+
 void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 {
     pedestal = Pedestal(m, s);

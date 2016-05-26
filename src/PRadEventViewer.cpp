@@ -10,6 +10,7 @@
 #include "TApplication.h"
 #include "TSystem.h"
 #include "TFile.h"
+#include "TList.h"
 #include "TH1.h"
 #include "TF1.h"
 #include "TSpectrum.h"
@@ -1060,13 +1061,25 @@ void PRadEventViewer::saveHistToFile()
 
     handler->GetEnergyHist()->Write();
 
-    QVector<HyCalModule*> moduleList = HyCal->GetModuleList();
-    for(auto &module : moduleList)
+    vector<PRadDAQUnit *> channelList = handler->GetChannelList();
+    auto comp_func = [](PRadDAQUnit *a, PRadDAQUnit *b) {return (*a) < (*b);};
+    sort(channelList.begin(), channelList.end(), comp_func);
+
+    for(auto channel : channelList)
     {
-        module->GetHist("PHYS")->Write();
+        TList hlist;
+        std::vector<TH1*> hists = channel->GetHistList();
+        for(auto hist : hists)
+        {
+            hlist.Add(hist);
+        }
+        hlist.Write(channel->GetName().c_str(), TObject::kSingleKey);
     }
+
+    f->Write();
     f->Close();
     rStatusLabel->setText(tr("All histograms are saved to ") + rootFile);
+
 }
 
 void PRadEventViewer::savePedestalFile()

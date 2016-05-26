@@ -123,7 +123,7 @@ public:
     PRadTDCGroup *GetTDCGroup(const string &name);
     PRadTDCGroup *GetTDCGroup(const ChannelAddress &addr);
     const unordered_map< string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};
-    const vector< PRadDAQUnit* > &GetChannelList() {return channelList;};
+    vector< PRadDAQUnit* > GetChannelList() {return channelList;};
 
 private:
     PRadEvioParser *parser;

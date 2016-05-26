@@ -2,6 +2,7 @@
 #define PRAD_DAQ_UNIT_H
 
 #include <string>
+#include <vector>
 #include <unordered_map>
 #include "TH1.h"
 #include "datastruct.h"
@@ -34,6 +35,7 @@ public:
     void MapHist(const std::string &name, PRadTriggerType type);
     TH1 *GetHist(const std::string &name = "PHYS");
     TH1 *GetHist(PRadTriggerType type) {return hist[(size_t)type];};
+    std::vector<TH1*> GetHistList();
     int GetOccupancy() {return occupancy;};
     std::string &GetName() {return channelName;};
     void AssignID(const unsigned short &id) {channelID = id;};
@@ -43,6 +45,22 @@ public:
     const double &GetEnergy() {return energy;};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
     virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
+
+    bool operator < (const PRadDAQUnit &rhs) const
+    {
+        int lhs_val = 10000*(int)channelName.at(0);
+        int rhs_val = 10000*(int)rhs.channelName.at(0);
+
+        size_t idx = channelName.find_first_of("1234567890");
+        if(idx != std::string::npos)
+            lhs_val += std::stoi(channelName.substr(idx, -1));
+
+        idx = rhs.channelName.find_first_of("1234567890");
+        if(idx != std::string::npos)
+            rhs_val += std::stoi(rhs.channelName.substr(idx, -1));
+
+        return lhs_val < rhs_val;
+    }
 
 protected:
     std::string channelName;
