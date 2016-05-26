@@ -21,13 +21,9 @@ enum PRadTriggerType
     LMS_Led,
     LMS_Alpha,
     PHYS_TaggerE,
-    PULS_Clock,
+    PHYS_Scintillator,
     MAX_Trigger,
 };
-
-#define PHYS_TYPE (PHYS_TotalSum | PHYS_TaggerE)
-#define LMS_TYPE (LMS_Led | LMS_Alpha)
-#define PULS_TYPE (PULS_Pedestal | PULS_Clock)
 
 enum EvioBankType
 {

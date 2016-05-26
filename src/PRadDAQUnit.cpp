@@ -19,9 +19,9 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
     // default hist-trigger mapping
     MapHist("PED", TI_Error);
     MapHist("PED", PULS_Pedestal);
-    MapHist("PED", PULS_Clock);
     MapHist("PHYS", PHYS_TotalSum);
     MapHist("PHYS", PHYS_TaggerE);
+    MapHist("PHYS", PHYS_Scintillator);
     MapHist("LMS", LMS_Led);
     MapHist("PED", LMS_Alpha);
 

@@ -26,7 +26,8 @@ class PRadTDCGroup;
 class TH1I;
 class TH1D;
 
-typedef struct ChannelData {
+typedef struct ChannelData
+{
     unsigned short channel_id;
     unsigned short value;
     ChannelData() : channel_id(0), value(0) {};
@@ -34,7 +35,8 @@ typedef struct ChannelData {
     : channel_id(i), value(v) {};       
 } TDC_Data, ADC_Data;
 
-struct EventData {
+struct EventData
+{
     unsigned char type;
     unsigned char lms_phase;
     unsigned int time;
@@ -51,7 +53,8 @@ struct EventData {
     void add_tdc(const TDC_Data &t) {tdc_data.push_back(t);};
 };
 
-struct EPICSValue {
+struct EPICSValue
+{
     int att_event;
     float value;
     EPICSValue() : att_event(0), value(0) {};
@@ -64,7 +67,8 @@ struct EPICSValue {
 };
 
 // a simple hash function for DAQ configuration
-namespace std {
+namespace std
+{
     template <>
     struct hash<ChannelAddress>
     {
@@ -89,7 +93,7 @@ typedef unordered_map< ChannelAddress, PRadTDCGroup* >::iterator tdc_daq_iter;
 class PRadDataHandler
 {
 public:
-   PRadDataHandler();
+    PRadDataHandler();
     virtual ~PRadDataHandler();
     void AddChannel(PRadDAQUnit *channel);
     void AddTDCGroup(PRadTDCGroup *group);

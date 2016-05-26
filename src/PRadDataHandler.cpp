@@ -213,8 +213,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
 
     channel->GetHist((PRadTriggerType)newEvent.type)->Fill(adcData.val);
 
-    // zero suppression
-    unsigned short sparVal = channel->Sparsification(adcData.val, newEvent.type&PHYS_TYPE);
+    unsigned short sparVal = channel->Sparsification(adcData.val, (newEvent.type != LMS_Led));
 
     if(sparVal) // only store events above pedestal in memory
     {
@@ -298,7 +297,10 @@ void PRadDataHandler::EndofThisEvent()
         energyData.push_back(newEvent); // save event
     }
 
-    if(newEvent.type & PHYS_TYPE)
+    if(newEvent.type == PHYS_TotalSum ||
+       newEvent.type == PHYS_TaggerE  ||
+       newEvent.type == PHYS_Scintillator
+      )
         energyHist->Fill(totalE); // fill energy histogram
 
 #ifdef recon_test
