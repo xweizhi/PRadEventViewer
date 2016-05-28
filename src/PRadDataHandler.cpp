@@ -112,9 +112,6 @@ void PRadDataHandler::BuildChannelMap()
         }
         tdcGroup->AddChannel(channel);
     }
-
-    auto comp_func = [](PRadDAQUnit *a, PRadDAQUnit *b) {return (*a) < (*b);};
-    sort(channelList.begin(), channelList.end(), comp_func);
 }
 
 // erase the data container
@@ -393,11 +390,17 @@ void PRadDataHandler::PrintOutEPICS(const int &event)
 
 void PRadDataHandler::SaveHistograms(const string &path)
 {
+
+    auto comp_func = [](PRadDAQUnit *a, PRadDAQUnit *b) {return (*a) < (*b);};
+    auto chList = channelList;
+
+    sort(chList.begin(), chList.end(), comp_func);
+
     TFile *f = new TFile(path.c_str(), "recreate");
 
     energyHist->Write();
 
-    for(auto channel : channelList)
+    for(auto channel : chList)
     {
         TList hlist;
         std::vector<TH1*> hists = channel->GetHistList();

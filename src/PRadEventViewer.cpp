@@ -737,7 +737,6 @@ void PRadEventViewer::Refresh()
     }
     case EnergyView:
         handler->UpdateEvent(event_index); // fetch data from handler
-        handler->PrintOutEPICS(event_index);
         ModuleAction(&HyCalModule::ShowEnergy);
         break;
     }
