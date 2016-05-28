@@ -41,8 +41,6 @@ enum HistType {
     EnergyTDCHist,
     ModuleHist,
     DynodeSumHist,
-    LMSHist,
-    LMSAlphaHist,
 };
 
 enum AnnoType {

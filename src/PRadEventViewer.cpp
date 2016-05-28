@@ -261,8 +261,6 @@ void PRadEventViewer::createControlPanel()
     histTypeBox->addItem(tr("Energy&TDC Hist"));
     histTypeBox->addItem(tr("Module Hist"));
     histTypeBox->addItem(tr("Dynode Hist"));
-    histTypeBox->addItem(tr("LMS Hist"));
-    histTypeBox->addItem(tr("LMS Alpha Hist"));
     annoTypeBox = new QComboBox();
     annoTypeBox->addItem(tr("No Annotation"));
     annoTypeBox->addItem(tr("Module ID"));
@@ -891,6 +889,8 @@ void PRadEventViewer::UpdateHistCanvas()
             PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
             if(tdc)
                 histCanvas->UpdateHist(2, tdc->GetHist());
+            else
+                histCanvas->UpdateHist(2, selection->GetHist("LMS"));
         }
         histCanvas->UpdateHist(3, handler->GetEnergyHist());
         break;
@@ -903,33 +903,16 @@ void PRadEventViewer::UpdateHistCanvas()
         }
         break;
 
-    case DynodeSumHist: {
+    case DynodeSumHist:
+      {
         PRadDAQUnit *dsum = handler->GetChannel("DSUM");
         if(handler->GetChannel("DSUM") != nullptr) {
             histCanvas->UpdateHist(1, dsum->GetHist("PHYS"));
             histCanvas->UpdateHist(2, dsum->GetHist("PED"));
             histCanvas->UpdateHist(3, dsum->GetHist("LMS"));
         }
-        break; }
-
-    case LMSHist:
-        for(int i = 1; i <= 3; ++i)
-        {
-            PRadDAQUnit *lmsChannel = handler->GetChannel("LMS" + std::to_string(i));
-            if(lmsChannel)
-                histCanvas->UpdateHist(i, lmsChannel->GetHist("LMS"));
-        }
+      }
         break;
-
-    case LMSAlphaHist:
-        for(int i = 1; i <= 3; ++i)
-        {
-            PRadDAQUnit *lmsChannel = handler->GetChannel("LMS" + std::to_string(i));
-            if(lmsChannel)
-                histCanvas->UpdateHist(i, lmsChannel->GetHist("PHYS"));
-        }
-        break;
-
      }
 }
 
