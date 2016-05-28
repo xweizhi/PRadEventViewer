@@ -9,6 +9,7 @@
 #include <string>
 #include "HyCalModule.h"
 #include "PRadEventViewer.h"
+#include "PRadHVSystem.h"
 
 #if QT_VERSION >= 0x500000
 #include <QtWidgets>
@@ -20,11 +21,10 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
                          const QString &rid,
                          const ChannelAddress &daqAddr,
                          const QString &tdc,
-                         const HVSetup &hvInfo,
                          const GeoInfo &geo)
 : PRadDAQUnit(rid.toStdString(), daqAddr, tdc.toStdString()),
-  console(p), name(rid), hvSetup(hvInfo), geometry(geo),
-  m_hover(false), m_selected(false), color(Qt::white), font(QFont("times",10))
+  console(p), name(rid), geometry(geo), m_hover(false), m_selected(false),
+  color(Qt::white), font(QFont("times",10))
 {
     // initialize the item
     Initialize();
@@ -153,23 +153,6 @@ void HyCalModule::setSelected(bool selected)
 void HyCalModule::SetColor(const double &val)
 {
     color = console->GetColor(val);
-}
-
-// update high voltage
-void HyCalModule::ShowVoltage()
-{
-    if(!hvSetup.volt.ON) {
-        color = Qt::white;
-        return;
-    }
-
-    SetColor(hvSetup.volt.Vmon);
-    // some warning if currentHV is far away from setHV
-}
-
-void HyCalModule::ShowVSet()
-{
-    SetColor(hvSetup.volt.Vset);
 }
 
 // calculate module position according to its id

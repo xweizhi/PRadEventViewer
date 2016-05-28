@@ -268,30 +268,6 @@ void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
     newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
 }
 
-
-// update High Voltage
-void PRadDataHandler::FeedData(CAENHVData &hvData)
-{
-    name_iter it = map_name.find(hvData.name);
-
-    if(it == map_name.end())
-        return;
-
-    PRadDAQUnit *channel = it->second;
-    HyCalModule *module = dynamic_cast<HyCalModule *>(channel);
-    if(module == nullptr)
-        return;
-
-    if(module->GetHVInfo() == hvData.config) {
-        module->UpdateHV(hvData.Vmon, hvData.Vset, hvData.ON);
-    } else {
-        cerr << "ERROR: incorrect HV Configuration! "
-             << "Module: " << hvData.name << endl;
-        return;
-    }
-
-}
-
 // signal of event end, save event or discard event in online mode
 void PRadDataHandler::EndofThisEvent()
 {

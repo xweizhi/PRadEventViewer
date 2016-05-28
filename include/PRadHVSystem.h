@@ -1,91 +1,30 @@
 #ifndef PRAD_HV_SYSTEM_H
 #define PRAD_HV_SYSTEM_H
 
-#include "CAENHVWrapper.h"
+#include "CAENHVSystem.h"
 #include <vector>
 #include <string>
 #include <thread>
 #include <mutex>
+#include <unordered_map>
 #include "PRadException.h"
 #include "datastruct.h"
 
 class PRadEventViewer;
-
 class PRadHVSystem
 {
 public:
-    class CAEN_PrimaryChannel
+    struct Voltage
     {
-    public:
-        int handle;
-        unsigned short slot;
-        unsigned short channel;
-        bool initialized;
-
-        CAEN_PrimaryChannel() : handle(-1), slot(-1), channel(-1), initialized(false) {};
-        CAEN_PrimaryChannel(const int &h, const unsigned short &s, const unsigned short &c = 0)
-        : handle(h), slot(s), channel(c), initialized(true) {};
-        int SetPower(const bool& on);
-        int SetVoltage(const float& v);
+       float Vmon;
+       float Vset;
+       bool ON;
+       Voltage() : Vmon(0), Vset(0), ON(false) {};
+       Voltage(float vm, float vs, bool o = false) : Vmon(vm), Vset(vs), ON(o) {};
     };
 
-    class CAEN_Board
-    {
-    public:
-        std::string model;
-        std::string desc;
-        unsigned short slot;
-        unsigned short nChan;
-        unsigned short serNum;
-        unsigned char fmwLSB;
-        unsigned char fmwMSB;
-        CAEN_PrimaryChannel primaryCh;
-        // constructor
-        CAEN_Board() {};
-        CAEN_Board(std::string m, std::string d, unsigned short s, unsigned short n,
-                   unsigned short ser, unsigned char lsb, unsigned char msb)
-        : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb),
-          primaryCh(CAEN_PrimaryChannel())
-        {};
-        CAEN_Board(char* m, char* d, unsigned short s, unsigned short n,
-                   unsigned short ser, unsigned char lsb, unsigned char msb)
-        : model(m), desc(d), slot(s), nChan(n), serNum(ser), fmwLSB(lsb), fmwMSB(msb),
-          primaryCh(CAEN_PrimaryChannel())
-        {};
-     };
 
-    class CAEN_Crate
-    {
-    public:
-        unsigned char id;
-        std::string name;
-        std::string ip;
-        CAENHV::CAENHV_SYSTEM_TYPE_t sysType;
-        int linkType;
-        std::string username;
-        std::string password;
-        int handle;
-        bool mapped;
-        std::vector<CAEN_Board> boardList;
-
-        // constructor
-        CAEN_Crate() {};
-        CAEN_Crate(unsigned char i, std::string n, std::string p,
-                   CAENHV:: CAENHV_SYSTEM_TYPE_t type, int link,
-                   std::string user, std::string pwd)
-        : id(i), name(n), ip(p), sysType(type), linkType(link),
-          username(user), password(pwd), handle(-1), mapped(false) {};
-//        void Initialize() throw(PRadException);
-//        void DeInitialize() throw(PRadException);
-        void clear() {handle = -1; mapped = false; boardList.clear();};
-    };
-
-    enum ShowErrorType
-    {
-        ShowError,
-        ShowAll,
-    };
-
+public:
     PRadHVSystem(PRadEventViewer *p);
     virtual ~PRadHVSystem();
     void AddCrate(const std::string &name,
@@ -95,35 +34,32 @@ public:
                   const int &linkType = LINKTYPE_TCPIP,
                   const std::string &username = "admin",
                   const std::string &password = "admin");
-    void Initialize();
-    void DeInitialize();
     void Connect();
     void Disconnect();
-    int GetCrateHandle(const std::string &name);
     void StartMonitor();
     void StopMonitor();
-    void SetPower(const bool &val);
-    void SetPower(const ChannelAddress &config, const bool &val);
-    void SetVoltage(const char *name, const ChannelAddress &config, const float &val);
     void ReadVoltage();
+    void CheckStatus();
     void SaveCurrentSetting(const std::string &path);
     void RestoreSetting(const std::string &path);
-    void PrintOut();
+    CAEN_Crate *GetCrate(const std::string &name);
+    CAEN_Crate *GetCrate(const int &id);
+    CAEN_Board *GetBoard(const std::string &name, const unsigned short &slot);
+    CAEN_Board *GetBoard(const int &id, const unsigned short &slot);
+    CAEN_Channel *GetChannel(const std::string &name, const unsigned short &slot, const unsigned short &channel);
+    CAEN_Channel *GetChannel(const int &id, const unsigned short &slot, const unsigned short &channel);
+    Voltage GetVoltage(const std::string &name, const unsigned short &slot, const unsigned short &channel);
+    Voltage GetVoltage(const int &id, const unsigned short &slot, const unsigned short &channel);
 
 private:
     PRadEventViewer *console;
-    std::vector<CAEN_Crate> crateList;
+    std::vector<CAEN_Crate*> crateList;
     volatile bool alive;
     std::thread queryThread;
     std::mutex locker;
-    void getCrateMap(CAEN_Crate &crate);
-    void heartBeat();
+    std::unordered_map<int, CAEN_Crate*> crate_id_map;
+    std::unordered_map<std::string, CAEN_Crate*> crate_name_map;
     void queryLoop();
-    void checkStatus();
-    void checkVoltage(const CAENHVData &hvData);
-    void showError(const std::string &prefix, const int &err, ShowErrorType type = ShowError);
-    void showChError(const char *n, const unsigned int &ebit);
-    float getLimit(const char *name = "");
 };
 
 #endif

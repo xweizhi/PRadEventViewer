@@ -66,7 +66,7 @@ enum PRadBankID
     TI_BANK = 0xe10a,
     TAG_BANK = 0xe10b,
     CONF_BANK = 0xe10e,
-    EPINFO_BANK = 0xe112,
+    LIVE_BANK = 0xe112,
     EPICS_BANK = 0xe114,
     GEM_BANK = 0xe11f,
     FASTBUS_BANK = 0xe120,
@@ -174,15 +174,6 @@ struct GEMAPVData
         unsigned short first;
         unsigned short second;
     } val;
-};
-
-struct CAENHVData
-{
-    ChannelAddress config;
-    std::string name;
-    bool ON;
-    float Vmon;
-    float Vset;
 };
 
 #endif

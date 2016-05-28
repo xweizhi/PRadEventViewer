@@ -66,6 +66,7 @@ protected:
     ChannelAddress address;
     Pedestal pedestal;
     std::string tdcGroup;
+    ChannelAddress hv_addr;
     int occupancy;
     unsigned short sparsify;
     unsigned short channelID;

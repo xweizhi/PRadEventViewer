@@ -211,7 +211,7 @@ void PRadEventViewer::createMainMenu()
     hvDisableAction->setEnabled(false);
     hvSaveAction = hvMenu->addAction(tr("Save HV Setting"));
     hvSaveAction->setEnabled(false);
-    hvRestoreAction = hvMenu->addAction(tr("restore HV Setting"));
+    hvRestoreAction = hvMenu->addAction(tr("Restore HV Setting"));
     hvRestoreAction->setEnabled(false);
 
     connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
@@ -434,15 +434,12 @@ void PRadEventViewer::readModuleList()
 
     QString moduleName;
     ChannelAddress daqAddr;
+    ChannelAddress hvAddr;
     QString tdcGroup;
-    HyCalModule::HVSetup hvInfo;
     HyCalModule::GeoInfo geometry;
 
     // some info that is not read from list
     // initialize first
-    hvInfo.volt.Vmon = 0;
-    hvInfo.volt.Vset = 0;
-    hvInfo.volt.ON = false;
 
     while (c_parser.ParseLine())
     {
@@ -462,11 +459,12 @@ void PRadEventViewer::readModuleList()
             geometry.x = std::stod(c_parser.TakeFirst());
             geometry.y = std::stod(c_parser.TakeFirst());
 
-            hvInfo.config.crate = std::stoi(c_parser.TakeFirst());
-            hvInfo.config.slot = std::stoi(c_parser.TakeFirst());
-            hvInfo.config.channel = std::stoi(c_parser.TakeFirst());
+            hvAddr.crate = std::stoi(c_parser.TakeFirst());
+            hvAddr.slot = std::stoi(c_parser.TakeFirst());
+            hvAddr.channel = std::stoi(c_parser.TakeFirst());
 
-            HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, hvInfo, geometry);
+            HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, geometry);
+            newModule->UpdateHVSetup(hvAddr);
             HyCal->addModule(newModule);
             handler->RegisterChannel(newModule);
         } else {
@@ -491,7 +489,6 @@ void PRadEventViewer::readSpecialChannels()
     std::string moduleName;
     ChannelAddress daqAddr;
     std::string tdcGroup;
-    HyCalModule::HVSetup hvInfo;
 
     // some info that is not read from list
     while (c_parser.ParseLine())
@@ -716,11 +713,30 @@ void PRadEventViewer::Refresh()
         ModuleAction(&HyCalModule::ShowOccupancy);
         break;
     case HighVoltageView:
-        ModuleAction(&HyCalModule::ShowVoltage);
+    {
+        auto moduleList = HyCal->GetModuleList();
+        for(auto module : moduleList)
+        {
+            ChannelAddress hv_addr = module->GetHVInfo();
+            PRadHVSystem::Voltage volt = hvSystem->GetVoltage(hv_addr.crate, hv_addr.slot, hv_addr.channel);
+            if(!volt.ON)
+                module->SetColor(Qt::white);
+            else
+                module->SetColor(energySpectrum->GetColor(volt.Vmon));
+        }
         break;
+    }
     case VoltageSetView:
-        ModuleAction(&HyCalModule::ShowVSet);
+    {
+        auto moduleList = HyCal->GetModuleList();
+        for(auto module : moduleList)
+        {
+            ChannelAddress hv_addr = module->GetHVInfo();
+            PRadHVSystem::Voltage volt = hvSystem->GetVoltage(hv_addr.crate, hv_addr.slot, hv_addr.channel);
+            module->SetColor(energySpectrum->GetColor(volt.Vset));
+        }
         break;
+    }
     case EnergyView:
         handler->UpdateEvent(event_index); // fetch data from handler
         handler->PrintOutEPICS(event_index);
@@ -947,6 +963,9 @@ void PRadEventViewer::UpdateStatusInfo()
     case HyCalModule::Scintillator:
         typeInfo = tr("<center><p><b>Scintillator</b></p></center>");
         break;
+    case HyCalModule::LightMonitor:
+        typeInfo = tr("<center><p><b>Light Monitor</b></p></center>");
+        break;
     default:
         typeInfo = tr("<center><p><b>Unknown</b></p></center>");
         break;
@@ -964,7 +983,7 @@ void PRadEventViewer::UpdateStatusInfo()
                  + tr(", Ch") + QString::number(hvInfo.channel);     // hv channel
 
     PRadDAQUnit::Pedestal ped = selection->GetPedestal();
-    HyCalModule::Voltage volt = selection->GetVoltage();
+    PRadHVSystem::Voltage volt = hvSystem->GetVoltage(hvInfo.crate, hvInfo.slot, hvInfo.channel);
     QString temp = QString::number(volt.Vmon) + tr(" V ")
                    + ((volt.ON)? tr("/ ") : tr("(OFF) / "))
                    + QString::number(volt.Vset) + tr(" V");
@@ -1429,7 +1448,6 @@ void PRadEventViewer::startHVMonitor()
 void PRadEventViewer::disconnectHVSystem()
 {
     hvSystem->Disconnect();
-    ModuleAction(&HyCalModule::UpdateHV, (float)0, (float)0, false);
     hvEnableAction->setEnabled(true);
     hvDisableAction->setEnabled(false);
     hvSaveAction->setEnabled(false);

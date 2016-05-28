@@ -104,7 +104,6 @@ public:
     void FeedData(GEMAPVData &gemData);
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
-    void FeedData(CAENHVData &hvData);
     void UpdateEvent(int idx = 0);
     void UpdateEventNb(const unsigned int &n) {eventNb = n;};
     void UpdateTrgType(const unsigned char &trg);

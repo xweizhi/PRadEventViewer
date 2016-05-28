@@ -9,6 +9,7 @@
 #include "PRadHVSystem.h"
 #include "PRadEventViewer.h"
 #include "PRadDataHandler.h"
+#include "ConfigParser.h"
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -16,51 +17,10 @@
 #include <iomanip>
 #include <chrono>
 
+#include "HyCalModule.h"
+
 using namespace std;
 using namespace CAENHV;
-
-ostream &operator<<(ostream &os, PRadHVSystem::CAEN_Board const &b)
-{
-    return os << b.model << ", " << b.desc << ", "
-              << b.slot << ", " << b.nChan << ", "
-              << b.serNum << ", "
-              << (int)b.fmwMSB << "." << (int)b.fmwLSB;
-}
-
-ostream &operator<<(ostream &os, CAENHVData const &data)
-{
-    return os << "Module: " << data.name << ", "
-              << "VMon: " << data.Vmon << " V, "
-              << "VSet:" << data.Vset << " V."
-              << endl;
-}
-
-string trim(const string& str,
-            const string& whitespace = " \t")
-{
-    const auto strBegin = str.find_first_not_of(whitespace);
-    if (strBegin == string::npos)
-        return ""; // no content
-
-    const auto strEnd = str.find_last_not_of(whitespace);
-    const auto strRange = strEnd - strBegin + 1;
-
-    return str.substr(strBegin, strRange);
-}
-
-int PRadHVSystem::CAEN_PrimaryChannel::SetPower(const bool& on)
-{
-    if(!initialized) return 0;
-    unsigned int val = on ? 1 : 0;
-    return CAENHV_SetChParam(handle, slot, "Pw", 1, &channel, &val);
-}
-
-int PRadHVSystem::CAEN_PrimaryChannel::SetVoltage(const float& v)
-{
-    if(!initialized) return 0;
-    float val = v;
-    return CAENHV_SetChParam(handle, slot, "V0Set", 1, &channel, &val);
-}
 
 PRadHVSystem::PRadHVSystem(PRadEventViewer *p)
 : console(p), alive(false)
@@ -69,6 +29,8 @@ PRadHVSystem::PRadHVSystem(PRadEventViewer *p)
 PRadHVSystem::~PRadHVSystem()
 {
     Disconnect();
+    for(auto &crate : crateList)
+        delete crate;
 }
 
 void PRadHVSystem::AddCrate(const string &name,
@@ -79,12 +41,27 @@ void PRadHVSystem::AddCrate(const string &name,
                              const string &username,
                              const string &password)
 {
-    if(alive)
+    if(alive) {
         cerr << "HV Channel AddCrate Error: HV Channel is alive, cannot add crate" << endl;
-    crateList.push_back(CAEN_Crate(id, name, ip, type, linkType, username, password));
+        return;
+     }
+
+    if(GetCrate(id) || GetCrate(name)) {
+        cerr << "Crate " << name 
+             << ", id "<< id 
+             << " exists in HV system, skip adding it." << endl;
+        return;
+    }
+
+    CAEN_Crate *newCrate = new CAEN_Crate(id, name, ip, type, linkType, username, password);
+
+    crate_id_map[id] = newCrate;
+    crate_name_map[name] = newCrate;
+
+    crateList.push_back(newCrate);
 }
 
-void PRadHVSystem::Initialize()
+void PRadHVSystem::Connect()
 {
     locker.lock();
     int try_cnt = 0, fail_cnt = 0;
@@ -94,121 +71,41 @@ void PRadHVSystem::Initialize()
     for(auto &crate : crateList)
     {
         ++ try_cnt;
-        int err;
-        char arg[32];
-        strcpy(arg, crate.ip.c_str());
-        err = CAENHV_InitSystem(crate.sysType,
-                                crate.linkType,
-                                arg,
-                                crate.username.c_str(),
-                                crate.password.c_str(),
-                                &crate.handle);
-        if(err == CAENHV_OK) {
+        if(crate->Initialize()) {
             cout << "Connected to high voltage system "
-                 << crate.name << "@" << crate.ip
+                 << crate->GetName() << "@" << crate->GetIP()
                  << endl;
-            if(!crate.mapped) // fist time initialize, does not have crate map
-                getCrateMap(crate);
-        }
-        else {
+        } else {
             ++fail_cnt;
             cerr << "Cannot connect to "
-                 << crate.name << "@" << crate.ip
+                 << crate->GetName() << "@" << crate->GetIP()
                  << endl;
-            showError("HV Initialize", err);
         }
     }
 
     cout << "HV crates initialize DONE, tried "
-         << try_cnt << " crates, failed for "
+         << try_cnt << " crates,  failed on "
          << fail_cnt << " crates" << endl;
 
     locker.unlock();
-}
-
-void PRadHVSystem::DeInitialize()
-{
-    for(auto &crate : crateList)
-    {
-        int err = CAENHV_DeinitSystem(crate.handle);
-        crate.clear();
-
-        if(err == CAENHV_OK) {
-            cout << "Disconnected from high voltage system "
-                 << crate.name << "@" << crate.ip
-                 << endl;
-        }
-        else {
-            cerr << "Failed to disconnect from "
-                 << crate.name << "@" << crate.ip
-                 << endl;
-            showError("HV DeInitialize", err);
-        }
-    }
-}
-
-void PRadHVSystem::Connect()
-{
-    Initialize();
 }
 
 void PRadHVSystem::Disconnect()
 {
     StopMonitor();
 
-    DeInitialize();
-}
-
-int PRadHVSystem::GetCrateHandle(const string &name)
-{
     for(auto &crate : crateList)
     {
-        if(crate.name == name)
-            return crate.handle;
-    }
-    return -1;
-}
-
-void PRadHVSystem::getCrateMap(CAEN_Crate &crate)
-{
-    if(crate.handle < 0) {
-        cerr << "HV Channel Get Crate Map Error: crate "
-             << crate.name << " is not initialized!"
-             << endl;
-        return;
-    }
-
-    unsigned short NbofSlot;
-    unsigned short *NbofChList;
-    char *modelList, *descList;
-    unsigned short *serNumList;
-    unsigned char *fmwMinList, *fmwMaxList;
-
-    // looks like this function only return the first model name rather than a list
-    int err = CAENHV_GetCrateMap(crate.handle, &NbofSlot, &NbofChList, &modelList, &descList, &serNumList, &fmwMinList, &fmwMaxList);
-
-    char *m = modelList, *d = descList;
-    if(err == CAENHV_OK) {
-        for(int slot = 0; slot < NbofSlot; ++slot, m += strlen(m) + 1, d += strlen(d) + 1) {
-            if(!NbofChList[slot])
-                continue;
-            //TODO, change this hard coded exception
-            if(crate.id == 5 && slot == 14)
-                continue;
-            CAEN_Board newBoard(m, d, slot, NbofChList[slot], serNumList[slot], fmwMinList[slot], fmwMaxList[slot]);
-            if(newBoard.model.find("1932") != string::npos)
-                newBoard.primaryCh = CAEN_PrimaryChannel(crate.handle, slot);
-            crate.boardList.push_back(newBoard);
+        if(crate->DeInitialize()) {
+            cout << "Disconnected from high voltage system "
+                 << crate->GetName() << "@" << crate->GetIP()
+                 << endl;
+        } else {
+            cerr << "Failed to disconnect from "
+                 << crate->GetName() << "@" << crate->GetIP()
+                 << endl;
         }
     }
-    free(NbofChList);
-    free(modelList);
-    free(descList);
-    free(serNumList);
-    free(fmwMinList);
-    free(fmwMaxList);
-
-    crate.mapped = true;
 }
 
 void PRadHVSystem::StartMonitor()
@@ -233,177 +130,37 @@ void PRadHVSystem::queryLoop()
             ReadVoltage();
 
         if(!(loopCount%30))
-            checkStatus();
+            CheckStatus();
 
         ++loopCount;
         this_thread::sleep_for(chrono::seconds(1));
     }
 }
 
-void PRadHVSystem::heartBeat()
-{
-    locker.lock();
-    for(auto &crate : crateList)
-    {
-        if(crate.handle < 0)
-            continue;
-
-        char sw[30];
-        int err = CAENHV_GetSysProp(crate.handle, "SwRelease", sw);
-        showError("HV Heartbeat", err);
-    }
-    locker.unlock();
-}
-
-void PRadHVSystem::checkStatus()
-{
-    locker.lock();
-    int err;
-    for(auto &crate : crateList)
-    {
-        if(crate.handle < 0)
-            continue;
-
-        for(auto &board : crate.boardList)
-        {
-            int size = board.nChan;
-            unsigned int status[size];
-            unsigned short list[size];
-            char nameList[size][MAX_CH_NAME];
-
-            for(int k = 0; k < size; ++k)
-            {
-                list[k] = k;
-                status[k] = 0;
-            }
-            err = CAENHV_GetChName(crate.handle, board.slot, size, list, nameList);
-            showError("HV Read Voltage", err);
-
-            err = CAENHV_GetChParam(crate.handle, board.slot, "Status", size, list, status);
-            showError("HV Status Monitor", err);
-
-            for(int i = 0; i < size; ++i)
-            {
-                showChError(nameList[i], status[i]);
-            }
-        }
-    }
-    locker.unlock();
-}
-
-void PRadHVSystem::SetPower(const bool &val)
-{
-    int err;
-    for(auto &crate : crateList)
-    {
-        for(auto &board : crate.boardList)
-        {
-            int size = board.nChan;
-            unsigned short list[size];
-            unsigned int valList[size];
-            for(int k = 0; k < size; ++k)
-            {
-                valList[k] = (val)?1:0;
-                list[k] = k;
-            }
-
-            err = CAENHV_SetChParam(crate.handle, board.slot, "Pw", size, list, valList);
-            showError("HV Power On", err);
-        }
-    }
-}
-
-void PRadHVSystem::SetPower(const ChannelAddress &config, const bool &val)
-{
-    for(auto &crate : crateList)
-    {
-        if(crate.id == config.crate) {
-            unsigned int value = (val)?1:0;
-            unsigned short slot = (unsigned short) config.slot;
-            unsigned short channel = (unsigned short) config.channel;
-            int err = CAENHV_SetChParam(crate.handle, slot, "Pw", 1, &channel, &value);
-            showError("HV Power On", err);
-            return;
-        }
-    }
-}
-
-void PRadHVSystem::SetVoltage(const char *name, const ChannelAddress &config, const float &val)
-{
-    // set voltage limit
-    if(val > getLimit(name)) {
-        cerr << "Exceeds safe value in setting the voltage, ignore the action!" << endl;
-        return;
-    }
-
-    // TODO, check the primary channel voltage
-    for(auto &crate : crateList)
-    {
-        if(crate.id == config.crate) {
-            float value = val;
-            unsigned short slot = (unsigned short) config.slot;
-            unsigned short channel = (unsigned short) config.channel;
-            int err = CAENHV_SetChParam(crate.handle, slot, "V0Set", 1, &channel, &value);
-            showError("HV Set Voltage", err);
-            return;
-        }
-    }
-}
-
 void PRadHVSystem::ReadVoltage()
 {
     locker.lock();
-    int err;
-    CAENHVData hvData;
+
     for(auto &crate : crateList)
     {
-        if(crate.handle < 0)
-            continue;
-
-        hvData.config.crate = crate.id;
-        for(auto &board : crate.boardList)
-        {
-            int size = board.nChan;
-            float monVals[size], setVals[size];
-            unsigned int pwON[size];
-            unsigned short list[size];
-            char nameList[size][MAX_CH_NAME];
-
-            for(int k = 0; k < size; ++k)
-                list[k] = k;
-
-            err = CAENHV_GetChName(crate.handle, board.slot, size, list, nameList);
-            showError("HV Read Name", err);
-
-            err = CAENHV_GetChParam(crate.handle, board.slot, "Pw", size, list, pwON);
-            showError("HV Read Power", err);
-
-            err = CAENHV_GetChParam(crate.handle, board.slot, "VMon", size, list, monVals);
-            showError("HV Read Voltage", err);
-
-            err = CAENHV_GetChParam(crate.handle, board.slot, "V0Set", size, list, setVals);
-            showError("HV Read Voltage Set", err);
-
-            hvData.config.slot = (unsigned char)board.slot;
-            for(int k = 0; k < size; ++k)
-            {
-                    hvData.config.channel = (unsigned char)k;
-                    hvData.name = nameList[k];
-                    hvData.ON = (bool)pwON[k];
-                    hvData.Vmon = monVals[k];
-                    hvData.Vset = setVals[k];
-
-                    checkVoltage(hvData);
-
-                    console->GetHandler()->FeedData(hvData);
-            }
-
-        }
+        crate->ReadVoltage();
     }
     locker.unlock();
+
     console->Refresh();
 }
 
+void PRadHVSystem::CheckStatus()
+{
+    locker.lock();
+
+    for(auto &crate : crateList)
+    {
+        crate->CheckStatus();
+    }
+
+    locker.unlock();
+}
 
 void PRadHVSystem::SaveCurrentSetting(const string &path)
 {
@@ -415,49 +172,21 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
            << setw(10) << "VMon"
            << setw(10) << "VSet"
            << endl;
-    int err;
+
+    ReadVoltage(); // update its value
 
     for(auto &crate : crateList)
     {
-        if(crate.handle < 0)
-            continue;
-
-        for(auto &board : crate.boardList)
+        for(auto &board : crate->GetBoardList())
         {
-            int size = board.nChan;
-            float setVals[size], monVals[size];
-            unsigned short list[size];
-            char nameList[size][MAX_CH_NAME];
-
-            for(int k = 0; k < size; ++k)
-                list[k] = k;
-
-            err = CAENHV_GetChName(crate.handle, board.slot, size, list, nameList);
-            if(err != CAENHV_OK) {
-                showError("HV Read Name", err);
-                continue;
-            }
-
-            err = CAENHV_GetChParam(crate.handle, board.slot, "V0Set", size, list, setVals);
-            if(err != CAENHV_OK) {
-                showError("HV Read Set Voltage", err);
-                continue;
-            }
-
-            err = CAENHV_GetChParam(crate.handle, board.slot, "VMon", size, list, monVals);
-            if(err != CAENHV_OK) {
-                showError("HV Read Current Voltage", err);
-                continue;
-            }
-
-            for(int k = 0; k < size; ++k)
+            for(auto &channel : board->GetChannelList())
             {
-                hv_out << setw(12) << crate.name
-                       << setw(8) << board.slot
-                       << setw(8) << k
-                       << setw(16) << nameList[k]
-                       << setw(10) << monVals[k]
-                       << setw(10) << setVals[k]
+                hv_out << setw(12) << crate->GetName()
+                       << setw(8) << board->GetSlot()
+                       << setw(8) << channel->GetChannel()
+                       << setw(16) << channel->GetName()
+                       << setw(10) << channel->GetVMon()
+                       << setw(10) << channel->GetVSet()
                        << endl;
             }
         }
@@ -468,153 +197,118 @@ void PRadHVSystem::SaveCurrentSetting(const string &path)
 
 void PRadHVSystem::RestoreSetting(const string &path)
 {
-    SetPower(false);
+    ConfigParser c_parser;
 
-    ifstream hv_in(path);
-    string line, trim_line;
+    c_parser.OpenFile(path);
 
-    while(getline(hv_in, line))
+    while(c_parser.ParseLine())
     {
-        trim_line = trim(line);
-        if(trim_line.at(0) == '#' || trim_line.empty())
+        if(c_parser.NbofElements() != 6)
             continue;
-        istringstream iss(trim_line);
+
         string crate_name, channel_name;
-        int handle, slot;
+        int slot;
         unsigned short channel;
-        float VMon, VSet, limit;
-        iss >> crate_name >> slot >> channel >> channel_name >> VMon >> VSet;
-        handle = GetCrateHandle(crate_name);
-        limit = getLimit(channel_name.c_str());
-        if(VSet > limit) {
+        float VSet;
+
+        crate_name = c_parser.TakeFirst();
+        slot = stoi(c_parser.TakeFirst());
+        channel = stoi(c_parser.TakeFirst());
+        channel_name = c_parser.TakeFirst();
+        c_parser.TakeFirst(); // VMon, not used
+        VSet = stof(c_parser.TakeFirst());
+
+        CAEN_Channel *ch = GetChannel(crate_name, slot, channel);
+
+        if(ch != nullptr) {
+            ch->SetName(channel_name);
+            ch->SetVoltage(VSet);
+        } else {
             cout << "Crate: " << crate_name
-                 << ", Slot: "  << slot
-                 << ", Channel: "  << channel
-                 << ", Name: " << channel_name
-                 << ", VSet " << VSet
-                 << "V exceeds the limit " << limit
-                 << "V, set to limit value." << endl;
-            VSet = limit;
+                 << "Slot: " << slot
+                 << "Channel: " << channel
+                 << " is not found!" << endl;
         }
-        CAENHV_SetChName(handle, slot, 1, &channel, channel_name.c_str());
-        CAENHV_SetChParam(handle, slot, "V0Set", 1, &channel, (void*)&VSet);
     }
+
     cout << "Restore the High Voltage Setting from " << path << endl;
-    hv_in.close(); 
+    c_parser.CloseFile();
 }
 
-void PRadHVSystem::PrintOut()
+CAEN_Crate *PRadHVSystem::GetCrate(const string &n)
 {
-    cout << crateList.size() << " high voltage crates connected." << endl;
-    cout << "==========================================" << endl;
-    for(auto &crate : crateList)
-    {
-        cout << crate.name << "@" << crate.ip
-             << " - " << crate.boardList.size()
-             << " boards detected."
-             << endl;
-        for(auto &board : crate.boardList)
-        {
-            cout << board << endl;
-        }
-        cout << "======================================" << endl;
-    }
+    auto it = crate_name_map.find(n);
+    if(it != crate_name_map.end())
+        return it->second;
+    return nullptr;
 }
 
-void PRadHVSystem::checkVoltage(const CAENHVData &hvData)
+CAEN_Crate *PRadHVSystem::GetCrate(const int &id)
 {
-/* status will tell if it is over voltage or under voltage
-    if(hvData.name.at(0) == 'G' || hvData.name.at(0) == 'W' || hvData.name.at(0) == 'L') {
-        float diff = (hvData.ON)?(hvData.Vmon - hvData.Vset):0;
-        if(diff > 15 || diff < -15) {
-            cerr << "WARNING: voltage deviates from set value!" << endl
-                 << hvData << endl;
-        }
-    }
-*/
-    float limit = getLimit(hvData.name.c_str());
-    if(hvData.Vmon > limit) {
-        cerr << "WARNING: voltage exceeds safe limit!" << endl
-             << hvData << endl;
-    }
+    auto it = crate_id_map.find(id);
+    if(it != crate_id_map.end())
+        return it->second;
+    return nullptr;
 }
 
-float PRadHVSystem::getLimit(const char *name)
+CAEN_Board *PRadHVSystem::GetBoard(const string &n, const unsigned short &slot)
 {
-    if(name[0] == 'G') return 1950;
-    if(name[0] == 'W') return 1450;
-    if(name[0] == 'L') return 2000;
-    if(name[0] == 'S') return 2000;
-    if(name[0] == 'P') return 3000;
-    if(name[0] == 'H') return 2000;
-    return 1500;
+    CAEN_Crate *crate = GetCrate(n);
+    if(crate)
+        return crate->GetBoard(slot);
+    return nullptr;
 }
 
-void PRadHVSystem::showError(const string &prefix, const int &err, ShowErrorType type)
+CAEN_Board *PRadHVSystem::GetBoard(const int &id, const unsigned short &slot)
 {
-    if(err == CAENHV_OK && type != ShowAll)
-        return;
+    CAEN_Crate *crate = GetCrate(id);
+    if(crate)
+        return crate->GetBoard(slot);
+    return nullptr;
+}
 
-    string result = prefix + " ERROR: ";
+CAEN_Channel *PRadHVSystem::GetChannel(const string &n, const unsigned short &slot, const unsigned short &channel)
+{
+    CAEN_Board *board = GetBoard(n, slot);
+    if(board)
+        return board->GetChannel(channel);
+    return nullptr;
+}
 
-    switch(err)
-    {
-    case 0: cout << prefix << ": Command is successfully executed," << endl; return;
-    case 1: result += "Error of operatived system"; break;
-    case 2: result += "Write error in communication channel"; break;
-    case 3: result += "Read error in communication channel"; break;
-    case 4: result += "Time out in server communication"; break;
-    case 5: result += "Command Front End application is down"; break;
-    case 6: result += "Communication with system not yet connected by a Login command"; break;
-    case 7: result += "Communication with a not present board/slot"; break;
-    case 8: result += "Communication with RS232 not yet implemented"; break;
-    case 9: result += "User memory not sufficient"; break;
-    case 10: result += "Value out of range"; break;
-    case 11: result += "Execute command not yet implemented"; break;
-    case 12: result += "Get Property not yet implemented"; break;
-    case 13: result += "Set Property not yet implemented"; break;
-    case 14: result += "Property not found"; break;
-    case 15: result += "Execute command not found"; break;
-    case 16: result += "No System property"; break;
-    case 17: result += "No get property"; break;
-    case 18: result += "No set property"; break;
-    case 19: result += "No execute command"; break;
-    case 20: result += "Device configuration changed"; break;
-    case 21: result += "Property of param not found"; break;
-    case 22: result += "Param not found"; break;
-    case 23: result += "No data present"; break;
-    case 24: result += "Device already open"; break;
-    case 25: result += "To Many devices opened"; break;
-    case 26: result += "Function Parameter not valid"; break;
-    case 27: result += "Function not available for the connected device"; break;
-    case 0x1001: result += "Device already connected"; break;
-    case 0x1002: result += "Device not connected"; break;
-    case 0x1003: result += "Operating system error"; break;
-    case 0x1004: result += "Login failed"; break;
-    case 0x1005: result += "Logout failed"; break;
-    case 0x1006: result += "Link type not supported"; break;
-    case 0x1007: result += "Incorrect username/password"; break;
-    default: result += "Unknown error code"; break;
+CAEN_Channel *PRadHVSystem::GetChannel(const int &id, const unsigned short &slot, const unsigned short &channel)
+{
+    CAEN_Board *board = GetBoard(id, slot);
+    if(board)
+        return board->GetChannel(channel);
+    return nullptr;
+}
+
+PRadHVSystem::Voltage PRadHVSystem::GetVoltage(const string &n, const unsigned short &slot, const unsigned short &channel)
+{
+    Voltage volt;
+
+    CAEN_Channel *ch = GetChannel(n, slot, channel);
+
+    if(ch) {
+        volt.ON = ch->IsTurnedOn();
+        volt.Vmon = ch->GetVMon();
+        volt.Vset = ch->GetVSet();
     }
 
-    cerr << result << endl;
+    return volt;
 }
 
-void PRadHVSystem::showChError(const char *n, const unsigned int &err_bit)
+PRadHVSystem::Voltage PRadHVSystem::GetVoltage(const int &id, const unsigned short &slot, const unsigned short &channel)
 {
-    // TODO, add an exception list instead of this hard coded thing
-    if(!strcmp(n, "W305") || !strcmp(n, "G900")) return;
+    Voltage volt;
 
-    if(err_bit&(1 << 3)) cerr << "Channel " << n << " is in overcurrent!" << endl;
-    if(err_bit&(1 << 4)) cerr << "Channel " << n << " is in overvoltage!" << endl;
-    if(err_bit&(1 << 5)) cerr << "Channel " << n << " is in undervoltage!" << endl;
-    if(err_bit&(1 << 6)) cerr << "Channel " << n << " is in external trip!" << endl;
-    if(err_bit&(1 << 7)) cerr << "Channel " << n << " is in max voltage!" << endl;
-    if(err_bit&(1 << 8)) cerr << "Channel " << n << " is in external disable!" << endl;
-    if(err_bit&(1 << 9)) cerr << "Channel " << n << " is in internal trip!" << endl;
-    if(err_bit&(1 << 10)) cerr << "Channel " << n << " is in calibration error!" << endl;
-    if(err_bit&(1 << 11)) cerr << "Channel " << n << " is unplugged!" << endl;
-    if(err_bit&(1 << 13)) cerr << "Channel " << n << " is in overvoltage protection!" << endl;
-    if(err_bit&(1 << 14)) cerr << "Channel " << n << " is in power fail!" << endl;
-    if(err_bit&(1 << 15)) cerr << "Channel " << n << " is in temperature error!" << endl;
+    CAEN_Channel *ch = GetChannel(id, slot, channel);
+
+    if(ch) {
+        volt.ON = ch->IsTurnedOn();
+        volt.Vmon = ch->GetVMon();
+        volt.Vset = ch->GetVSet();
+    }
+
+    return volt;
 }

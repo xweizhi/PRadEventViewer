@@ -111,7 +111,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             switch(evtHeader->tag)
             {
             default:
-            case EPINFO_BANK: // bank contains the epics information
+            case LIVE_BANK: // bank contains the live time
             case TAG_BANK:
                 break;
             case EVINFO_BANK: // Bank contains the event information
