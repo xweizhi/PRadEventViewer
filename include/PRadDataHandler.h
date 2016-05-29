@@ -105,7 +105,6 @@ public:
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
     void UpdateEvent(int idx = 0);
-    void UpdateEventNb(const unsigned int &n) {eventNb = n;};
     void UpdateTrgType(const unsigned char &trg);
     void UpdateLMSPhase(const unsigned char &ph);
     void UpdateEPICS(const string &name, const float &value);
@@ -132,7 +131,6 @@ public:
 private:
     PRadEvioParser *parser;
     double totalE;
-    unsigned int eventNb;
     bool onlineMode;
 #ifdef MULTI_THREAD
     mutex myLock;

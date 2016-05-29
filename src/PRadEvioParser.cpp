@@ -209,7 +209,7 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
         {
             if(((data[index]>>27)&0x1F) == (unsigned int)adcData.config.slot) {
                 adcData.config.channel = (data[index]>>17)&0x3F;
-                adcData.val = data[index]&0x1FFF;
+                adcData.val = data[index]&0x3FFF;
                 myHandler->FeedData(adcData); // feed data to handler
             } else { // show the error message
                 cerr << "*** MISMATCHED CRATE ADDRESS ***" << endl;
