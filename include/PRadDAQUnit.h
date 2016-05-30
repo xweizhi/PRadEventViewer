@@ -60,8 +60,15 @@ public:
 
     bool operator < (const PRadDAQUnit &rhs) const
     {
-        int lhs_val = 10000*(int)channelName.at(0);
-        int rhs_val = 10000*(int)rhs.channelName.at(0);
+        auto name_to_val = [](std::string name)
+                           {
+                               if(name.at(0) == 'W') return 1000;
+                               if(name.at(0) == 'G') return 0;
+                               else return (int)name.at(0)*10000;
+                           };
+
+        int lhs_val = name_to_val(channelName);
+        int rhs_val = name_to_val(rhs.channelName);
 
         size_t idx = channelName.find_first_of("1234567890");
         if(idx != std::string::npos)

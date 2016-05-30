@@ -23,6 +23,29 @@ public:
     const int &GetID() {return groupID;};
     TH1I *GetHist() {return tdcHist;};
 
+    bool operator < (const PRadTDCGroup &rhs) const
+    {
+        auto name_to_val = [](std::string name)
+                           {
+                               if(name.at(0) == 'W') return 1000;
+                               if(name.at(0) == 'G') return 0;
+                               else return (int)name.at(0)*10000;
+                           };
+
+        int lhs_val = name_to_val(groupName);
+        int rhs_val = name_to_val(rhs.groupName);
+
+        size_t idx = groupName.find_first_of("1234567890");
+        if(idx != std::string::npos)
+            lhs_val += std::stoi(groupName.substr(idx, -1));
+
+        idx = rhs.groupName.find_first_of("1234567890");
+        if(idx != std::string::npos)
+            rhs_val += std::stoi(rhs.groupName.substr(idx, -1));
+
+        return lhs_val < rhs_val;
+    }
+
 private:
     std::string groupName;
     TH1I *tdcHist;

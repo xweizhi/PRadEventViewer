@@ -136,6 +136,7 @@ public:
     TH1D *GetEnergyHist() {return energyHist;};
     TH2I *GetTagEHist() {return TagEHist;};
     TH2I *GetTagTHist() {return TagTHist;};
+    EventData &GetEventData(const unsigned int &index);
     void Clear();
     void EndofThisEvent();
     void OnlineMode() {onlineMode = true;};

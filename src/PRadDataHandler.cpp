@@ -419,14 +419,28 @@ void PRadDataHandler::PrintOutEPICS(const int &event)
 void PRadDataHandler::SaveHistograms(const string &path)
 {
 
-    auto comp_func = [](PRadDAQUnit *a, PRadDAQUnit *b) {return (*a) < (*b);};
-    auto chList = channelList;
-
-    sort(chList.begin(), chList.end(), comp_func);
-
     TFile *f = new TFile(path.c_str(), "recreate");
 
     energyHist->Write();
+
+    // tdc histograms
+    auto tList = tdcList;
+    sort(tList.begin(), tList.end(), [](PRadTDCGroup *a, PRadTDCGroup *b) {return (*a) < (*b);} );
+
+    TList thList;
+    thList.Add(TagEHist);
+    thList.Add(TagTHist);
+
+    for(auto tdc : tList)
+    {
+        thList.Add(tdc->GetHist());
+    }
+    thList.Write("TDC Hists", TObject::kSingleKey);
+
+
+    // adc histograms
+    auto chList = channelList;
+    sort(chList.begin(), chList.end(), [](PRadDAQUnit *a, PRadDAQUnit *b) {return (*a) < (*b);} );
 
     for(auto channel : chList)
     {
@@ -440,4 +454,17 @@ void PRadDataHandler::SaveHistograms(const string &path)
     }
 
     f->Close();
+}
+
+EventData &PRadDataHandler::GetEventData(const unsigned int &index)
+{
+    if(onlineMode) {
+        return lastEvent;
+    } else {
+        if(index >= energyData.size()) {
+            return energyData.back();
+        } else {
+            return energyData.at(index);
+        }
+    }
 }
