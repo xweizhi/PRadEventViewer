@@ -198,7 +198,7 @@ void PRadDataHandler::FeedData(JLabTIData &tiData)
     newEvent.lms_phase = tiData.lms_phase;
     newEvent.latch_word = tiData.latch_word;
     newEvent.timestamp = tiData.time_high;
-    newEvent.timestamp >>= 32;
+    newEvent.timestamp <<= 32;
     newEvent.timestamp |= tiData.time_low;
 }
 
