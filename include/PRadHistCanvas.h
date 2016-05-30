@@ -6,10 +6,11 @@
 
 class QRootCanvas;
 class QGridLayout;
-class TObject;
 class TCanvas;
 class TColor;
 class TF1;
+class TH1;
+class TH2;
 
 class PRadHistCanvas : public QWidget
 {
@@ -19,7 +20,10 @@ public:
     PRadHistCanvas(QWidget *parent = 0);
     virtual ~PRadHistCanvas() {}
     void AddCanvas(int row, int column, int fillColor = 38);
-    void UpdateHist(int index, TObject *hist, int range_min = 0, int range_max = 0);
+    void UpdateHist(int index, TH1 *hist, bool auto_range = true);
+    void UpdateHist(int index, TH1 *hist, int range_min, int range_max);
+    void UpdateHist(int index, TH2 *hist);
+
 
 protected:
     QGridLayout *layout;

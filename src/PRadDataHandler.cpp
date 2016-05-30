@@ -17,6 +17,7 @@
 #include "TFile.h"
 #include "TList.h"
 #include "TH1.h"
+#include "TH2.h"
 
 //#define recon_test
 
@@ -36,12 +37,15 @@ PRadDataHandler::PRadDataHandler()
 {
     // total energy histogram
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
-
+    TagEHist = new TH2I("Tagger E", "Tagger E counter", 2000, 0, 20000, 384, 0, 383);
+    TagTHist = new TH2I("Tagger T", "Tagger T counter", 2000, 0, 20000, 128, 0, 127);
 }
 
 PRadDataHandler::~PRadDataHandler()
 {
     delete energyHist;
+    delete TagEHist;
+    delete TagTHist;
 
     for(auto &ele : freeList)
     {
@@ -143,13 +147,8 @@ void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
              << ", was " << (int) newEvent.type
              << " now " << (int) trg
              << endl;
-    } 
+    }
     newEvent.type = trg;
-}
-
-void PRadDataHandler::UpdateLMSPhase(const unsigned char &ph)
-{
-    newEvent.lms_phase = ph;
 }
 
 void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
@@ -164,7 +163,6 @@ void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
         (*it).second.push_back(EPICSValue(parser->eventNb, value));
     }
 }
-
 
 float PRadDataHandler::FindEPICSValue(const string &name)
 {
@@ -195,9 +193,13 @@ float PRadDataHandler::FindEPICSValue(const string &name, const int &event)
     return data.at(idx).value;
 }
 
-void PRadDataHandler::FeedData(JLabTIData & /*tiData*/)
+void PRadDataHandler::FeedData(JLabTIData &tiData)
 {
-   // place holder
+    newEvent.lms_phase = tiData.lms_phase;
+    newEvent.latch_word = tiData.latch_word;
+    newEvent.timestamp = tiData.time_high;
+    newEvent.timestamp >>= 32;
+    newEvent.timestamp |= tiData.time_low;
 }
 
 // feed ADC1881M data
@@ -213,7 +215,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // get the channel
     PRadDAQUnit *channel = it->second;
 
-    channel->GetHist((PRadTriggerType)newEvent.type)->Fill(adcData.val);
+    channel->FillHist(adcData.val, (PRadTriggerType)newEvent.type);
 
     unsigned short sparVal = channel->Sparsification(adcData.val, (newEvent.type != LMS_Led));
 
@@ -225,7 +227,8 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
         // so lock the thread to prevent concurrent access
         myLock.lock();
 #endif
-        totalE += channel->Calibration(sparVal); // calculate total energy of this event
+        if(channel->GetType() == PRadDAQUnit::HyCalModule)
+            totalE += channel->Calibration(sparVal); // calculate total energy of this event
         newEvent.add_adc(word); // store this data word
 #ifdef MULTI_THREAD
         myLock.unlock();
@@ -254,15 +257,40 @@ void PRadDataHandler::FeedData(TDCV767Data &tdcData)
 
 void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
 {
-    tdc_daq_iter it = map_daq_tdc.find(tdcData.config);
-    if(it == map_daq_tdc.end()) {
-        return;
+    if(tdcData.config.crate == PRadTS) {
+        tdc_daq_iter it = map_daq_tdc.find(tdcData.config);
+        if(it == map_daq_tdc.end()) {
+            return;
+        }
+
+        PRadTDCGroup *tdc = it->second;
+        tdc->GetHist()->Fill(tdcData.val);
+
+        newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
+    } else {
+        FillTaggerHist(tdcData);
     }
+}
 
-    PRadTDCGroup *tdc = it->second;
-    tdc->GetHist()->Fill(tdcData.val);
+void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
+{
+    if(tdcData.config.slot == 3 || tdcData.config.slot == 5 || tdcData.config.slot == 7)
+    {
+        int e_ch = tdcData.config.channel + (tdcData.config.slot - 3)*64;
+        TagEHist->Fill(tdcData.val, e_ch);
+    }
+    if(tdcData.config.slot == 14)
+    {
+        int t_lr = tdcData.config.channel/64;
+        int t_ch = tdcData.config.channel%64;
+        if(t_ch > 31)
+            t_ch = 32 + (t_ch + 16)%32;
+        else
+            t_ch = (t_ch + 16)%32;
+        t_ch += t_lr*64;
 
-    newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
+        TagTHist->Fill(tdcData.val, t_ch);
+    }
 }
 
 // signal of event end, save event or discard event in online mode

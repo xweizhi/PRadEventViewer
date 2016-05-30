@@ -31,6 +31,22 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
 
     // detect if mouse is hovering on this item
     setAcceptHoverEvents(true);
+
+    switch(geo.type)
+    {
+    case LeadGlass:
+    case LeadTungstate:
+        PRadDAQUnit::UpdateType(PRadDAQUnit::HyCalModule);
+        break;
+    case Scintillator:
+        PRadDAQUnit::UpdateType(PRadDAQUnit::Scintillator);
+        break;
+    case LightMonitor:
+        PRadDAQUnit::UpdateType(PRadDAQUnit::LMS_PMT);
+        break;
+    default:
+        break;
+    }
 }
 
 HyCalModule::~HyCalModule()

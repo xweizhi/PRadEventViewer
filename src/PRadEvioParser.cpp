@@ -112,7 +112,6 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             {
             default:
             case LIVE_BANK: // bank contains the live time
-            case TAG_BANK:
                 break;
             case EVINFO_BANK: // Bank contains the event information
                 eventNb = buffer[index];
@@ -121,6 +120,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                 parseTIData(&buffer[index], dataSize, evtHeader->num);
                 break;
             case TDC_BANK:
+            case TAG_BANK:
 #ifdef MULTI_THREAD
                 bank_threads.push_back(thread(&PRadEvioParser::parseTDCV1190, this, &buffer[index], dataSize, evtHeader->num));
 #else
@@ -309,51 +309,38 @@ void PRadEvioParser::parseTDCV767(const uint32_t *data, const size_t &size, cons
 // parse CAEN V1190 Data
 void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, const int &roc_id)
 {
-    if(roc_id != PRadTS) return;
-
-    size_t index = 0;
-    while((data[index]>>27) == V1190_FILLER_WORD) {
-        ++index;
-        if(index >= size)
-            return;
-    }
-
-    if((data[index++]>>27) != V1190_GLOBAL_HEADER) {
-        cerr << "Unrecognized V1190 header word: "
-             << "0x" << hex << setw(8) << setfill('0') << data[0]
-             << endl;
-        return;
-    }
-
     TDCV1190Data tdcData;
     tdcData.config.crate = roc_id;
-    tdcData.config.slot = data[0]&0x1f;
 
-    for(size_t i = index; i < size; ++i)
+    for(size_t i = 0; i < size; ++i)
     {
         switch(data[i]>>27)
         {
+        case V1190_GLOBAL_HEADER:
+            if(roc_id == PRadTS) {
+                tdcData.config.slot = 0; // geo address not supported in this crate
+            } else {
+                tdcData.config.slot = data[i]&0x1f;
+            }
+            break;
         case V1190_TDC_MEASURE:
             tdcData.config.channel = (data[i]>>19)&0x7f;
             tdcData.val = (data[i]&0x7ffff);
             myHandler->FeedData(tdcData);
             break;
         case V1190_TDC_ERROR:
+/*
             cerr << "V1190 Error Word: "
 		 << "0x" << hex << setw(8) << setfill('0') << data[i]
                  << endl;
             break;
+*/
         case V1190_GLOBAL_TRAILER:
-            return;
         case V1190_FILLER_WORD:
         default:
             break;
         }
     }
-
-    cerr << "Event: " << dec << eventNb
-         <<". Didn't find V1190 global trailer word!"
-         <<endl;
 }
 
 void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
@@ -361,12 +348,32 @@ void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
     // place holder
 }
 
-void PRadEvioParser::parseTIData(const uint32_t *data, const size_t & /*size*/, const int &roc_id)
+void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const int &roc_id)
 {
+    // update trigger type
     myHandler->UpdateTrgType(bit_word_to_trigger_type(data[2]>>24));
 
-    if(roc_id == PRadTS)
-        myHandler->UpdateLMSPhase((data[8]&0xff0000)>>16);
+    if(roc_id == PRadTS) {// we will be more interested in the TI-master
+        // check block header first
+        if((data[0] >> 27) != 0x10) {
+            cerr << "Unexpected TI block header: "
+                 << "0x" << hex << setw(8) << setfill('0') << data[0]
+                 << endl;
+            return;
+        }
+        // then check the bank size
+        if(size != 9) {
+            cerr << "Unexpected TI-master bank size: "
+                 << size << endl;
+            return;
+        }
+        JLabTIData tiData;
+        tiData.time_low = data[4];
+        tiData.time_high = data[5] & 0xffff;
+        tiData.latch_word = data[6] & 0xff;
+        tiData.lms_phase = (data[8] >> 16) & 0xff;
+        myHandler->FeedData(tiData);   
+    }
 }
 
 void PRadEvioParser::parseEPICS(const uint32_t *data)

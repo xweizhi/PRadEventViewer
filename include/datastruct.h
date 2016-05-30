@@ -75,7 +75,6 @@ enum PRadBankID
     EVINFO_BANK = 0xc000,
 };
 
-
 struct ChannelAddress
 {
     size_t crate;
@@ -115,14 +114,14 @@ struct ChannelAddress
 
 // v1190 type check (data >> 27)
 enum V1190WordType {
-  V1190_GLOBAL_HEADER = 0x08,  // 01000
-  V1190_GLOBAL_TRAILER = 0x10, // 10000
-  V1190_GLOBAL_TIMETAG = 0x11, // 10001
-  V1190_TDC_HEADER = 0x01,     // 00001
-  V1190_TDC_TRAILER = 0x03,    // 00011
-  V1190_TDC_ERROR = 0x04,      // 00100
-  V1190_TDC_MEASURE = 0x00,    // 00000
-  V1190_FILLER_WORD = 0x18,    // 11000
+    V1190_GLOBAL_HEADER = 0x08,  // 01000
+    V1190_GLOBAL_TRAILER = 0x10, // 10000
+    V1190_GLOBAL_TIMETAG = 0x11, // 10001
+    V1190_TDC_HEADER = 0x01,     // 00001
+    V1190_TDC_TRAILER = 0x03,    // 00011
+    V1190_TDC_ERROR = 0x04,      // 00100
+    V1190_TDC_MEASURE = 0x00,    // 00000
+    V1190_FILLER_WORD = 0x18,    // 11000
 };
 
 /* 32 bit event header structure
@@ -142,10 +141,10 @@ struct PRadEventHeader
 
 struct JLabTIData
 {
-    unsigned int time_gated;
-    unsigned int time_ungated;
-    unsigned char trigger_type;
+    unsigned char latch_word;
     unsigned char lms_phase;
+    unsigned short time_high;
+    unsigned int time_low;
 };
 
 struct ADC1881MData

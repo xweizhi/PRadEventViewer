@@ -23,47 +23,67 @@ using namespace std;
 class PRadEvioParser;
 class PRadDAQUnit;
 class PRadTDCGroup;
-class TH1I;
 class TH1D;
+class TH2I;
 
 typedef struct ChannelData
 {
     unsigned short channel_id;
     unsigned short value;
-    ChannelData() : channel_id(0), value(0) {};
+
+    ChannelData()
+    : channel_id(0), value(0)
+    {};
     ChannelData(const unsigned short &i, const unsigned short &v)
-    : channel_id(i), value(v) {};       
+    : channel_id(i), value(v)
+    {};
+
 } TDC_Data, ADC_Data;
 
 struct EventData
 {
     unsigned char type;
+    unsigned char latch_word;
     unsigned char lms_phase;
-    unsigned int time;
+    uint64_t timestamp;
     vector< ADC_Data > adc_data;
     vector< TDC_Data > tdc_data;
-    EventData() : type(0), lms_phase(0), time(0) {};
-    EventData(const PRadTriggerType &t) : type((unsigned char)t), lms_phase(0), time(0) {};
+
+    EventData()
+    : type(0), lms_phase(0), timestamp(0)
+    {};
+    EventData(const PRadTriggerType &t)
+    : type((unsigned char)t), lms_phase(0), timestamp(0)
+    {};
     EventData(const PRadTriggerType &t, vector< ADC_Data > &adc, vector< TDC_Data > &tdc)
-    : type((unsigned char)t), lms_phase(0), time(0), adc_data(adc), tdc_data(tdc) {};
+    : type((unsigned char)t), lms_phase(0), timestamp(0), adc_data(adc), tdc_data(tdc)
+    {};
+
     void clear() {type = 0; adc_data.clear(); tdc_data.clear();};
     void update_type(const unsigned char &t) {type = t;};
-    void update_time(const unsigned int &t) {time = t;};
+    void update_time(const uint64_t &t) {timestamp = t;};
     void add_adc(const ADC_Data &a) {adc_data.push_back(a);};
     void add_tdc(const TDC_Data &t) {tdc_data.push_back(t);};
+
 };
 
 struct EPICSValue
 {
     int att_event;
     float value;
-    EPICSValue() : att_event(0), value(0) {};
+
+    EPICSValue()
+    : att_event(0), value(0)
+    {};
     EPICSValue(const int &e, const float &v)
-    : att_event(e), value(v) {};
+    : att_event(e), value(v)
+    {};
+
     bool operator < (const int &e) const
     {
         return att_event < e;
     }
+
 };
 
 // a simple hash function for DAQ configuration
@@ -104,9 +124,9 @@ public:
     void FeedData(GEMAPVData &gemData);
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
+    void FillTaggerHist(TDCV1190Data &tdcData);
     void UpdateEvent(int idx = 0);
     void UpdateTrgType(const unsigned char &trg);
-    void UpdateLMSPhase(const unsigned char &ph);
     void UpdateEPICS(const string &name, const float &value);
     float FindEPICSValue(const string &name);
     float FindEPICSValue(const string &name, const int &event);
@@ -114,6 +134,8 @@ public:
     unsigned int GetEventCount() {return energyData.size();};
     int GetCurrentEventNb();
     TH1D *GetEnergyHist() {return energyHist;};
+    TH2I *GetTagEHist() {return TagEHist;};
+    TH2I *GetTagTHist() {return TagTHist;};
     void Clear();
     void EndofThisEvent();
     void OnlineMode() {onlineMode = true;};
@@ -146,6 +168,8 @@ private:
     deque< EventData > energyData;
     EventData newEvent, lastEvent;
     TH1D *energyHist;
+    TH2I *TagEHist;
+    TH2I *TagTHist;
 };
 
 #endif

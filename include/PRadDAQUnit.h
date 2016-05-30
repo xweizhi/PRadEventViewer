@@ -10,6 +10,14 @@
 class PRadDAQUnit
 {
 public:
+    enum ChannelType
+    {
+        Undefined,
+        HyCalModule,
+        Scintillator,
+        LMS_PMT,
+    };
+
     struct Pedestal
     {
         double mean;
@@ -28,16 +36,21 @@ public:
     void UpdatePedestal(const double &m, const double &s);
     void UpdateCalibrationFactor(const double &c) {calf = c;};
     void UpdateEnergy(const unsigned short &adcVal);
+    void UpdateType(const ChannelType &t) {type = t;};
     void CleanBuffer();
     void AddHist(const std::string &name);
     template<typename... Args>
     void AddHist(const std::string &name, const std::string &type, Args&&... args);
     void MapHist(const std::string &name, PRadTriggerType type);
+    template<typename T>
+    void FillHist(const T& t, const PRadTriggerType &type);
     TH1 *GetHist(const std::string &name = "PHYS");
     TH1 *GetHist(PRadTriggerType type) {return hist[(size_t)type];};
     std::vector<TH1*> GetHistList();
     int GetOccupancy() {return occupancy;};
-    std::string &GetName() {return channelName;};
+    const std::string &GetName() {return channelName;};
+    const ChannelType &GetType() {return type;};
+    
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
     const double &GetCalibrationFactor() {return calf;};
@@ -63,6 +76,7 @@ public:
 
 protected:
     std::string channelName;
+    ChannelType type;
     ChannelAddress address;
     Pedestal pedestal;
     std::string tdcGroup;

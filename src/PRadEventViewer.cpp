@@ -10,6 +10,7 @@
 #include "TApplication.h"
 #include "TSystem.h"
 #include "TH1.h"
+#include "TH2.h"
 #include "TF1.h"
 #include "TSpectrum.h"
 
@@ -261,6 +262,7 @@ void PRadEventViewer::createControlPanel()
     histTypeBox->addItem(tr("Energy&TDC Hist"));
     histTypeBox->addItem(tr("Module Hist"));
     histTypeBox->addItem(tr("Dynode Hist"));
+    histTypeBox->addItem(tr("Tagger Hist"));
     annoTypeBox = new QComboBox();
     annoTypeBox->addItem(tr("No Annotation"));
     annoTypeBox->addItem(tr("Module ID"));
@@ -904,14 +906,19 @@ void PRadEventViewer::UpdateHistCanvas()
 
     case DynodeSumHist:
       {
-        PRadDAQUnit *dsum = handler->GetChannel("DSUM");
-        if(handler->GetChannel("DSUM") != nullptr) {
+        PRadDAQUnit *dsum = handler->GetChannel("DSUM1");
+        if(dsum != nullptr) {
             histCanvas->UpdateHist(1, dsum->GetHist("PHYS"));
             histCanvas->UpdateHist(2, dsum->GetHist("PED"));
             histCanvas->UpdateHist(3, dsum->GetHist("LMS"));
         }
       }
         break;
+
+     case TaggerHist:
+         histCanvas->UpdateHist(1, handler->GetTagEHist());
+         histCanvas->UpdateHist(2, handler->GetTagTHist());
+         histCanvas->UpdateHist(3, handler->GetEnergyHist());
      }
 }
 

@@ -5,9 +5,8 @@
 PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const ChannelAddress &daqAddr,
                          const std::string &tdc)
-: channelName(name), address(daqAddr), pedestal(Pedestal(0, 0)),
-  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), calf(0),
-  energy(0)
+: channelName(name), type(Undefined), address(daqAddr), pedestal(Pedestal(0, 0)),
+  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), calf(0), energy(0)
 {
     std::string hist_name;
 
@@ -87,6 +86,15 @@ void PRadDAQUnit::MapHist(const std::string &name, PRadTriggerType type)
 
     size_t index = (size_t) type;
     hist[index] = hist_trg;
+}
+
+template<>
+void PRadDAQUnit::FillHist<unsigned short>(const unsigned short &val, const PRadTriggerType &type)
+{
+    size_t index = (size_t) type;
+    if(hist[index]) {
+        hist[index]->Fill(val);
+    }
 }
 
 TH1 *PRadDAQUnit::GetHist(const std::string &n)

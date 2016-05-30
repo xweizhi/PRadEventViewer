@@ -12,6 +12,7 @@
 #include "TColor.h"
 #include "TF1.h"
 #include "TH1.h"
+#include "TH2.h"
 #include "TAxis.h"
 
 #include "PRadHistCanvas.h"
@@ -41,8 +42,7 @@ void PRadHistCanvas::AddCanvas(int row, int column, int color)
     newCanvas->SetFrameFillColor(10); // white
 }
 
-// show the histogram in first slot, try a Gaussian fit with given parameters
-void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int range_max)
+void PRadHistCanvas::UpdateHist(int index, TH1 *hist, bool auto_range)
 {
     --index;
     if(index < 0 || index >= canvases.size())
@@ -53,26 +53,15 @@ void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int rang
 
     //gPad->SetLogy();
 
-    TH1 *hist = (TH1*)tob;
+    if(auto_range) {
+        int firstBin = hist->FindFirstBinAbove(0,1)*0.7;
+        int lastBin = hist->FindLastBinAbove(0,1)*1.3;
 
-    int firstBin = hist->FindFirstBinAbove(0,1)*0.7;
-    int lastBin = hist->FindLastBinAbove(0,1)*1.3;
-
-    hist->GetXaxis()->SetRange(firstBin, lastBin);
+        hist->GetXaxis()->SetRange(firstBin, lastBin);
+    }
 
     hist->GetXaxis()->SetLabelSize(HIST_LABEL_SIZE);
     hist->GetYaxis()->SetLabelSize(HIST_LABEL_SIZE);
-
-    // try to fit gaussian in certain range
-    if(range_max > range_min
-       && hist->Integral(range_min, range_max + 1) > 0)
-    {
-        TF1 *fit = new TF1("", "gaus", range_min, range_max);
-        fit->SetLineColor(kRed);
-        fit->SetLineWidth(2);
-        hist->Fit(fit,"qlR");
-        delete fit;
-    }
 
     hist->SetFillColor(fillColors[index]);
     hist->Draw();
@@ -80,3 +69,41 @@ void PRadHistCanvas::UpdateHist(int index, TObject *tob, int range_min, int rang
     canvases[index]->Refresh();
 }
 
+// show the histogram in first slot, try a Gaussian fit with given parameters
+void PRadHistCanvas::UpdateHist(int index, TH1 *hist, int range_min, int range_max)
+{
+    --index;
+    if(index < 0 || index >= canvases.size())
+        return;
+
+    canvases[index]->cd();
+    canvases[index]->SetGrid();
+
+    //gPad->SetLogy();
+
+    hist->GetXaxis()->SetRange(range_min, range_max);
+
+    hist->GetXaxis()->SetLabelSize(HIST_LABEL_SIZE);
+    hist->GetYaxis()->SetLabelSize(HIST_LABEL_SIZE);
+
+    hist->SetFillColor(fillColors[index]);
+    hist->Draw();
+
+    canvases[index]->Refresh();
+}
+
+void PRadHistCanvas::UpdateHist(int index, TH2 *hist)
+{
+    --index;
+    if(index < 0 || index >= canvases.size())
+        return;
+
+    canvases[index]->cd();
+
+    hist->GetXaxis()->SetLabelSize(HIST_LABEL_SIZE);
+    hist->GetYaxis()->SetLabelSize(HIST_LABEL_SIZE);
+
+    hist->Draw("colz");
+
+    canvases[index]->Refresh();
+}

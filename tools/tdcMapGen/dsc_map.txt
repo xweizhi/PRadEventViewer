@@ -63,3 +63,9 @@
       1        14       W5
       1        15       S1  #Scintillator
       1        16       S2  #Scintillator
+      0        1        T1  #TI TS Input
+      0        2        T2
+      0        3        T3
+      0        4        T4
+      0        5        T5
+      0        6        T6

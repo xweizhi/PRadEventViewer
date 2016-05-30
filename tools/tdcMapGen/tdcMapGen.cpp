@@ -104,6 +104,7 @@ int main()
             << setw(12) << "channel"
             << endl;
 
+    int count = 0;
     while(getline(infile, line))
     {
         trim_line = trim(line);
@@ -120,6 +121,7 @@ int main()
             cout << "cannot find tdc channel for discriminator id " << dsc_id << " channel " << dsc_channel << endl;
             continue;
         } else {
+            ++ count;
             outfile << setw(12) << tdc_name
                     << setw(12) << crate
                     << setw(12) << slot
@@ -127,6 +129,7 @@ int main()
                     << endl;
         }
     }
+    cout << "read dsc map, found " << count << " matched with tdc map." << endl;
     cout << "tdc group list is written in tdc_group_list.txt" << endl;
     outfile.close();
     infile.close();
