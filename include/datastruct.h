@@ -81,6 +81,11 @@ struct ChannelAddress
     size_t slot;
     size_t channel;
 
+    ChannelAddress() {};
+    ChannelAddress(const size_t &c, const size_t &s, const size_t &ch)
+    : crate(c), slot(s), channel(ch)
+    {};
+
     bool operator < (const ChannelAddress &rhs) const {
         if( crate != rhs.crate )
             return crate < rhs.crate ;
