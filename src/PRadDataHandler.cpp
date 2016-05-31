@@ -266,7 +266,7 @@ void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
         PRadTDCGroup *tdc = it->second;
         tdc->GetHist()->Fill(tdcData.val);
 
-        newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
+        newEvent.add_tdc(TDC_Data(tdc->GetID(), tdcData.val));
     } else {
         FillTaggerHist(tdcData);
     }
@@ -278,6 +278,7 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
     {
         int e_ch = tdcData.config.channel + (tdcData.config.slot - 3)*64;
         TagEHist->Fill(tdcData.val, e_ch);
+        newEvent.add_tdc(TDC_Data(e_ch+1001, tdcData.val));
     }
     if(tdcData.config.slot == 14)
     {
@@ -290,6 +291,7 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
         t_ch += t_lr*64;
 
         TagTHist->Fill(tdcData.val, t_ch);
+        newEvent.add_tdc(TDC_Data(t_ch+2001, tdcData.val));
     }
 }
 
