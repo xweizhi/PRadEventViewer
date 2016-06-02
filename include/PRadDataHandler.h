@@ -105,11 +105,6 @@ namespace std
     };
 }
 
-typedef unordered_map< ChannelAddress, PRadDAQUnit* >::iterator daq_iter;
-typedef unordered_map< string, PRadDAQUnit* >::iterator name_iter;
-typedef unordered_map< string, PRadTDCGroup* >::iterator tdc_name_iter;
-typedef unordered_map< ChannelAddress, PRadTDCGroup* >::iterator tdc_daq_iter;
-
 class PRadDataHandler
 {
 public:

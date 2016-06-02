@@ -215,7 +215,7 @@ void PRadDataHandler::FeedData(JLabTIData &tiData)
 void PRadDataHandler::FeedData(ADC1881MData &adcData)
 {
     // find the channel with this DAQ configuration
-    daq_iter it = map_daq.find(adcData.config);
+    auto it = map_daq.find(adcData.config);
 
     // did not find any channel
     if(it == map_daq.end())
@@ -254,7 +254,7 @@ void PRadDataHandler::FeedData(GEMAPVData & /*gemData*/)
 
 void PRadDataHandler::FeedData(TDCV767Data &tdcData)
 {
-    tdc_daq_iter it = map_daq_tdc.find(tdcData.config);
+    auto it = map_daq_tdc.find(tdcData.config);
     if(it == map_daq_tdc.end())
         return;
 
@@ -267,7 +267,7 @@ void PRadDataHandler::FeedData(TDCV767Data &tdcData)
 void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
 {
     if(tdcData.config.crate == PRadTS) {
-        tdc_daq_iter it = map_daq_tdc.find(tdcData.config);
+        auto it = map_daq_tdc.find(tdcData.config);
         if(it == map_daq_tdc.end()) {
             return;
         }
@@ -375,7 +375,7 @@ void PRadDataHandler::ChooseEvent(int idx)
 // find channels
 PRadDAQUnit *PRadDataHandler::GetChannel(const ChannelAddress &daqInfo)
 {
-    daq_iter it = map_daq.find(daqInfo);
+    auto it = map_daq.find(daqInfo);
     if(it == map_daq.end())
         return nullptr;
     return it->second;
@@ -383,7 +383,7 @@ PRadDAQUnit *PRadDataHandler::GetChannel(const ChannelAddress &daqInfo)
 
 PRadDAQUnit *PRadDataHandler::GetChannel(const string &name)
 {
-    name_iter it = map_name.find(name);
+    auto it = map_name.find(name);
     if(it == map_name.end())
         return nullptr;
     return it->second;
@@ -398,7 +398,7 @@ PRadDAQUnit *PRadDataHandler::GetChannel(const unsigned short &id)
 
 PRadTDCGroup *PRadDataHandler::GetTDCGroup(const string &name)
 {
-    tdc_name_iter it = map_name_tdc.find(name);
+    auto it = map_name_tdc.find(name);
     if(it == map_name_tdc.end())
         return nullptr; // return empty vector
     return it->second;
@@ -406,7 +406,7 @@ PRadTDCGroup *PRadDataHandler::GetTDCGroup(const string &name)
 
 PRadTDCGroup *PRadDataHandler::GetTDCGroup(const ChannelAddress &addr)
 {
-    tdc_daq_iter it = map_daq_tdc.find(addr);
+    auto it = map_daq_tdc.find(addr);
     if(it == map_daq_tdc.end())
         return nullptr;
     return it->second;
