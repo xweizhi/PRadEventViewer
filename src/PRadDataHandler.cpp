@@ -160,7 +160,11 @@ void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
         epics_ch.push_back(EPICSValue((int)parser->eventNb, value));
         epics_channels[name] = epics_ch;
     } else {
-        (*it).second.push_back(EPICSValue(parser->eventNb, value));
+        if(onlineMode) {
+            (*it).second.back() = EPICSValue(parser->eventNb, value);
+        } else {
+            (*it).second.push_back(EPICSValue(parser->eventNb, value));
+        }
     }
 }
 
@@ -176,6 +180,11 @@ float PRadDataHandler::FindEPICSValue(const string &name)
 
 float PRadDataHandler::FindEPICSValue(const string &name, const int &event)
 {
+    if(onlineMode || (unsigned int)event >= energyData.size())
+        return FindEPICSValue(name);
+
+    int index = energyData.at(event).event_number;
+ 
     auto it = epics_channels.find(name);
     if(it == epics_channels.end())
         return 0;
@@ -185,10 +194,10 @@ float PRadDataHandler::FindEPICSValue(const string &name, const int &event)
     if(data.size() < 1)
         return 0;
 
-    if(event < data.at(0))
+    if(index < data.at(0))
         return data.at(0).value;
 
-    auto idx = upper_bound(data.begin(), data.end(), event) - data.begin() - 1;
+    auto idx = upper_bound(data.begin(), data.end(), index) - data.begin() - 1;
 
     return data.at(idx).value;
 }
@@ -298,6 +307,8 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
 // signal of event end, save event or discard event in online mode
 void PRadDataHandler::EndofThisEvent()
 {
+    newEvent.event_number = parser->eventNb;
+
     if(onlineMode) { // online mode only saves the last event, to reduce usage of memory
         lastEvent = newEvent;
     } else {
@@ -335,7 +346,7 @@ void PRadDataHandler::EndofThisEvent()
 }
 
 // show the event to event viewer
-void PRadDataHandler::UpdateEvent(int idx)
+void PRadDataHandler::ChooseEvent(int idx)
 {
 
     EventData event;
@@ -406,15 +417,31 @@ int PRadDataHandler::GetCurrentEventNb()
     return (int)parser->eventNb;
 }
 
-void PRadDataHandler::PrintOutEPICS(const int &event)
+void PRadDataHandler::PrintOutEPICS()
 {
-    if(event) {
-        for(auto &epics_ch : epics_channels)
-        {
-            cout << epics_ch.first << ": "
-                 << epics_ch.second.back().value
-                 << endl;
-        }
+    for(auto &epics_ch : epics_channels)
+    {
+        cout << epics_ch.first << ": "
+             << epics_ch.second.back().value
+             << endl;
+    }
+}
+
+void PRadDataHandler::PrintOutEPICS(const string &name)
+{
+    auto it = epics_channels.find(name);
+    if(it == epics_channels.end()) {
+        cout << "Did not find the EPICS channel "
+             << name << endl;
+        return;
+    }
+
+    auto channel_data = it->second;
+
+    cout << "Channel " << name << " data are: " << endl;
+    for(auto &data : channel_data)
+    {
+        cout << data.att_event << "  " << data.value << endl;
     }
 }
 

@@ -42,6 +42,7 @@ typedef struct ChannelData
 
 struct EventData
 {
+    int event_number;
     unsigned char type;
     unsigned char latch_word;
     unsigned char lms_phase;
@@ -64,7 +65,6 @@ struct EventData
     void update_time(const uint64_t &t) {timestamp = t;};
     void add_adc(const ADC_Data &a) {adc_data.push_back(a);};
     void add_tdc(const TDC_Data &t) {tdc_data.push_back(t);};
-
 };
 
 struct EPICSValue
@@ -125,12 +125,13 @@ public:
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
     void FillTaggerHist(TDCV1190Data &tdcData);
-    void UpdateEvent(int idx = 0);
+    void ChooseEvent(int idx = 0);
     void UpdateTrgType(const unsigned char &trg);
     void UpdateEPICS(const string &name, const float &value);
     float FindEPICSValue(const string &name);
     float FindEPICSValue(const string &name, const int &event);
-    void PrintOutEPICS(const int &event = 0);
+    void PrintOutEPICS();
+    void PrintOutEPICS(const string &name);
     unsigned int GetEventCount() {return energyData.size();};
     int GetCurrentEventNb();
     TH1D *GetEnergyHist() {return energyHist;};
