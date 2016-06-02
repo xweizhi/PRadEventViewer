@@ -58,6 +58,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
     switch(header->tag)
     {
     case CODA_Event:
+    case CODA_Sync:
     case EPICS_Info:
         break; // go on to process
     case CODA_Prestart:
@@ -128,7 +129,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
 #endif
                 break;
             case DSC_BANK:
-                parseDSCData(&buffer[index]);
+                parseDSCData(&buffer[index], dataSize);
                 break;
             case FASTBUS_BANK: // Bank 0x7, Fastbus data
                 // Self defined crate data header
@@ -343,7 +344,7 @@ void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, con
     }
 }
 
-void PRadEvioParser::parseDSCData(const uint32_t * /*data*/)
+void PRadEvioParser::parseDSCData(const uint32_t * /*data*/, const size_t & /*size*/)
 {
     // place holder
 }

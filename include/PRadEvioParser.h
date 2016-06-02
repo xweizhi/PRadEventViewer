@@ -17,7 +17,7 @@ public:
     void parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id);
     void parseTDCV767(const uint32_t *data, const size_t &size, const int &roc_id);
     void parseTDCV1190(const uint32_t *data, const size_t &size, const int &roc_id);
-    void parseDSCData(const uint32_t *data);
+    void parseDSCData(const uint32_t *data, const size_t &size);
     void parseTIData(const uint32_t *data, const size_t &size, const int &roc_id);
     void parseEPICS(const uint32_t *data);
     unsigned int eventNb;

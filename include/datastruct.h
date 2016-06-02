@@ -10,6 +10,7 @@ enum PRadEventType
     CODA_Event = 0x81,
     CODA_Prestart = 0x11,
     CODA_Go = 0x12,
+    CODA_Sync = 0xc1,
     CODA_End = 0x20,
 };
 
@@ -68,10 +69,10 @@ enum PRadBankID
     CONF_BANK = 0xe10e,
     LIVE_BANK = 0xe112,
     EPICS_BANK = 0xe114,
+    DSC_BANK = 0xe115,
     GEM_BANK = 0xe11f,
     FASTBUS_BANK = 0xe120,
     TDC_BANK = 0xe121,
-    DSC_BANK = 0xe122,
     EVINFO_BANK = 0xc000,
 };
 
