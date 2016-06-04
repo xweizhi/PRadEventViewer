@@ -32,20 +32,24 @@ public:
 
     HyCalScene(PRadEventViewer *p, QObject *parent = 0)
     : QGraphicsScene(parent), console(p),
-      pModule(NULL), sModule(NULL), rModule(NULL) {};
+      pModule(nullptr), sModule(nullptr), rModule(nullptr), showScalars(false)
+    {};
 
     HyCalScene(PRadEventViewer *p, const QRectF & sceneRect, QObject *parent = 0)
     : QGraphicsScene(sceneRect, parent), console(p),
-      pModule(NULL), sModule(NULL), rModule(NULL) {};
+      pModule(nullptr), sModule(nullptr), rModule(nullptr), showScalars(false)
+    {};
 
     HyCalScene(PRadEventViewer*p, qreal x, qreal y, qreal width, qreal height, QObject *parent = 0)
     : QGraphicsScene(x, y, width, height, parent), console(p),
-      pModule(NULL), sModule(NULL), rModule(NULL) {};
+      pModule(nullptr), sModule(nullptr), rModule(nullptr), showScalars(false)
+    {};
 
     void AddTDCBox(const QString &name, const QColor &textColor, const QRectF &textBox, const QColor &bgColor);
     void AddScalarBox(const QString &name, const QColor &textColor, const QRectF &textBox, const QColor &bgColor);
     void UpdateScalarCount(const int &group, const unsigned int &count);
     void UpdateScalarsCount(const std::vector<unsigned int> &counts);
+    void ShowScalars(const bool &s = true) {showScalars = s;};
     void addModule(HyCalModule *module);
     void addItem(QGraphicsItem *item);
     QVector<HyCalModule *> GetModuleList() {return moduleList;};
@@ -58,6 +62,7 @@ protected:
 private:
     PRadEventViewer *console;
     HyCalModule *pModule, *sModule, *rModule;
+    bool showScalars;
     QList<TextBox> tdcBoxList;
     QVector<TextBox> scalarBoxList;
     QVector<HyCalModule *> moduleList;

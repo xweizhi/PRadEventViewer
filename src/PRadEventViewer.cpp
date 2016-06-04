@@ -1363,6 +1363,10 @@ void PRadEventViewer::startOnlineMode()
     // Update to status bar
     UpdateStatusBar(ONLINE_MODE);
 
+    // show scalar counts
+    HyCal->ShowScalars(true);
+    Refresh();
+
     // Start online timer
     onlineTimer->start(5000);
 }
@@ -1387,6 +1391,10 @@ void PRadEventViewer::stopOnlineMode()
 
     // Update to Main Window
     UpdateStatusBar(NO_INPUT);
+
+    // turn off show scalars
+    HyCal->ShowScalars(false);
+    Refresh();
 }
 
 void PRadEventViewer::handleOnlineTimer()
