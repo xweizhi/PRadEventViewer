@@ -2,4 +2,3 @@
 #  name  DAQ crate  slot  chan    TDC   HV crate  slot  chan
    DSUM1         6     4     0    N/A          0     0     0
    DSUM2         6     4     6    N/A          0     0     0
-

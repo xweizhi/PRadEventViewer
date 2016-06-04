@@ -12,7 +12,7 @@
 #include <algorithm>
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
-#include "HyCalModule.h"
+#include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
 #include "TFile.h"
 #include "TList.h"
@@ -39,6 +39,15 @@ PRadDataHandler::PRadDataHandler()
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
     TagEHist = new TH2I("Tagger E", "Tagger E counter", 2000, 0, 20000, 384, 0, 383);
     TagTHist = new TH2I("Tagger T", "Tagger T counter", 2000, 0, 20000, 128, 0, 127);
+
+    triggerScalars.push_back(ScalarChannel("Lead Glass Sum"));
+    triggerScalars.push_back(ScalarChannel("Total Sum"));
+    triggerScalars.push_back(ScalarChannel("LMS Led"));
+    triggerScalars.push_back(ScalarChannel("LMS Alpha Source"));
+    triggerScalars.push_back(ScalarChannel("Tagger Master OR"));
+    triggerScalars.push_back(ScalarChannel("Scintillator"));
+    triggerScalars.push_back(ScalarChannel("Faraday Cage"));
+    triggerScalars.push_back(ScalarChannel("External Pulser"));
 }
 
 PRadDataHandler::~PRadDataHandler()
@@ -149,6 +158,21 @@ void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
              << endl;
     }
     newEvent.type = trg;
+}
+
+void PRadDataHandler::UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated)
+{
+    if(size > triggerScalars.size())
+    {
+        cerr << "ERROR: Received too many scalar channels, scalar counts will not be updated" << endl;
+        return;
+    }
+
+    for(unsigned int i = 0; i < size; ++i)
+    {
+        triggerScalars[i].gated_count = gated[i];
+        triggerScalars[i].count = ungated[i];
+    }
 }
 
 void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
@@ -496,4 +520,29 @@ EventData &PRadDataHandler::GetEventData(const unsigned int &index)
             return energyData.at(index);
         }
     }
+}
+
+unsigned int PRadDataHandler::GetScalarCount(const unsigned int &group, const bool &gated)
+{
+    if(group >= triggerScalars.size())
+        return 0;
+    if(gated)
+        return triggerScalars[group].gated_count;
+    else
+        return triggerScalars[group].count;
+}
+
+vector<unsigned int> PRadDataHandler::GetScalarsCount(const bool &gated)
+{
+    vector<unsigned int> result;
+
+    for(auto scalar : triggerScalars)
+    {
+        if(gated)
+            result.push_back(scalar.gated_count);
+        else
+            result.push_back(scalar.count);
+    }
+
+    return result;
 }

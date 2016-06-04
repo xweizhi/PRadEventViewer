@@ -76,6 +76,7 @@ void PRadEventViewer::initView()
     HyCal = new HyCalScene(this, -800, -800, 1600, 1600);
     HyCal->setBackgroundBrush(QColor(255, 255, 238));
 
+    generateScalarBoxes();
     generateSpectrum();
     generateHyCalModules();
 
@@ -159,6 +160,18 @@ void PRadEventViewer::generateHyCalModules()
     annoType = NoAnnotation;
     viewMode = EnergyView;
 
+}
+
+void PRadEventViewer::generateScalarBoxes()
+{
+    HyCal->AddScalarBox(tr("Pb-Glass Sum")    , Qt::black, QRectF(-650, -630, 150, 40), QColor(255, 155, 155, 50)); 
+    HyCal->AddScalarBox(tr("Total Sum")       , Qt::black, QRectF(-500, -630, 150, 40), QColor(155, 255, 155, 50));
+    HyCal->AddScalarBox(tr("LMS Led")         , Qt::black, QRectF(-350, -630, 150, 40), QColor(155, 155, 255, 50));
+    HyCal->AddScalarBox(tr("LMS Alpha")       , Qt::black, QRectF(-200, -630, 150, 40), QColor(255, 200, 100, 50));
+    HyCal->AddScalarBox(tr("Master Or")       , Qt::black, QRectF( -50, -630, 150, 40), QColor(100, 255, 200, 50));
+    HyCal->AddScalarBox(tr("Scintillator")    , Qt::black, QRectF( 100, -630, 150, 40), QColor(200, 100, 255, 50));
+    HyCal->AddScalarBox(tr("Faraday Cage")    , Qt::black, QRectF( 250, -630, 150, 40), QColor(200, 255, 100, 50));
+    HyCal->AddScalarBox(tr("Pulser")          , Qt::black, QRectF( 400, -630, 150, 40), QColor(100, 200, 255, 50));
 }
 
 //============================================================================//
@@ -563,7 +576,7 @@ void PRadEventViewer::buildModuleMap()
         }
         QRectF groupBox = QRectF(xmin - HYCAL_SHIFT, ymin, xmax-xmin, ymax-ymin);
         if(has_module)
-            HyCal->AddTextBox(tdcGroupName, groupBox, bkgColor);
+            HyCal->AddTDCBox(tdcGroupName, Qt::black, groupBox, bkgColor);
     }
 }
 
@@ -1396,6 +1409,7 @@ void PRadEventViewer::onlineUpdate(const size_t &max_events)
 
         if(num) {
             UpdateHistCanvas();
+            HyCal->UpdateScalarsCount(handler->GetScalarsCount());
             Refresh();
         }
 

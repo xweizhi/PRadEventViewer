@@ -17,7 +17,7 @@ enum PRadEventType
 enum PRadTriggerType
 {
     TI_Error = 0,
-    PULS_Pedestal,
+    PHYS_LeadGlassSum,
     PHYS_TotalSum,
     LMS_Led,
     LMS_Alpha,

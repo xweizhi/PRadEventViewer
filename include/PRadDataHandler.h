@@ -12,7 +12,6 @@
 #endif
 
 #include <unordered_map>
-#include <unordered_set>
 #include <map>
 #include <deque>
 #include <vector>
@@ -86,6 +85,16 @@ struct EPICSValue
 
 };
 
+struct ScalarChannel
+{
+    string name;
+    unsigned int count;
+    unsigned int gated_count;
+
+    ScalarChannel() : name("undefined"), count(0), gated_count(0) {};
+    ScalarChannel(const string &n) : name(n), count(0), gated_count(0) {};
+};
+
 // a simple hash function for DAQ configuration
 namespace std
 {
@@ -122,12 +131,15 @@ public:
     void FillTaggerHist(TDCV1190Data &tdcData);
     void ChooseEvent(int idx = 0);
     void UpdateTrgType(const unsigned char &trg);
+    void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
     void UpdateEPICS(const string &name, const float &value);
     float FindEPICSValue(const string &name);
     float FindEPICSValue(const string &name, const int &event);
     void PrintOutEPICS();
     void PrintOutEPICS(const string &name);
     unsigned int GetEventCount() {return energyData.size();};
+    unsigned int GetScalarCount(const unsigned int &group = 0, const bool &gated = false);
+    vector<unsigned int> GetScalarsCount(const bool &gated = false);
     int GetCurrentEventNb();
     TH1D *GetEnergyHist() {return energyHist;};
     TH2I *GetTagEHist() {return TagEHist;};
@@ -162,6 +174,7 @@ private:
     vector< PRadDAQUnit* > channelList;
     vector< PRadDAQUnit* > freeList;
     vector< PRadTDCGroup* > tdcList;
+    vector< ScalarChannel > triggerScalars;
     deque< EventData > energyData;
     EventData newEvent, lastEvent;
     TH1D *energyHist;

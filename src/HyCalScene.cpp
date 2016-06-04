@@ -10,7 +10,7 @@
 #include "HyCalScene.h"
 #include "PRadEventViewer.h"
 #include "HyCalModule.h"
-
+#include <iostream>
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
 #else
@@ -20,27 +20,50 @@
 void HyCalScene::drawForeground(QPainter *painter, const QRectF &rect)
 {
     QGraphicsScene::drawForeground(painter, rect);
-    // this to be impelmented to show the tdc groups and cluster reconstruction
-    if(console->GetAnnoType() == ShowTDC && !tdcBoxList.empty()) {
-        painter->save();
-        painter->setFont(QFont("times", 24, QFont::Bold));
-        QPen pen(Qt::black);
-        pen.setWidth(2);
-        pen.setCosmetic(true);
-        painter->setPen(pen);
-        for (QList<TextBox>::iterator it = tdcBoxList.begin(); it != tdcBoxList.end(); ++it)
-        {
+    painter->save();
+
+    // print scalar boxes
+    for(auto it = scalarBoxList.begin(); it != scalarBoxList.end(); ++it)
+    {
+            painter->setFont(QFont("times", 16, QFont::Bold));
+            QPen pen(it->textColor);
+            pen.setWidth(2);
+            pen.setCosmetic(true);
+            painter->setPen(pen);
             QPainterPath path;
-            path.addRect(it->boxBounding);
-            painter->fillPath(path, it->backgroundColor);
+            path.addRect(it->bound);
+            painter->fillPath(path, it->bgColor);
             painter->drawPath(path);
-            painter->drawText(it->boxBounding,
-                              it->boxName,
+            QRectF name_box = it->bound.translated(0, -it->bound.height());
+            painter->drawText(name_box,
+                              it->name,
+                              QTextOption(Qt::AlignBottom | Qt::AlignHCenter));
+             painter->drawText(it->bound,
+                              it->text,
+                              QTextOption(Qt::AlignCenter | Qt::AlignHCenter));
+    }
+    // this to be impelmented to show the tdc groups and cluster reconstruction
+    if(console->GetAnnoType() == ShowTDC)
+    {
+       for (auto it = tdcBoxList.begin(); it != tdcBoxList.end(); ++it)
+        {
+            painter->setFont(QFont("times", 24, QFont::Bold));
+            QPen pen(it->textColor);
+            pen.setWidth(2);
+            pen.setCosmetic(true);
+            painter->setPen(pen);
+            QPainterPath path;
+            path.addRect(it->bound);
+            painter->fillPath(path, it->bgColor);
+            painter->drawPath(path);
+            painter->drawText(it->bound,
+                              it->name,
                               QTextOption(Qt::AlignCenter | Qt::AlignHCenter));
 
         }
-        painter->restore();
     }
+
+    painter->restore();
 }
 
 void HyCalScene::addItem(QGraphicsItem *item)
@@ -54,13 +77,30 @@ void HyCalScene::addModule(HyCalModule *module)
     moduleList.push_back(module);
 }
 
-void HyCalScene::AddTextBox(QString &name, QRectF &textBox, QColor &bkgColor)
+void HyCalScene::AddTDCBox(const QString &text, const QColor &textColor, const QRectF &textBox, const QColor &bkgColor)
 {
-    TextBox newBox;
-    newBox.boxName = name;
-    newBox.boxBounding = textBox;
-    newBox.backgroundColor = bkgColor;
-    tdcBoxList.append(newBox);
+    tdcBoxList.append(TextBox(text, textColor, textBox, bkgColor));
+}
+
+void HyCalScene::AddScalarBox(const QString &text, const QColor &textColor, const QRectF &textBox, const QColor &bkgColor)
+{
+    scalarBoxList.push_back(TextBox(text, textColor, textBox, bkgColor));
+}
+
+void HyCalScene::UpdateScalarCount(const int &group, const unsigned int &count)
+{
+    if(group < 0 || group >= scalarBoxList.size())
+        return;
+
+    scalarBoxList[group].text = QString::number(count);
+}
+
+void HyCalScene::UpdateScalarsCount(const std::vector<unsigned int> &counts)
+{
+    for(size_t i = 0; i < counts.size(); ++i)
+    {
+        UpdateScalarCount((int)i, counts[i]);
+    }
 }
 
 // overload to change the default selection behavior

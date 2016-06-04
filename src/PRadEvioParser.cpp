@@ -344,9 +344,28 @@ void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, con
     }
 }
 
-void PRadEvioParser::parseDSCData(const uint32_t * /*data*/, const size_t & /*size*/)
+void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
 {
-    // place holder
+#define SCALARS_HEADER 3
+#define GATED_TRG_GROUP 1
+#define UNGATED_TRG_GROUP 3
+#define GROUP_SIZE 16
+
+    if(size < 72) {
+        cerr << "Unexpected scalar data bank size: " << size << endl;
+        return;
+    }
+
+    unsigned int gated_counts[8];
+    unsigned int ungated_counts[8];
+
+    for(int i = 0; i < 8; ++i)
+    {
+        gated_counts[i] = data[i + SCALARS_HEADER + GATED_TRG_GROUP*GROUP_SIZE];
+        ungated_counts[i] = data[i + SCALARS_HEADER + UNGATED_TRG_GROUP*GROUP_SIZE];
+    }
+
+    myHandler->UpdateScalarGroup(8, gated_counts, ungated_counts);
 }
 
 void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const int &roc_id)

@@ -2,6 +2,7 @@
 #define PRAD_HYCAL_SCENE_H
 
 #include <QGraphicsScene>
+#include <vector>
 
 class PRadEventViewer;
 class HyCalModule;
@@ -15,11 +16,19 @@ class HyCalScene : public QGraphicsScene
     Q_OBJECT
 
 public:
-    typedef struct {
-        QString boxName;
-        QRectF boxBounding;
-        QColor backgroundColor;
-    } TextBox;
+    struct TextBox {
+        QString name;
+        QString text;
+        QColor textColor;
+        QRectF bound;
+        QColor bgColor;
+
+        TextBox() {};
+        TextBox(const QString &n, const QString &t, const QColor &tc, const QRectF &b, const QColor &c)
+        : name(n), text(t), textColor(tc), bound(b), bgColor(c) {};
+        TextBox(const QString &n, const QColor &tc, const QRectF &b, const QColor &c)
+        : name(n), text(""), textColor(tc), bound(b), bgColor(c) {};
+     };
 
     HyCalScene(PRadEventViewer *p, QObject *parent = 0)
     : QGraphicsScene(parent), console(p),
@@ -33,7 +42,10 @@ public:
     : QGraphicsScene(x, y, width, height, parent), console(p),
       pModule(NULL), sModule(NULL), rModule(NULL) {};
 
-    void AddTextBox(QString &name, QRectF &textBox, QColor &bkgColor);
+    void AddTDCBox(const QString &name, const QColor &textColor, const QRectF &textBox, const QColor &bgColor);
+    void AddScalarBox(const QString &name, const QColor &textColor, const QRectF &textBox, const QColor &bgColor);
+    void UpdateScalarCount(const int &group, const unsigned int &count);
+    void UpdateScalarsCount(const std::vector<unsigned int> &counts);
     void addModule(HyCalModule *module);
     void addItem(QGraphicsItem *item);
     QVector<HyCalModule *> GetModuleList() {return moduleList;};
@@ -47,6 +59,7 @@ private:
     PRadEventViewer *console;
     HyCalModule *pModule, *sModule, *rModule;
     QList<TextBox> tdcBoxList;
+    QVector<TextBox> scalarBoxList;
     QVector<HyCalModule *> moduleList;
 };
 
