@@ -346,10 +346,11 @@ void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, con
 
 void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
 {
-#define SCALARS_HEADER 3
-#define GATED_TRG_GROUP 1
-#define UNGATED_TRG_GROUP 3
-#define GROUP_SIZE 16
+#define REF_PULSER_FREQ 500000
+#define GATED_TDC_GROUP 3
+#define GATED_TRG_GROUP 19
+#define UNGATED_TDC_GROUP 35
+#define UNGATED_TRG_GROUP 51
 
     if(size < 72) {
         cerr << "Unexpected scalar data bank size: " << size << endl;
@@ -358,11 +359,20 @@ void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
 
     unsigned int gated_counts[8];
     unsigned int ungated_counts[8];
+    unsigned int pulser_read = data[8 + UNGATED_TRG_GROUP];
+
+    auto scale_to_ref = [this](const unsigned int &num, const unsigned int &ref_read, const unsigned int &ref_freq = REF_PULSER_FREQ)
+                        {
+                            uint64_t tmp = num;
+                            tmp *= ref_freq;
+                            tmp /= ref_read;
+                            return (unsigned int)tmp;
+                        };
 
     for(int i = 0; i < 8; ++i)
     {
-        gated_counts[i] = data[i + SCALARS_HEADER + GATED_TRG_GROUP*GROUP_SIZE];
-        ungated_counts[i] = data[i + SCALARS_HEADER + UNGATED_TRG_GROUP*GROUP_SIZE];
+        gated_counts[i] = scale_to_ref(data[i + GATED_TRG_GROUP], pulser_read);
+        ungated_counts[i] = scale_to_ref(data[i + UNGATED_TRG_GROUP], pulser_read);
     }
 
     myHandler->UpdateScalarGroup(8, gated_counts, ungated_counts);
