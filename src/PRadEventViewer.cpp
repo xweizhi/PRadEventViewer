@@ -164,14 +164,14 @@ void PRadEventViewer::generateHyCalModules()
 
 void PRadEventViewer::generateScalarBoxes()
 {
-    HyCal->AddScalarBox(tr("Pb-Glass Sum")    , Qt::black, QRectF(-650, -630, 150, 40), QColor(255, 155, 155, 50)); 
-    HyCal->AddScalarBox(tr("Total Sum")       , Qt::black, QRectF(-500, -630, 150, 40), QColor(155, 255, 155, 50));
-    HyCal->AddScalarBox(tr("LMS Led")         , Qt::black, QRectF(-350, -630, 150, 40), QColor(155, 155, 255, 50));
-    HyCal->AddScalarBox(tr("LMS Alpha")       , Qt::black, QRectF(-200, -630, 150, 40), QColor(255, 200, 100, 50));
-    HyCal->AddScalarBox(tr("Master Or")       , Qt::black, QRectF( -50, -630, 150, 40), QColor(100, 255, 200, 50));
-    HyCal->AddScalarBox(tr("Scintillator")    , Qt::black, QRectF( 100, -630, 150, 40), QColor(200, 100, 255, 50));
-    HyCal->AddScalarBox(tr("Faraday Cage")    , Qt::black, QRectF( 250, -630, 150, 40), QColor(200, 255, 100, 50));
-    HyCal->AddScalarBox(tr("Pulser")          , Qt::black, QRectF( 400, -630, 150, 40), QColor(100, 200, 255, 50));
+    HyCal->AddScalarBox(tr("Pb-Glass Sum")    , Qt::black, QRectF(-650, -640, 150, 40), QColor(255, 155, 155, 50)); 
+    HyCal->AddScalarBox(tr("Total Sum")       , Qt::black, QRectF(-500, -640, 150, 40), QColor(155, 255, 155, 50));
+    HyCal->AddScalarBox(tr("LMS Led")         , Qt::black, QRectF(-350, -640, 150, 40), QColor(155, 155, 255, 50));
+    HyCal->AddScalarBox(tr("LMS Alpha")       , Qt::black, QRectF(-200, -640, 150, 40), QColor(255, 200, 100, 50));
+    HyCal->AddScalarBox(tr("Master Or")       , Qt::black, QRectF( -50, -640, 150, 40), QColor(100, 255, 200, 50));
+    HyCal->AddScalarBox(tr("Scintillator")    , Qt::black, QRectF( 100, -640, 150, 40), QColor(200, 100, 255, 50));
+    HyCal->AddScalarBox(tr("Faraday Cage")    , Qt::black, QRectF( 250, -640, 150, 40), QColor(200, 255, 100, 50));
+    HyCal->AddScalarBox(tr("Pulser")          , Qt::black, QRectF( 400, -640, 150, 40), QColor(100, 200, 255, 50));
 }
 
 //============================================================================//

@@ -10,7 +10,7 @@
 #include "HyCalScene.h"
 #include "PRadEventViewer.h"
 #include "HyCalModule.h"
-#include <iostream>
+
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
 #else
