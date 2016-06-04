@@ -359,10 +359,13 @@ void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
 
     unsigned int gated_counts[8];
     unsigned int ungated_counts[8];
-    unsigned int pulser_read = data[8 + UNGATED_TRG_GROUP];
+    unsigned int pulser_read = data[7 + UNGATED_TRG_GROUP];
 
-    auto scale_to_ref = [this](const unsigned int &num, const unsigned int &ref_read, const unsigned int &ref_freq = REF_PULSER_FREQ)
+    auto scale_to_ref = [](const unsigned int &num, const unsigned int &ref_read, const unsigned int &ref_freq = REF_PULSER_FREQ)
                         {
+                            if(!ref_read)
+                                return num;
+
                             uint64_t tmp = num;
                             tmp *= ref_freq;
                             tmp /= ref_read;
