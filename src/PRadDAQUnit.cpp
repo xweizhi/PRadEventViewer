@@ -28,6 +28,10 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
     if(name.find("LMS") != std::string::npos) {
         GetHist("PHYS")->SetTitle((channelName + " Alpha Source").c_str());
         MapHist("PHYS", LMS_Alpha);
+        MapHist("PED", PHYS_LeadGlassSum);
+        MapHist("PED", PHYS_TotalSum);
+        MapHist("PED", PHYS_TaggerE);
+        MapHist("PED", PHYS_Scintillator);
     }
 }
 

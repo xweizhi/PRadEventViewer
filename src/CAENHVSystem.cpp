@@ -13,11 +13,20 @@ CAEN_Channel::~CAEN_Channel()
 
 void CAEN_Channel::SetPower(const bool& on)
 {
+    int err;
     unsigned int val = on ? 1 : 0;
     int handle = mother->GetHandle();
     unsigned short slot = mother->GetSlot();
 
-    int err = CAENHV_SetChParam(handle, slot, "Pw", 1, &channel, &val);
+    if(on && mother->GetPrimaryChannelNumber() >= 0) {
+        unsigned short list[2];
+        list[0] = mother->GetPrimaryChannelNumber();
+        list[1] = channel;
+        unsigned int vallist[2] = {val, val};
+        err = CAENHV_SetChParam(handle, slot, "Pw", 2, list, vallist);
+    } else {
+        err = CAENHV_SetChParam(handle, slot, "Pw", 1, &channel, &val);
+    }
 
     CAEN_ShowError("HV Channel Set Power", err);
 }
@@ -238,6 +247,75 @@ unsigned short CAEN_Board::GetFirmware()
     return ((lsb << 8) | msb);
 }
 
+void CAEN_Board::SetVoltage(const vector<float> &Vset)
+{
+    if(Vset.size() != nChan) {
+        cout << "HV Board Set Voltage Warning: Mismatched size in value list, "
+             << "input size is " << Vset.size()
+             << ", should be " << nChan
+             << ". Operation terminated."
+             << endl;
+        return;
+    }
+
+    int err;
+    int handle = mother->GetHandle();
+    unsigned short list[nChan];
+    float val[nChan];
+
+    for(int k = 0; k < nChan; ++k)
+    {
+        list[k] = k;
+        val[k] = Vset[k];
+    }
+ 
+    err = CAENHV_SetChParam(handle, slot, "V0Set", nChan, list, val);
+    CAEN_ShowError("HV Board Set Voltage", err);
+}
+
+void CAEN_Board::SetPower(const bool &on_off)
+{
+    int err;
+    int handle = mother->GetHandle();
+    unsigned short list[nChan];
+    unsigned int val[nChan];
+
+    for(int k = 0; k < nChan; ++k)
+    {
+        list[k] = k;
+        val[k] = (on_off)? 1: 0;
+    }
+
+    err = CAENHV_SetChParam(handle, slot, "Pw", nChan, list, val);
+    CAEN_ShowError("HV Board Set Power", err);
+}
+
+void CAEN_Board::SetPower(const vector<unsigned int> &on_off)
+{
+    if(on_off.size() != nChan) {
+        cout << "HV Board Set Power Warning: Mismatched size in value list, "
+             << "input size is " << on_off.size()
+             << ", should be " << nChan
+             << ". Operation terminated."
+             << endl;
+        return;
+    }
+
+    int err;
+    int handle = mother->GetHandle();
+    unsigned short list[nChan];
+    unsigned int val[nChan];
+
+    for(int k = 0; k < nChan; ++k)
+    {
+        list[k] = k;
+        val[k] = on_off[k];
+    }
+
+    err = CAENHV_SetChParam(handle, slot, "Pw", nChan, list, val);
+    CAEN_ShowError("HV Board Set Power", err);
+}
+
 //============================================================================//
 // CAEN HV Crate                                                              //
 //============================================================================//
@@ -385,11 +463,17 @@ void CAEN_Crate::ReadVoltage()
         board->ReadVoltage();
 }
 
+void CAEN_Crate::SetPower(const bool &on_off)
+{
+    for(auto &board : boardList)
+        board->SetPower(on_off);
+}
+
 //============================================================================//
 // CAEN HV General                                                            //
 //============================================================================//
 
-std::ostream &operator<<(std::ostream &os, CAEN_Board &b)
+ostream &operator<<(ostream &os, CAEN_Board &b)
 {
     return os << b.GetModel() << ", " << b.GetDescription() << ", "
               << b.GetSlot() << ", " << b.GetSize() << ", "
@@ -397,16 +481,16 @@ std::ostream &operator<<(std::ostream &os, CAEN_Board &b)
               << b.GetFirmware() << ".";
 }
 
-void CAEN_ShowError(const std::string &prefix, const int &err, const bool &ShowSuccess)
+void CAEN_ShowError(const string &prefix, const int &err, const bool &ShowSuccess)
 {
     if(err == CAENHV_OK && !ShowSuccess)
         return;
 
-    std::string result = prefix + " ERROR: ";
+    string result = prefix + " ERROR: ";
 
     switch(err)
     {
-    case 0: std::cout << prefix << ": Command is successfully executed," << std::endl; return;
+    case 0: cout << prefix << ": Command is successfully executed," << endl; return;
     case 1: result += "Error of operatived system"; break;
     case 2: result += "Write error in communication channel"; break;
     case 3: result += "Read error in communication channel"; break;
@@ -444,7 +528,7 @@ void CAEN_ShowError(const std::string &prefix, const int &err, const bool &ShowS
     default: result += "Unknown error code"; break;
     }
 
-    std::cerr << result << std::endl;
+    cerr << result << endl;
 }
 
 

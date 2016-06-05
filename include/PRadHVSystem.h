@@ -7,7 +7,6 @@
 #include <thread>
 #include <mutex>
 #include <unordered_map>
-#include "PRadException.h"
 #include "datastruct.h"
 
 class PRadEventViewer;
@@ -42,6 +41,9 @@ public:
     void CheckStatus();
     void SaveCurrentSetting(const std::string &path);
     void RestoreSetting(const std::string &path);
+    void SetVoltage(const ChannelAddress &addr, const float &Vset);
+    void SetPower(const bool &on_off);
+    void SetPower(const ChannelAddress &addr, const bool &on_off);
     CAEN_Crate *GetCrate(const std::string &name);
     CAEN_Crate *GetCrate(const int &id);
     CAEN_Board *GetBoard(const std::string &name, const unsigned short &slot);

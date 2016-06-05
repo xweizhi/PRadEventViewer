@@ -92,6 +92,9 @@ public:
     void ReadBoardMap();
     void ReadVoltage();
     void CheckStatus();
+    void SetPower(const bool &on_off);
+    void SetPower(const std::vector<unsigned int> &on_off);
+    void SetVoltage(const std::vector<float> &Vset);
     int GetHandle();
     const unsigned short &GetSlot() {return slot;};
     CAEN_Crate *GetMother() {return mother;};
@@ -103,6 +106,7 @@ public:
     const unsigned short &GetSize() {return nChan;};
     const unsigned short &GetSerialNum() {return serNum;};
     unsigned short GetFirmware();
+    const int &GetPrimaryChannelNumber() {return primary;};
  };
 
 class CAEN_Crate
@@ -142,6 +146,7 @@ public:
     void Clear();
     void ReadVoltage();
     void CheckStatus();
+    void SetPower(const bool &on_off);
     const int &GetHandle() {return handle;};
     const std::string &GetName() {return name;};
     const std::string &GetIP() {return ip;};

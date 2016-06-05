@@ -170,7 +170,7 @@ void PRadEventViewer::generateScalarBoxes()
     HyCal->AddScalarBox(tr("LMS Alpha")       , Qt::black, QRectF(-200, -640, 150, 40), QColor(255, 200, 100, 50));
     HyCal->AddScalarBox(tr("Master Or")       , Qt::black, QRectF( -50, -640, 150, 40), QColor(100, 255, 200, 50));
     HyCal->AddScalarBox(tr("Scintillator")    , Qt::black, QRectF( 100, -640, 150, 40), QColor(200, 100, 255, 50));
-    HyCal->AddScalarBox(tr("Faraday Cage")    , Qt::black, QRectF( 250, -640, 150, 40), QColor(200, 255, 100, 50));
+    HyCal->AddScalarBox(tr("Faraday Cup")     , Qt::black, QRectF( 250, -640, 150, 40), QColor(200, 255, 100, 50));
     HyCal->AddScalarBox(tr("Pulser")          , Qt::black, QRectF( 400, -640, 150, 40), QColor(100, 200, 255, 50));
 }
 

@@ -235,6 +235,46 @@ void PRadHVSystem::RestoreSetting(const string &path)
     c_parser.CloseFile();
 }
 
+void PRadHVSystem::SetVoltage(const ChannelAddress &addr, const float &Vset)
+{
+    CAEN_Channel *channel = GetChannel(addr.crate, addr.slot, addr.channel);
+    if(channel == nullptr)
+    {
+        cout << "HV System Error: Did not find Channel at "
+             << "crate " << addr.crate
+             << ", slot " << addr.slot
+             << ", channel " << addr.channel
+             << endl;
+        return;
+    }
+
+    channel->SetVoltage(Vset);
+}
+
+void PRadHVSystem::SetPower(const bool &on_off)
+{
+    for(auto crate : crateList)
+    {
+        crate->SetPower(on_off);
+    }
+}
+
+void PRadHVSystem::SetPower(const ChannelAddress &addr, const bool &on_off)
+{
+    CAEN_Channel *channel = GetChannel(addr.crate, addr.slot, addr.channel);
+    if(channel == nullptr)
+    {
+        cout << "HV System Error: Did not find Channel at "
+             << "crate " << addr.crate
+             << ", slot " << addr.slot
+             << ", channel " << addr.channel
+             << endl;
+        return;
+    }
+
+    channel->SetPower(on_off);
+}
+
 CAEN_Crate *PRadHVSystem::GetCrate(const string &n)
 {
     auto it = crate_name_map.find(n);
