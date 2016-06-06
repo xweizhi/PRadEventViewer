@@ -782,7 +782,7 @@ void PRadEventViewer::openFile()
         codaData = QDir::currentPath();
 
     QStringList filters;
-    filters << "Data files (*.dat *.ev *.evio)"
+    filters << "Data files (*.dat *.ev *.evio *.evio.*)"
             << "All files (*)";
 
     fileName = getFileName(tr("Choose a data file"), codaData, filters, "");
@@ -804,7 +804,7 @@ void PRadEventViewer::openPedFile()
         codaData = QDir::currentPath();
 
     QStringList filters;
-    filters << "Data files (*.dat *.ev *.evio)"
+    filters << "Data files (*.dat *.txt)"
             << "All files (*)";
 
     fileName = getFileName(tr("Choose a data file to generate pedestal"),
