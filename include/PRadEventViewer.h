@@ -147,6 +147,12 @@ private:
                         const QStringList &filter,
                         const QString &suffix,
                         QFileDialog::AcceptMode mode = QFileDialog::AcceptOpen);
+    QStringList getFileNames(const QString &title,
+                             const QString &dir,
+                             const QStringList &filter,
+                             const QString &suffix,
+                             QFileDialog::AcceptMode mode = QFileDialog::AcceptOpen,
+                             QFileDialog::FileMode fmode = QFileDialog::ExistingFiles);
 
     PRadDataHandler *handler;
     int currentEvent;

@@ -46,8 +46,7 @@
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
 #include "PRadLogBox.h"
-
-#include <sys/time.h>
+#include "PRadBenchMark.h"
 
 #define cap_value(a, min, max) \
         (((a) >= (max)) ? (max) : ((a) <= (min)) ? (min) : (a))
@@ -785,14 +784,33 @@ void PRadEventViewer::openFile()
     filters << "Data files (*.dat *.ev *.evio *.evio.*)"
             << "All files (*)";
 
-    fileName = getFileName(tr("Choose a data file"), codaData, filters, "");
+    QStringList fileList = getFileNames(tr("Choose a data file"), codaData, filters, "");
 
-    if (!fileName.isEmpty()) {
+    if (fileList.isEmpty())
+        return;
+
+    eraseModuleBuffer();
+
+    PRadBenchMark timer;
+    timer.Start();
+
+    for(QString &file : fileList)
+    {
         //TODO, dialog to notice waiting
 //        QtConcurrent::run(this, &PRadEventViewer::readEventFromFile, fileName);
+        fileName = file;
         readEventFromFile(fileName);
         UpdateStatusBar(DATA_FILE);
     }
+
+    timer.Stop();
+
+    cout << "Parsed " << handler->GetEventCount() << " events from "
+         << fileList.size() << " files."
+         << " Used " << timer.GetElapsedTime() << " ms."
+         << endl;
+
+    updateEventRange();
 }
 
 // open pedestal file
@@ -1015,14 +1033,9 @@ void PRadEventViewer::readEventFromFile(const QString &filepath)
 {
     std::cout << "Reading data from file " << filepath.toStdString() << std::endl;
 
-    struct timeval timeStart, timeEnd;
-    gettimeofday(&timeStart, nullptr);
-
     try {
         evio::evioFileChannel *chan = new evio::evioFileChannel(filepath.toStdString().c_str(),"r");
         chan->open();
-
-        eraseModuleBuffer();
 
         while(chan->read())
         {
@@ -1032,18 +1045,11 @@ void PRadEventViewer::readEventFromFile(const QString &filepath)
         chan->close();
         delete chan;
 
-        updateEventRange();
     } catch (evio::evioException e) {
         std::cerr << e.toString() << endl;
     } catch (...) {
         std::cerr << "?unknown exception" << endl;
     }
-
-    gettimeofday(&timeEnd, nullptr);
-
-    std::cout << "Parsed " << handler->GetEventCount() << " events, took "
-              << ((timeEnd.tv_sec - timeStart.tv_sec)*1000 + (timeEnd.tv_usec - timeStart.tv_usec)/1000)
-              << " ms." << std::endl;
 }
 
 QString PRadEventViewer::getFileName(const QString &title,
@@ -1052,15 +1058,34 @@ QString PRadEventViewer::getFileName(const QString &title,
                                      const QString &suffix,
                                      QFileDialog::AcceptMode mode)
 {
-    QString filepath;
+    QFileDialog::FileMode fmode = QFileDialog::ExistingFile;
+    if(mode == QFileDialog::AcceptSave)
+        fmode =QFileDialog::AnyFile;
+
+    QStringList filepaths = getFileNames(title, dir, filter, suffix, mode, fmode);
+    if(filepaths.size())
+        return filepaths.at(0);
+
+    return "";
+}
+
+QStringList PRadEventViewer::getFileNames(const QString &title,
+                                          const QString &dir,
+                                          const QStringList &filter,
+                                          const QString &suffix,
+                                          QFileDialog::AcceptMode mode,
+                                          QFileDialog::FileMode fmode)
+{
+    QStringList filepath;
     fileDialog->setWindowTitle(title);
     fileDialog->setDirectory(dir);
     fileDialog->setNameFilters(filter);
     fileDialog->setDefaultSuffix(suffix);
     fileDialog->setAcceptMode(mode);
+    fileDialog->setFileMode(fmode);
 
     if(fileDialog->exec())
-        filepath = fileDialog->selectedFiles().at(0);
+        filepath = fileDialog->selectedFiles();
 
     return filepath;
 }
