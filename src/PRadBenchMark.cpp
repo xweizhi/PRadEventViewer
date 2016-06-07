@@ -2,23 +2,21 @@
 
 PRadBenchMark::PRadBenchMark()
 {
+    Reset();
 }
 
 PRadBenchMark::~PRadBenchMark()
 {
 }
 
-void PRadBenchMark::Start()
+void PRadBenchMark::Reset()
 {
-    gettimeofday(&timeStart, nullptr);
-}
-
-void PRadBenchMark::Stop()
-{
-    gettimeofday(&timeStop, nullptr);
+    time_point = std::chrono::high_resolution_clock::now();
 }
 
 unsigned int PRadBenchMark::GetElapsedTime()
 {
-    return (unsigned int)((timeStop.tv_sec - timeStart.tv_sec)*1000 + (timeStop.tv_usec - timeStart.tv_usec)/1000);
+    auto time_end = std::chrono::high_resolution_clock::now();
+    auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_point);
+    return int_ms.count();
 }

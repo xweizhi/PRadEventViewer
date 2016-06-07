@@ -792,7 +792,6 @@ void PRadEventViewer::openFile()
     eraseModuleBuffer();
 
     PRadBenchMark timer;
-    timer.Start();
 
     for(QString &file : fileList)
     {
@@ -802,8 +801,6 @@ void PRadEventViewer::openFile()
         readEventFromFile(fileName);
         UpdateStatusBar(DATA_FILE);
     }
-
-    timer.Stop();
 
     cout << "Parsed " << handler->GetEventCount() << " events from "
          << fileList.size() << " files."
