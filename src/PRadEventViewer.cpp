@@ -1129,6 +1129,8 @@ void PRadEventViewer::fitHistogram()
 void PRadEventViewer::correctGainFactor()
 {
     handler->CorrectGainFactor();
+    Refresh();
+    UpdateHistCanvas();
 }
 
 void PRadEventViewer::takeSnapShot()

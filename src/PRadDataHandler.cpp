@@ -35,7 +35,7 @@ static bool operator < (const int &e, const EPICSValue &v)
 
 
 PRadDataHandler::PRadDataHandler()
-: parser(new PRadEvioParser(this)), totalE(0), onlineMode(false)
+: parser(new PRadEvioParser(this)), totalE(0), charge(0), onlineMode(false)
 {
     // total energy histogram
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
@@ -142,6 +142,7 @@ void PRadDataHandler::Clear()
     // used memory won't be released, but it can be used again for new data file
     energyData.clear();
     totalE = 0;
+    charge = 0;
     parser->eventNb = 0;
     newEvent.clear();
     energyHist->Reset();
@@ -199,6 +200,12 @@ void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
             (*it).second.push_back(EPICSValue(parser->eventNb, value));
         }
     }
+}
+
+void PRadDataHandler::AccumulateBeamCharge(const double &c)
+{
+    if(newEvent.isPhysicsEvent())
+        charge += c;
 }
 
 float PRadDataHandler::FindEPICSValue(const string &name)
@@ -259,7 +266,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
 
     channel->FillHist(adcData.val, (PRadTriggerType)newEvent.type);
 
-    unsigned short sparVal = channel->Sparsification(adcData.val, (newEvent.type != LMS_Led));
+    unsigned short sparVal = channel->Sparsification(adcData.val, newEvent.isPhysicsEvent());
 
     if(sparVal) // only store events above pedestal in memory
     {
@@ -348,11 +355,9 @@ void PRadDataHandler::EndofThisEvent()
         energyData.push_back(newEvent); // save event
     }
 
-    if(newEvent.type == PHYS_TotalSum ||
-       newEvent.type == PHYS_TaggerE  ||
-       newEvent.type == PHYS_Scintillator
-      )
+    if(newEvent.isPhysicsEvent()) {
         energyHist->Fill(totalE); // fill energy histogram
+    }
 
 #ifdef recon_test
     ofstream outfile;
@@ -706,6 +711,9 @@ void PRadDataHandler::CorrectGainFactor(const string &reference)
             }
         }
     }
+
+    // refill energy hist since calibration constant changed
+    RefillEnergyHist();
 }
 
 void PRadDataHandler::ReadTDCList(const string &path)
@@ -906,4 +914,24 @@ void PRadDataHandler::ReadGainFactor(const string &path)
     }
 
     c_parser.CloseFile();
+}
+
+// Refill energy hist after correct gain factos
+void PRadDataHandler::RefillEnergyHist()
+{
+    energyHist->Reset();
+
+    for(auto &event : energyData)
+    {
+        if(!event.isPhysicsEvent())
+            continue;
+
+        double ene = 0.;
+        for(auto &adc : event.adc_data)
+        {
+            if(channelList[adc.channel_id]->GetType() == PRadDAQUnit::HyCalModule)
+                ene += channelList[adc.channel_id]->Calibration(adc.value);
+        }
+        energyHist->Fill(ene);
+    }
 }

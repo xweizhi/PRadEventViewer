@@ -65,6 +65,13 @@ struct EventData
     void update_time(const uint64_t &t) {timestamp = t;};
     void add_adc(const ADC_Data &a) {adc_data.push_back(a);};
     void add_tdc(const TDC_Data &t) {tdc_data.push_back(t);};
+    bool isPhysicsEvent()
+    {
+        return ( (type == PHYS_LeadGlassSum) ||
+                 (type == PHYS_TotalSum)     ||
+                 (type == PHYS_TaggerE)      ||
+                 (type == PHYS_Scintillator) );
+    };
 };
 
 struct EPICSValue
@@ -139,18 +146,21 @@ public:
     void UpdateTrgType(const unsigned char &trg);
     void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
     void UpdateEPICS(const string &name, const float &value);
+    void AccumulateBeamCharge(const double &c);
     float FindEPICSValue(const string &name);
     float FindEPICSValue(const string &name, const int &event);
     void PrintOutEPICS();
     void PrintOutEPICS(const string &name);
     unsigned int GetEventCount() {return energyData.size();};
     unsigned int GetScalarCount(const unsigned int &group = 0, const bool &gated = false);
+    double GetBeamCharge() {return charge;};
     vector<unsigned int> GetScalarsCount(const bool &gated = false);
     int GetCurrentEventNb();
     TH1D *GetEnergyHist() {return energyHist;};
     TH2I *GetTagEHist() {return TagEHist;};
     TH2I *GetTagTHist() {return TagTHist;};
     EventData &GetEventData(const unsigned int &index);
+    size_t GetEventDataSize() {return energyData.size();};
     void Clear();
     void EndofThisEvent();
     void OnlineMode() {onlineMode = true;};
@@ -171,10 +181,12 @@ public:
                       const double &range_max) throw(PRadException);
     void FitPedestal();
     void CorrectGainFactor(const string &reference = "LMS2");
+    void RefillEnergyHist();
 
 private:
     PRadEvioParser *parser;
     double totalE;
+    double charge;
     bool onlineMode;
 #ifdef MULTI_THREAD
     mutex myLock;

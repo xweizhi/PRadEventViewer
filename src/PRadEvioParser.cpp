@@ -352,6 +352,9 @@ void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
 #define UNGATED_TDC_GROUP 35
 #define UNGATED_TRG_GROUP 51
 
+#define FCUP_OFFSET 100.0
+#define FCUP_SLOPE 906.2
+
     if(size < 72) {
         cerr << "Unexpected scalar data bank size: " << size << endl;
         return;
@@ -379,6 +382,13 @@ void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
     }
 
     myHandler->UpdateScalarGroup(8, gated_counts, ungated_counts);
+
+    // calculate beam charge
+    double beam_current = ((double)ungated_counts[6] - FCUP_OFFSET)/FCUP_SLOPE;
+    double beam_charge = beam_current * (double)pulser_read/(double)REF_PULSER_FREQ;
+    double live_time = 1. - (double)data[7 + GATED_TRG_GROUP]/(double)pulser_read;
+
+    myHandler->AccumulateBeamCharge(live_time * beam_charge);
 }
 
 void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const int &roc_id)
