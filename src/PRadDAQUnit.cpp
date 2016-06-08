@@ -6,7 +6,7 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const ChannelAddress &daqAddr,
                          const std::string &tdc)
 : channelName(name), type(Undefined), address(daqAddr), pedestal(Pedestal(0, 0)),
-  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), calf(0), energy(0)
+  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), energy(0)
 {
     std::string hist_name;
 
@@ -139,7 +139,7 @@ void PRadDAQUnit::UpdateEnergy(const unsigned short &adcVal)
 // universe calibration code, can be implemented by derivative class
 double PRadDAQUnit::Calibration(const unsigned short &val)
 {
-    return (double)val*calf;
+    return (double)val*cal_const.factor;
 }
 
 // erase current data

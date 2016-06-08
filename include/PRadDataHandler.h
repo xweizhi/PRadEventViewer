@@ -123,6 +123,11 @@ public:
     void AddChannel(PRadDAQUnit *channel);
     void AddTDCGroup(PRadTDCGroup *group);
     void RegisterChannel(PRadDAQUnit *channel);
+    void ReadTDCList(const string &path);
+    void ReadChannelList(const string &path);
+    void ReadPedestalFile(const string &path);
+    void ReadCalibrationFile(const string &path);
+    void ReadGainFactor(const string &path);
     void Decode(const void *buffer);
     void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);

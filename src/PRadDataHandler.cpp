@@ -14,6 +14,7 @@
 #include "PRadEvioParser.h"
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
+#include "ConfigParser.h"
 #include "TFile.h"
 #include "TList.h"
 #include "TF1.h"
@@ -93,6 +94,13 @@ void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
 
 void PRadDataHandler::AddTDCGroup(PRadTDCGroup *group)
 {
+    if(GetTDCGroup(group->GetName()) || GetTDCGroup(group->GetAddress())) {
+        cout << "WARNING: Atempt to add existing TDC group "
+             << group->GetName()
+             << "." << endl;
+        return;
+    }
+
     group->AssignID(tdcList.size());
     tdcList.push_back(group);
 
@@ -656,4 +664,212 @@ void PRadDataHandler::CorrectGainFactor()
                         };
 
     double ped_mean = fit_gaussian(ref_alpha, 0, sep_val, 0.01);
+    double alpha_mean = fit_gaussian(ref_alpha, sep_val+1, 8191, 0.05);
+    double led_mean = fit_gaussian(ref_led);
+    double ref_factor = (led_mean - ped_mean)/(alpha_mean - ped_mean);
+
+    for(auto channel : channelList)
+    {
+        TH1 *hist = channel->GetHist("LMS");
+        if(hist != nullptr) {
+            double lms_mean = fit_gaussian(hist);
+            channel->UpdateGainFactor((lms_mean - channel->GetPedestal().mean)/ref_factor);
+        }
+    }
 }
+
+void PRadDataHandler::ReadTDCList(const string &path)
+{
+    ConfigParser c_parser;
+
+    if(!c_parser.OpenFile(path)) {
+        cout << "WARNING: Fail to open tdc group list file "
+             << "\"" << path << "\""
+             << ", no tdc groups created from this file."
+             << endl;
+    }
+
+    string name;
+    ChannelAddress addr;
+
+    while (c_parser.ParseLine())
+    {
+        if(!c_parser.NbofElements())
+            continue; // comment
+
+       if(c_parser.NbofElements() == 4) {
+            name = c_parser.TakeFirst();
+            addr.crate = stoi(c_parser.TakeFirst());
+            addr.slot = stoi(c_parser.TakeFirst());
+            addr.channel = stoi(c_parser.TakeFirst());
+
+            AddTDCGroup(new PRadTDCGroup(name, addr));
+        } else {
+            cout << "Unrecognized input format in tdc group list file, skipped one line!"
+                 << endl;
+        }
+    }
+
+    c_parser.CloseFile();
+}
+
+void PRadDataHandler::ReadChannelList(const string &path)
+{
+    ConfigParser c_parser;
+    
+    if(!c_parser.OpenFile(path)) {
+        cerr << "WARNING: Fail to open channel list file "
+                  << "\"" << path << "\""
+                  << ", no channel created from this file."
+                  << endl;
+        return;
+    }
+
+    string moduleName;
+    ChannelAddress daqAddr;
+    string tdcGroup;
+
+    // some info that is not read from list
+    while (c_parser.ParseLine())
+    {
+        if(!c_parser.NbofElements())
+            continue;
+
+        if(c_parser.NbofElements() == 8) {
+            moduleName = c_parser.TakeFirst();
+            daqAddr.crate = stoi(c_parser.TakeFirst());
+            daqAddr.slot = stoi(c_parser.TakeFirst());
+            daqAddr.channel = stoi(c_parser.TakeFirst());
+            tdcGroup = c_parser.TakeFirst();
+
+            PRadDAQUnit *specialCh = new PRadDAQUnit(moduleName, daqAddr, tdcGroup);
+            AddChannel(specialCh);
+        } else {
+            cout << "Unrecognized input format in channel list file, skipped one line!"
+                 << endl;
+        }
+    }
+
+    c_parser.CloseFile();
+}
+
+void PRadDataHandler::ReadPedestalFile(const string &path)
+{
+    ConfigParser c_parser;
+
+    if(!c_parser.OpenFile(path)) {
+        cout << "WARNING: Fail to open pedestal file "
+                  << "\"" << path << "\""
+                  << ", no pedestal data are read!"
+                  << endl;
+        return;
+    }
+
+    double val, sigma;
+    ChannelAddress daqInfo;
+    PRadDAQUnit *tmp;
+
+    while(c_parser.ParseLine())
+    {
+        if(!c_parser.NbofElements())
+            continue;
+
+        if(c_parser.NbofElements() == 5) {
+            daqInfo.crate = stoi(c_parser.TakeFirst());
+            daqInfo.slot = stoi(c_parser.TakeFirst());
+            daqInfo.channel = stoi(c_parser.TakeFirst());
+            val = stod(c_parser.TakeFirst());
+            sigma = stod(c_parser.TakeFirst());
+
+            if((tmp = GetChannel(daqInfo)) != nullptr)
+                tmp->UpdatePedestal(val, sigma);
+        } else {
+            cout << "Unrecognized input format in pedestal data file, skipped one line!"
+                 << endl;
+        }
+    }
+
+    c_parser.CloseFile();
+}
+
+void PRadDataHandler::ReadCalibrationFile(const string &path)
+{
+    ConfigParser c_parser;
+
+    if(!c_parser.OpenFile(path)) {
+        cout << "WARNING: Failed to calibration factor file "
+             << " \"" << path << "\""
+             << " , no calibration factors updated!"
+             << endl;
+        return;
+    }
+
+    string name;
+    double calFactor, gain;
+    int raw_gain;
+    PRadDAQUnit *tmp;
+
+    while(c_parser.ParseLine())
+    {
+        if(!c_parser.NbofElements())
+            continue;
+
+        if(c_parser.NbofElements() == 5) {
+            name = c_parser.TakeFirst();
+            raw_gain = stoi(c_parser.TakeFirst());
+            c_parser.TakeFirst(); // ref 1, discard
+            gain = stod(c_parser.TakeFirst()); // use ref 2
+            c_parser.TakeFirst(); // ref 3, discard
+
+            calFactor = 850./(double)raw_gain;
+
+            PRadDAQUnit::CalibrationConstant calConst(calFactor, gain);
+            if((tmp = GetChannel(name)) != nullptr)
+                tmp->UpdateCalibrationConstant(calConst);
+        } else {
+            cout << "Unrecognized input format in calibration factor file, skipped one line!"
+                 << endl;
+        }
+
+    }
+
+    c_parser.CloseFile();
+}
+
+void PRadDataHandler::ReadGainFactor(const string &path)
+{
+    ConfigParser c_parser;
+
+    if(!c_parser.OpenFile(path)) {
+        cout << "WARNING: Failed to gain factor file "
+             << " \"" << path << "\""
+             << " , no gain factors updated!"
+             << endl;
+        return;
+    }
+
+    string name;
+    double gain;
+    PRadDAQUnit *tmp;
+
+    while(c_parser.ParseLine())
+    {
+        if(!c_parser.NbofElements())
+            continue;
+
+        if(c_parser.NbofElements() == 2) {
+            name = c_parser.TakeFirst();
+            gain = stod(c_parser.TakeFirst());
+
+            if((tmp = GetChannel(name)) != nullptr)
+                tmp->UpdateGainFactor(gain);
+        } else {
+            cout << "Unrecognized input format in gain factor file, skipped one line!"
+                 << endl;
+        }
+
+    }
+
+    c_parser.CloseFile();
+}
+

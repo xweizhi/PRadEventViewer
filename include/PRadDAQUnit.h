@@ -27,6 +27,32 @@ public:
         : mean(m), sigma(s) {};
     };
 
+    struct CalibrationConstant
+    {
+        double factor;
+        double base_gain;
+        double curr_gain;
+
+        CalibrationConstant()
+        : factor(0), base_gain(0), curr_gain(0)
+        {};
+        CalibrationConstant(const double &calf, const double &gain)
+        : factor(calf), base_gain(gain), curr_gain(gain)
+        {};
+        CalibrationConstant(const double &calf, const double &gain, const double &cgain)
+        : factor(calf), base_gain(gain), curr_gain(cgain)
+        {};
+
+        void UpdateGainFactor(const double &gain)
+        {
+            curr_gain = gain;
+            if(curr_gain)
+                factor *= base_gain/curr_gain;
+            else
+                factor = 0;
+        };
+    };
+
 public:
     PRadDAQUnit(const std::string &name, const ChannelAddress &daqAddr, const std::string &tdc = "");
     virtual ~PRadDAQUnit();
@@ -34,7 +60,8 @@ public:
     Pedestal GetPedestal() {return pedestal;};
     std::string GetTDCName() {return tdcGroup;};
     void UpdatePedestal(const double &m, const double &s);
-    void UpdateCalibrationFactor(const double &c) {calf = c;};
+    void UpdateCalibrationConstant(const CalibrationConstant &c) {cal_const = c;};
+    void UpdateGainFactor(const double &g) {cal_const.UpdateGainFactor(g);};
     void UpdateEnergy(const unsigned short &adcVal);
     void UpdateType(const ChannelType &t) {type = t;};
     void CleanBuffer();
@@ -53,7 +80,7 @@ public:
     
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
-    const double &GetCalibrationFactor() {return calf;};
+    const double &GetCalibrationFactor() {return cal_const.factor;};
     const double &GetEnergy() {return energy;};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
     virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
@@ -91,7 +118,7 @@ protected:
     int occupancy;
     unsigned short sparsify;
     unsigned short channelID;
-    double calf;
+    CalibrationConstant cal_const;
     double energy;
     TH1 *hist[MAX_Trigger];
     std::unordered_map<std::string, TH1*> histograms;

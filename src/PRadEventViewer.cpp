@@ -144,15 +144,15 @@ void PRadEventViewer::generateSpectrum()
 // crate HyCal modules from module list
 void PRadEventViewer::generateHyCalModules()
 {
-    readTDCList();
     readModuleList();
-    readSpecialChannels();
+    handler->ReadTDCList("config/tdc_group_list.txt");
+    handler->ReadChannelList("config/special_channels.txt");
 
     // end of channel/module reading
     buildModuleMap();
 
-    readPedestalData("config/pedestal.dat");
-    readCalibrationData("config/calibration_factors.txt");
+    handler->ReadPedestalFile("config/pedestal.dat");
+    handler->ReadCalibrationFile("config/calibration.txt");
 
     // Default setting
     selection = HyCal->GetModuleList().at(0);
@@ -237,7 +237,7 @@ void PRadEventViewer::createMainMenu()
     QMenu *caliMenu = new QMenu(tr("&Calibration"));
 
 
-    QAction *openCalFileAction = caliMenu->addAction(tr("Read Calibration Factors"));
+    QAction *openCalFileAction = caliMenu->addAction(tr("Read Calibration File"));
 
     QAction *openGainFileAction = caliMenu->addAction(tr("Normalize Gain From File"));
 
@@ -413,40 +413,6 @@ void PRadEventViewer::setupInfoWindow()
 // read information from configuration files                                  //
 //============================================================================//
 
-// read tdc groups from file
-void PRadEventViewer::readTDCList()
-{
-    ConfigParser c_parser;
-
-    if(!c_parser.OpenFile("config/tdc_group_list.txt")) {
-        std::cout << "WARNING: Missing configuration file \"config/tdc_group_list.txt\""
-                  << ", cannot create tdc groups!"
-                  << std::endl;
-    }
-
-    std::string name;
-    ChannelAddress addr;
-
-    while (c_parser.ParseLine())
-    {
-        if(!c_parser.NbofElements())
-            continue; // comment
-
-       if(c_parser.NbofElements() == 4) {
-            name = c_parser.TakeFirst();
-            addr.crate = std::stoi(c_parser.TakeFirst());
-            addr.slot = std::stoi(c_parser.TakeFirst());
-            addr.channel = std::stoi(c_parser.TakeFirst());
-            handler->AddTDCGroup(new PRadTDCGroup(name, addr));
-        } else {
-            std::cout << "Unrecognized input format in configuration file, skipped one line!"
-                      << std::endl;
-        }
-    }
-
-    c_parser.CloseFile();
-}
-
 // read module list from file
 void PRadEventViewer::readModuleList()
 {
@@ -493,43 +459,6 @@ void PRadEventViewer::readModuleList()
             newModule->UpdateHVSetup(hvAddr);
             HyCal->addModule(newModule);
             handler->RegisterChannel(newModule);
-        } else {
-            std::cout << "Unrecognized input format in configuration file, skipped one line!"
-                      << std::endl;
-        }
-    }
-
-    c_parser.CloseFile();
-}
-
-void PRadEventViewer::readSpecialChannels()
-{
-    ConfigParser c_parser;
-    
-    if(!c_parser.OpenFile("config/special_channels.txt")) {
-        std::cerr << "WARNING: Missing configuration file \"config/special_channels.txt\"."
-                  << std::endl;
-        return;
-    }
-
-    std::string moduleName;
-    ChannelAddress daqAddr;
-    std::string tdcGroup;
-
-    // some info that is not read from list
-    while (c_parser.ParseLine())
-    {
-        if(!c_parser.NbofElements())
-            continue;
-        if(c_parser.NbofElements() == 8) {
-            moduleName = c_parser.TakeFirst();
-            daqAddr.crate = std::stoi(c_parser.TakeFirst());
-            daqAddr.slot = std::stoi(c_parser.TakeFirst());
-            daqAddr.channel = std::stoi(c_parser.TakeFirst());
-            tdcGroup = c_parser.TakeFirst();
-
-            PRadDAQUnit *specialCh = new PRadDAQUnit(moduleName, daqAddr, tdcGroup);
-            handler->AddChannel(specialCh);
         } else {
             std::cout << "Unrecognized input format in configuration file, skipped one line!"
                       << std::endl;
@@ -591,71 +520,6 @@ void PRadEventViewer::buildModuleMap()
         if(has_module)
             HyCal->AddTDCBox(tdcGroupName, Qt::black, groupBox, bkgColor);
     }
-}
-
-// read the pedestal data from previous file
-void PRadEventViewer::readPedestalData(const QString &filename)
-{
-    ConfigParser c_parser;
-
-    if(!c_parser.OpenFile(filename.toStdString())) {
-        std::cout << "WARNING: Missing pedestal file \"" << filename.toStdString()
-                  << "\", no pedestal data are read!" << std::endl;
-        return;
-    }
-
-    double val, sigma;
-    ChannelAddress daqInfo;
-    PRadDAQUnit *tmp;
-
-    while(c_parser.ParseLine())
-    {
-        if(!c_parser.NbofElements())
-            continue;
-        if(c_parser.NbofElements() == 5) {
-            daqInfo.crate = std::stoi(c_parser.TakeFirst());
-            daqInfo.slot = std::stoi(c_parser.TakeFirst());
-            daqInfo.channel = std::stoi(c_parser.TakeFirst());
-            val = std::stod(c_parser.TakeFirst());
-            sigma = std::stod(c_parser.TakeFirst());
-
-            if((tmp = handler->GetChannel(daqInfo)) != nullptr)
-                tmp->UpdatePedestal(val, sigma);
-        }
-    }
-
-    c_parser.CloseFile();
-}
-
-void PRadEventViewer::readCalibrationData(const QString &filename)
-{
-    ConfigParser c_parser;
-
-    if(!c_parser.OpenFile(filename.toStdString())) {
-        std::cout << "WARNING: Missing calibration data file \"" << filename.toStdString()
-                  << "\", use default calibration factors!" << std::endl;
-        return;
-    }
-
-    std::string name;
-    double calFactor;
-
-    while(c_parser.ParseLine())
-    {
-        if(!c_parser.NbofElements())
-            continue;
-
-        if(c_parser.NbofElements() == 2) {
-            name = c_parser.TakeFirst();
-            calFactor = std::stod(c_parser.TakeFirst());
-
-            PRadDAQUnit *channel = handler->GetChannel(name);
-            if(channel != nullptr)
-                channel->UpdateCalibrationFactor(calFactor);
-        }
-    }
-
-    c_parser.CloseFile();
 }
 
 //============================================================================//
@@ -839,7 +703,7 @@ void PRadEventViewer::openPedFile()
                            "");
 
     if (!fileName.isEmpty()) {
-        readPedestalData(fileName);
+        handler->ReadPedestalFile(fileName.toStdString());
     }
 }
 
@@ -858,7 +722,7 @@ void PRadEventViewer::openCalibrationFile()
                            "");
 
     if (!fileName.isEmpty()) {
-        readCalibrationData(fileName);
+        handler->ReadCalibrationFile(fileName.toStdString());
     }
 }
 
@@ -876,7 +740,7 @@ void PRadEventViewer::openGainFactorFile()
                            "");
 
     if (!fileName.isEmpty()) {
-        readCalibrationData(fileName);
+        handler->ReadGainFactor(fileName.toStdString());
     }
 }
 
