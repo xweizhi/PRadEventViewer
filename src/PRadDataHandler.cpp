@@ -617,6 +617,9 @@ void PRadDataHandler::FitPedestal()
 
 void PRadDataHandler::CorrectGainFactor()
 {
+#define PED_LED_REF 1000  // separation value for led signal and pedestal signal of reference PMT
+#define PED_LED_HYC 30 // separation value for led signal and pedestal signal of all HyCal Modules
+
     // firstly, get the reference factor from LMS PMT
     // LMS 2 seems to be the best one for fitting
     PRadDAQUnit *ref_ch = GetChannel("LMS2");
@@ -633,8 +636,7 @@ void PRadDataHandler::CorrectGainFactor()
         return;
     }
 
-    const int sep_val = 1000;
-    int sep_bin = ref_alpha->GetXaxis()->FindBin(sep_val);
+    int sep_bin = ref_alpha->GetXaxis()->FindBin(PED_LED_REF);
     int end_bin = ref_alpha->GetNbinsX(); // 1 for overflow bin and 1 for underflow bin
 
     if(ref_alpha->Integral(0, sep_bin) < 1000 || ref_alpha->Integral(sep_bin, end_bin) < 1000) {
@@ -645,13 +647,13 @@ void PRadDataHandler::CorrectGainFactor()
     auto fit_gaussian = [] (TH1* hist,
                             const int &range_min = 0,
                             const int &range_max = 8191,
-                            const double &warn_ratio = 0.05)
+                            const double &warn_ratio = 0.06)
                         {
                             int beg_bin = hist->GetXaxis()->FindBin(range_min);
                             int end_bin = hist->GetXaxis()->FindBin(range_max) - 1;
 
                             if(hist->Integral(beg_bin, end_bin) < 1000) {
-                                cerr << "Not enough entries in histogram " << hist->GetName()
+                                cout << "WARNING: Not enough entries in histogram " << hist->GetName()
                                      << ". Abort fitting!" << endl;
                                 return 0.;
                             }
@@ -675,9 +677,15 @@ void PRadDataHandler::CorrectGainFactor()
                             return mean;
                         };
 
-    double ped_mean = fit_gaussian(ref_alpha, 0, sep_val, 0.02);
-    double alpha_mean = fit_gaussian(ref_alpha, sep_val+1, 8191, 0.05);
+    double ped_mean = fit_gaussian(ref_alpha, 0, PED_LED_REF, 0.02);
+    double alpha_mean = fit_gaussian(ref_alpha, PED_LED_REF + 1, 8191, 0.05);
     double led_mean = fit_gaussian(ref_led);
+
+    if(ped_mean == 0. || alpha_mean == 0. || led_mean == 0.) {
+        cerr << "Failed to get gain factor from reference PMT, abort gain correction." << endl;
+        return;
+    }
+
     double ref_factor = (led_mean - ped_mean)/(alpha_mean - ped_mean);
 
     for(auto channel : channelList)
@@ -687,9 +695,14 @@ void PRadDataHandler::CorrectGainFactor()
 
         TH1 *hist = channel->GetHist("LMS");
         if(hist != nullptr) {
-            double lms_mean = fit_gaussian(hist, 1000, 8191);
-            if(lms_mean > 0)
-                channel->UpdateGainFactor((lms_mean - channel->GetPedestal().mean)/ref_factor);
+            double ch_led = fit_gaussian(hist) - channel->GetPedestal().mean;
+            if(ch_led > PED_LED_HYC) {// meaningful led signal
+                channel->UpdateGainFactor(ch_led/ref_factor);
+            } else {
+                cout << "WARNING: Gain factor of " << channel->GetName()
+                     << " is not updated due to bad fitting of LED signal."
+                     << endl;
+            }
         }
     }
 }
@@ -891,4 +904,3 @@ void PRadDataHandler::ReadGainFactor(const string &path)
 
     c_parser.CloseFile();
 }
-
