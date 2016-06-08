@@ -572,8 +572,11 @@ void PRadDataHandler::FitHistogram(const string &channel,
         if(hist == nullptr) {
             throw PRadException("Fit Histogram Failure", "Histogram " + hist_name + " does not exist!");
         }
-        
-        if(!hist->Integral(range_min, range_max)) {
+
+        int beg_bin = hist->GetXaxis()->FindBin(range_min);
+        int end_bin = hist->GetXaxis()->FindBin(range_max) - 1;
+ 
+        if(!hist->Integral(beg_bin, end_bin)) {
             throw PRadException("Fit Histogram Failure", "Histogram does not have entries in specified range!");
         }
 
@@ -644,6 +647,15 @@ void PRadDataHandler::CorrectGainFactor()
                             const int &range_max = 8191,
                             const double &warn_ratio = 0.05)
                         {
+                            int beg_bin = hist->GetXaxis()->FindBin(range_min);
+                            int end_bin = hist->GetXaxis()->FindBin(range_max) - 1;
+
+                            if(hist->Integral(beg_bin, end_bin) < 1000) {
+                                cerr << "Not enough entries in histogram " << hist->GetName()
+                                     << ". Abort fitting!" << endl;
+                                return 0.;
+                            }
+
                             TF1 *fit = new TF1("tmpfit", "gaus", range_min, range_max);
 
                             hist->Fit(fit, "qR");
@@ -663,17 +675,21 @@ void PRadDataHandler::CorrectGainFactor()
                             return mean;
                         };
 
-    double ped_mean = fit_gaussian(ref_alpha, 0, sep_val, 0.01);
+    double ped_mean = fit_gaussian(ref_alpha, 0, sep_val, 0.02);
     double alpha_mean = fit_gaussian(ref_alpha, sep_val+1, 8191, 0.05);
     double led_mean = fit_gaussian(ref_led);
     double ref_factor = (led_mean - ped_mean)/(alpha_mean - ped_mean);
 
     for(auto channel : channelList)
     {
+        if(channel->GetType() != PRadDAQUnit::HyCalModule)
+            continue;
+
         TH1 *hist = channel->GetHist("LMS");
         if(hist != nullptr) {
-            double lms_mean = fit_gaussian(hist);
-            channel->UpdateGainFactor((lms_mean - channel->GetPedestal().mean)/ref_factor);
+            double lms_mean = fit_gaussian(hist, 1000, 8191);
+            if(lms_mean > 0)
+                channel->UpdateGainFactor((lms_mean - channel->GetPedestal().mean)/ref_factor);
         }
     }
 }
@@ -821,6 +837,7 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
             gain = stod(c_parser.TakeFirst()); // use ref 2
             c_parser.TakeFirst(); // ref 3, discard
 
+            //TODO, replace the edge with calibration factor
             calFactor = 850./(double)raw_gain;
 
             PRadDAQUnit::CalibrationConstant calConst(calFactor, gain);
@@ -859,7 +876,9 @@ void PRadDataHandler::ReadGainFactor(const string &path)
 
         if(c_parser.NbofElements() == 2) {
             name = c_parser.TakeFirst();
+            c_parser.TakeFirst();
             gain = stod(c_parser.TakeFirst());
+            c_parser.TakeFirst();
 
             if((tmp = GetChannel(name)) != nullptr)
                 tmp->UpdateGainFactor(gain);
