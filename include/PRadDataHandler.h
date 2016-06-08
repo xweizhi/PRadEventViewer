@@ -170,7 +170,7 @@ public:
                       const double &range_min,
                       const double &range_max) throw(PRadException);
     void FitPedestal();
-    void CorrectGainFactor();
+    void CorrectGainFactor(const string &reference = "LMS2");
 
 private:
     PRadEvioParser *parser;
