@@ -10,29 +10,32 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
 {
     std::string hist_name;
 
+    for(auto &member: hist)
+    {
+        member = nullptr;
+    }
+
     // some default histograms
     AddHist("PHYS", "Integer", (channelName + " Physics Events").c_str(), 2048, 0, 8191);
     AddHist("PED", "Integer", (channelName + " Pedestal Events").c_str(), 2048, 0, 2047);
     AddHist("LMS", "Integer", (channelName + " LED Source").c_str(), 2048, 0, 8191);
 
     // default hist-trigger mapping
-    MapHist("PED", TI_Error);
-    MapHist("PED", LMS_Alpha);
-    MapHist("PHYS", PHYS_LeadGlassSum);
-    MapHist("PHYS", PHYS_TotalSum);
-    MapHist("PHYS", PHYS_TaggerE);
-    MapHist("PHYS", PHYS_Scintillator);
-    MapHist("LMS", LMS_Led);
-
-    // special case
-    if(name.find("LMS") != std::string::npos) {
-        GetHist("PHYS")->SetTitle((channelName + " Alpha Source").c_str());
+//    MapHist("PED", TI_Error);
+    if(channelName.find("LMS") != std::string::npos) {
         MapHist("PHYS", LMS_Alpha);
         MapHist("PED", PHYS_LeadGlassSum);
         MapHist("PED", PHYS_TotalSum);
         MapHist("PED", PHYS_TaggerE);
         MapHist("PED", PHYS_Scintillator);
+    } else {
+        MapHist("PED", LMS_Alpha);
+        MapHist("PHYS", PHYS_LeadGlassSum);
+        MapHist("PHYS", PHYS_TotalSum);
+        MapHist("PHYS", PHYS_TaggerE);
+        MapHist("PHYS", PHYS_Scintillator);
     }
+    MapHist("LMS", LMS_Led);
 }
 
 PRadDAQUnit::~PRadDAQUnit()

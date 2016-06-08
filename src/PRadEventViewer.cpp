@@ -233,6 +233,24 @@ void PRadEventViewer::createMainMenu()
     connect(hvRestoreAction, SIGNAL(triggered()), this, SLOT(restoreHVSetting()));
     menuBar()->addMenu(hvMenu);
 
+    // calibration related
+    QMenu *caliMenu = new QMenu(tr("&Calibration"));
+
+
+    QAction *openCalFileAction = caliMenu->addAction(tr("Read Calibration Factors"));
+
+    QAction *openGainFileAction = caliMenu->addAction(tr("Normalize Gain From File"));
+
+    QAction *correctGainAction = caliMenu->addAction(tr("Normalize Gain From Data"));
+
+    QAction *fitPedAction = caliMenu->addAction(tr("Update Pedestal From Data"));
+
+    connect(openCalFileAction, SIGNAL(triggered()), this, SLOT(openCalibrationFile()));
+    connect(openGainFileAction, SIGNAL(triggered()), this, SLOT(openGainFactorFile()));
+    connect(correctGainAction, SIGNAL(triggered()), this, SLOT(correctGainFactor()));
+    connect(fitPedAction, SIGNAL(triggered()), this, SLOT(fitPedestal()));
+    menuBar()->addMenu(caliMenu);
+
     // tool menu, useful tools
     QMenu *toolMenu = new QMenu(tr("&Tools"));
 
@@ -245,16 +263,12 @@ void PRadEventViewer::createMainMenu()
     QAction *fitHistAction = toolMenu->addAction(tr("Fit Histogram"));
     fitHistAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_H));
  
-    QAction *fitPedAction = toolMenu->addAction(tr("Fit Pedestal"));
-    fitPedAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_P));
-
     QAction *snapShotAction = toolMenu->addAction(tr("Take SnapShot"));
     snapShotAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_S));
 
     connect(eraseAction, SIGNAL(triggered()), this, SLOT(eraseBufferAction()));
     connect(findPeakAction, SIGNAL(triggered()), this, SLOT(findPeak()));
     connect(fitHistAction, SIGNAL(triggered()), this, SLOT(fitHistogram()));
-    connect(fitPedAction, SIGNAL(triggered()), this, SLOT(fitPedestal()));
     connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
 
     menuBar()->addMenu(toolMenu);
@@ -813,22 +827,56 @@ void PRadEventViewer::openFile()
 // open pedestal file
 void PRadEventViewer::openPedFile()
 {
-    QString codaData;
-    codaData.sprintf("%s", getenv("CODA_DATA"));
-    if (codaData.isEmpty())
-        codaData = QDir::currentPath();
+    QString codaData = QDir::currentPath() + "/config";
 
     QStringList filters;
     filters << "Data files (*.dat *.txt)"
             << "All files (*)";
 
-    fileName = getFileName(tr("Choose a data file to generate pedestal"),
+    fileName = getFileName(tr("Open pedestal file"),
                            codaData,
                            filters,
                            "");
 
     if (!fileName.isEmpty()) {
         readPedestalData(fileName);
+    }
+}
+
+// open calibration factor file
+void PRadEventViewer::openCalibrationFile()
+{
+    QString codaData = QDir::currentPath() + "/config";
+
+    QStringList filters;
+    filters << "Data files (*.dat *.txt)"
+            << "All files (*)";
+
+    fileName = getFileName(tr("Open calibration constants file"),
+                           codaData,
+                           filters,
+                           "");
+
+    if (!fileName.isEmpty()) {
+        readCalibrationData(fileName);
+    }
+}
+
+void PRadEventViewer::openGainFactorFile()
+{
+    QString codaData = QDir::currentPath() + "/config";
+
+    QStringList filters;
+    filters << "Data files (*.dat *.txt)"
+            << "All files (*)";
+
+    fileName = getFileName(tr("Open gain factors file"),
+                           codaData,
+                           filters,
+                           "");
+
+    if (!fileName.isEmpty()) {
+        readCalibrationData(fileName);
     }
 }
 
@@ -1148,16 +1196,9 @@ void PRadEventViewer::findPeak()
 
 void PRadEventViewer::fitPedestal()
 {
-    for(auto &channel : handler->GetChannelList())
-    {
-        TH1 *pedHist = channel->GetHist("PED");
-        if(pedHist->Integral() < 1000) continue;
-        pedHist->Fit("gaus");
-        TF1 *myfit = (TF1*) pedHist->GetFunction("gaus");
-        double p0 = myfit->GetParameter(1);
-        double p1 = myfit->GetParameter(2);
-        channel->UpdatePedestal(p0, p1);
-    }
+    handler->FitPedestal();
+    Refresh();
+    UpdateHistCanvas();
 }
 
 void PRadEventViewer::fitHistogram()
@@ -1175,15 +1216,17 @@ void PRadEventViewer::fitHistogram()
 
     label << tr("Channel")
           << tr("Histogram Name")
+          << tr("Fitting Function (root format)")
           << tr("Range Min.")
           << tr("Range Max.");
 
     de_value << ((selection) ? QString::fromStdString(selection->GetName()) : "W1")
              << "PHYS"
+             << "gaus"
              << "0"
              << "8000";
 
-    for(int i = 0; i < 4; ++i)
+    for(int i = 0; i < 5; ++i)
     {
         QLineEdit *lineEdit = new QLineEdit(&dialog);
         lineEdit->setText(de_value.at(i));
@@ -1201,46 +1244,27 @@ void PRadEventViewer::fitHistogram()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         // If the user didn't dismiss the dialog, do something with the fields
-        QString ch_name = fields.at(0)->text();
-        PRadDAQUnit *ch = handler->GetChannel(ch_name.toStdString());
-        if(ch == nullptr) {
-            QMessageBox::critical(this,
-                                  "Fit Histogram Failure",
-                                  "Channel " + ch_name + " does not exist!");
-            return;
-        }
+        try {
+            handler->FitHistogram(fields.at(0)->text().toStdString(),
+                                  fields.at(1)->text().toStdString(),
+                                  fields.at(2)->text().toStdString(),
+                                  fields.at(3)->text().toDouble(),
+                                  fields.at(4)->text().toDouble());
 
-        QString h_name = fields.at(1)->text();
-        TH1 *hist = ch->GetHist(h_name.toStdString());
-        if(hist == nullptr) {
-            QMessageBox::critical(this,
-                                  "Fit Histogram Failure",
-                                  "Histogram " + h_name + " does not exist!");
-            return;
-        }
-        
-        int fit_min = fields.at(2)->text().toInt();
-        int fit_max = fields.at(3)->text().toInt();
+            UpdateHistCanvas(); 
 
-        if(!hist->Integral(fit_min, fit_max)) {
+        } catch (PRadException e) {
             QMessageBox::critical(this,
-                                  "Fit Histogram Failure",
-                                  "Histogram does not have entries in specified range!");
-            return; 
+                                  QString::fromStdString(e.FailureType()),
+                                  QString::fromStdString(e.FailureDesc()));
+ 
         }
-
-        TF1 *fit = new TF1("newfit", "gaus", fit_min, fit_max);
-        hist->Fit(fit,"qlR");
-        TF1 *myfit = (TF1*) hist->GetFunction("newfit");
-        double p0 = myfit->GetParameter(1);
-        double p1 = myfit->GetParameter(2);
-        std::cout << "Fit histogram " << hist->GetTitle()
-                  << ", mean: " << p0
-                  << ", sigma: " << p1
-                  << std::endl;
-        UpdateHistCanvas(); 
-        delete fit;
     }
+}
+
+void PRadEventViewer::correctGainFactor()
+{
+    handler->CorrectGainFactor();
 }
 
 void PRadEventViewer::takeSnapShot()

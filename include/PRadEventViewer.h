@@ -94,11 +94,14 @@ public slots:
 private slots:
     void openFile();
     void openPedFile();
+    void openCalibrationFile();
+    void openGainFactorFile();
     void saveHistToFile();
     void savePedestalFile();
     void findPeak();
     void fitPedestal();
     void fitHistogram();
+    void correctGainFactor();
     void takeSnapShot();
     void changeHistType(int index);
     void changeAnnoType(int index);

@@ -23,6 +23,7 @@ public:
         ET_PUT_ERROR,
         HIGH_VOLTAGE_ERROR,
     };
+    PRadException(const std::string &typ, const std::string &txt = "", const std::string &aux = "");
     PRadException(PRadExceptionType typ = UNKNOWN_ERROR, const std::string &txt = "", const std::string &aux = "");
     PRadException(PRadExceptionType typ, const std::string &txt, const std::string &file, const std::string &func, int line);
     virtual ~PRadException(void) throw() {};
@@ -32,6 +33,7 @@ public:
 
 public:
     PRadExceptionType type;             // exception type
+    std::string title;
     std::string text;     // primary text
     std::string auxText;  // auxiliary text
 };

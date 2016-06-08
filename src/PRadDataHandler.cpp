@@ -16,6 +16,7 @@
 #include "PRadTDCGroup.h"
 #include "TFile.h"
 #include "TList.h"
+#include "TF1.h"
 #include "TH1.h"
 #include "TH2.h"
 
@@ -498,7 +499,7 @@ void PRadDataHandler::SaveHistograms(const string &path)
     for(auto channel : chList)
     {
         TList hlist;
-        std::vector<TH1*> hists = channel->GetHistList();
+        vector<TH1*> hists = channel->GetHistList();
         for(auto hist : hists)
         {
             hlist.Add(hist);
@@ -545,4 +546,114 @@ vector<unsigned int> PRadDataHandler::GetScalarsCount(const bool &gated)
     }
 
     return result;
+}
+
+void PRadDataHandler::FitHistogram(const string &channel,
+                                   const string &hist_name,
+                                   const string &fit_function,
+                                   const double &range_min,
+                                   const double &range_max) throw(PRadException)
+{
+        // If the user didn't dismiss the dialog, do something with the fields
+        PRadDAQUnit *ch = GetChannel(channel);
+        if(ch == nullptr) {
+            throw PRadException("Fit Histogram Failure", "Channel " + channel + " does not exist!");
+        }
+
+        TH1 *hist = ch->GetHist(hist_name);
+        if(hist == nullptr) {
+            throw PRadException("Fit Histogram Failure", "Histogram " + hist_name + " does not exist!");
+        }
+        
+        if(!hist->Integral(range_min, range_max)) {
+            throw PRadException("Fit Histogram Failure", "Histogram does not have entries in specified range!");
+        }
+
+        TF1 *fit = new TF1("newfit", fit_function.c_str(), range_min, range_max);
+
+        hist->Fit(fit, "qR");
+        TF1 *myfit = (TF1*) hist->GetFunction("newfit");
+
+        // print out result
+        cout << "Fit histogram " << hist->GetTitle() << endl;
+        for(int i = 0; i < myfit->GetNpar(); ++i)
+        {
+            cout << "Parameter " << i+1 << ": " << myfit->GetParameter(i+1) << endl;
+        }
+        cout << endl;
+
+        delete fit;
+}
+
+void PRadDataHandler::FitPedestal()
+{
+    for(auto &channel : channelList)
+    {
+        TH1 *pedHist = channel->GetHist("PED");
+
+        if(pedHist == nullptr || pedHist->Integral() < 1000)
+            continue;
+
+        pedHist->Fit("gaus", "q");
+
+        TF1 *myfit = (TF1*) pedHist->GetFunction("gaus");
+        double p0 = myfit->GetParameter(1);
+        double p1 = myfit->GetParameter(2);
+
+        channel->UpdatePedestal(p0, p1);
+    }
+}
+
+void PRadDataHandler::CorrectGainFactor()
+{
+    // firstly, get the reference factor from LMS PMT
+    // LMS 2 seems to be the best one for fitting
+    PRadDAQUnit *ref_ch = GetChannel("LMS2");
+    if(ref_ch == nullptr) {
+        cerr << "Cannot find the reference PMT channel for gain factor correction, abort gain correction." << endl;
+        return;
+    }
+
+    // reference pmt has both pedestal and alpha source signals in this histogram
+    TH1* ref_alpha = ref_ch->GetHist("PHYS");
+    TH1* ref_led = ref_ch->GetHist("LMS");
+    if(ref_alpha == nullptr || ref_led == nullptr) {
+        cerr << "Cannot find the histograms of reference PMT, abort gain correction."  << endl;
+        return;
+    }
+
+    const int sep_val = 1000;
+    int sep_bin = ref_alpha->GetXaxis()->FindBin(sep_val);
+    int end_bin = ref_alpha->GetNbinsX(); // 1 for overflow bin and 1 for underflow bin
+
+    if(ref_alpha->Integral(0, sep_bin) < 1000 || ref_alpha->Integral(sep_bin, end_bin) < 1000) {
+        cerr << "Not enough entries in pedestal histogram of reference PMT, abort gain correction." << endl;
+        return;
+    }
+
+    auto fit_gaussian = [] (TH1* hist,
+                            const int &range_min = 0,
+                            const int &range_max = 8191,
+                            const double &warn_ratio = 0.05)
+                        {
+                            TF1 *fit = new TF1("tmpfit", "gaus", range_min, range_max);
+
+                            hist->Fit(fit, "qR");
+                            TF1 *hist_fit = hist->GetFunction("tmpfit");
+                            double mean = hist_fit->GetParameter(1);
+                            double sigma = hist_fit->GetParameter(2);
+                            if(sigma/mean > warn_ratio) {
+                                cout << "WARNING: Bad fitting for "
+                                     << hist->GetTitle()
+                                     << ". Mean: " << mean
+                                     << ", sigma: " << sigma
+                                     << endl;
+                            }
+
+                            delete fit;
+
+                            return mean;
+                        };
+
+    double ped_mean = fit_gaussian(ref_alpha, 0, sep_val, 0.01);
 }

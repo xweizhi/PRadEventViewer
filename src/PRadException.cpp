@@ -9,13 +9,18 @@
 
 using namespace std;
 
+PRadException::PRadException(const string &typ, const string &txt, const string &aux)
+: title(typ), text(txt), auxText(aux)
+{
+}
+
 PRadException::PRadException(PRadExceptionType typ, const string &txt, const string &aux) 
-  : type(typ), text(txt), auxText(aux)
+: type(typ), text(txt), auxText(aux)
 {
 }
 
 PRadException::PRadException(PRadExceptionType typ, const string &txt, const string &file, const string &func, int line) 
-  : type(typ), text(txt)
+: type(typ), text(txt)
 {
     ostringstream oss;
     oss <<  "    evioException occured in file " << file << ", function " << func << ", line " << line;
@@ -27,15 +32,18 @@ string PRadException::FailureDesc(void) const throw()
 {
     ostringstream oss;
     oss << text << endl
-        << endl
-        << auxText << dec;
+        << auxText;
     return(oss.str());
 }
 
 string PRadException::FailureType(void) const throw()
 {
+    if(!title.empty())
+        return title;
+
     string oss;
-    switch(type) {
+    switch(type)
+    {
     case ET_CONNECT_ERROR:
         oss = "ET CONNECT ERROR";
         break;
@@ -64,5 +72,6 @@ string PRadException::FailureType(void) const throw()
         oss = "UNKNOWN ERROR";
         break;
     }
+
     return(oss);
 }

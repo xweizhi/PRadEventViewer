@@ -16,6 +16,7 @@
 #include <deque>
 #include <vector>
 #include "datastruct.h"
+#include "PRadException.h"
 
 using namespace std;
 
@@ -158,6 +159,13 @@ public:
     PRadTDCGroup *GetTDCGroup(const ChannelAddress &addr);
     const unordered_map< string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};
     vector< PRadDAQUnit* > GetChannelList() {return channelList;};
+    void FitHistogram(const string &channel,
+                      const string &hist_name,
+                      const string &fit_func,
+                      const double &range_min,
+                      const double &range_max) throw(PRadException);
+    void FitPedestal();
+    void CorrectGainFactor();
 
 private:
     PRadEvioParser *parser;
