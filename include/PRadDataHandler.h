@@ -161,7 +161,9 @@ public:
     TH2I *GetTagTHist() {return TagTHist;};
     EventData &GetEventData(const unsigned int &index);
     size_t GetEventDataSize() {return energyData.size();};
+    double GetEnergy() {return totalE;};
     void Clear();
+    void StartofNewEvent();
     void EndofThisEvent();
     void OnlineMode() {onlineMode = true;};
     void OfflineMode() {onlineMode = false;};

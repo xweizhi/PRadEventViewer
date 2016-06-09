@@ -60,6 +60,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
     case CODA_Event:
     case CODA_Sync:
     case EPICS_Info:
+        myHandler->StartofNewEvent();
         break; // go on to process
     case CODA_Prestart:
     case CODA_Go:

@@ -901,15 +901,15 @@ void PRadEventViewer::UpdateStatusInfo()
     }
 
     // first value column
-    valueList << selection->GetReadID()                              // module ID
-              << typeInfo                                            // module type
-              << tr("C") + QString::number(daqInfo.crate)            // daq crate
-                 + tr(", S") + QString::number(daqInfo.slot)         // daq slot
-                 + tr(", Ch") + QString::number(daqInfo.channel)     // daq channel
-              << QString::fromStdString(selection->GetTDCName())     // tdc group
-              << tr("C") + QString::number(hvInfo.crate)             // hv crate
-                 + tr(", S") + QString::number(hvInfo.slot)          // hv slot
-                 + tr(", Ch") + QString::number(hvInfo.channel);     // hv channel
+    valueList << selection->GetReadID()                                   // module ID
+              << typeInfo                                                 // module type
+              << tr("C") + QString::number(daqInfo.crate)                 // daq crate
+                 + tr(", S") + QString::number(daqInfo.slot)              // daq slot
+                 + tr(", Ch") + QString::number(daqInfo.channel)          // daq channel
+              << QString::fromStdString(selection->GetTDCName())          // tdc group
+              << tr("C") + QString::number(hvInfo.crate)                  // hv crate
+                 + tr(", S") + QString::number(hvInfo.slot)               // hv slot
+                 + tr(", Ch") + QString::number(hvInfo.channel);          // hv channel
 
     PRadDAQUnit::Pedestal ped = selection->GetPedestal();
     PRadHVSystem::Voltage volt = hvSystem->GetVoltage(hvInfo.crate, hvInfo.slot, hvInfo.channel);
@@ -918,17 +918,18 @@ void PRadEventViewer::UpdateStatusInfo()
                    + QString::number(volt.Vset) + tr(" V");
 
     // second value column
-    valueList << QString::number(ped.mean)                           // pedestal mean
+    valueList << QString::number(ped.mean)                                // pedestal mean
 #if QT_VERSION >= 0x050000
                  + tr(" \u00B1 ")
 #else
                  + tr(" \261 ")
 #endif
-                 + QString::number(ped.sigma,'f',2)                  // pedestal sigma
-              << QString::number(currentEvent)                       // current event
-              << QString::number(selection->GetEnergy())+ tr(" MeV") // energy
-              << QString::number(selection->GetOccupancy())          // occupancy
-              << temp;                                               // HV info
+                 + QString::number(ped.sigma,'f',2)                       // pedestal sigma
+              << QString::number(currentEvent)                            // current event
+              << QString::number(selection->GetEnergy()) + tr(" MeV / ")  // energy
+                 + QString::number(handler->GetEnergy()) + tr(" MeV")     // total energy
+              << QString::number(selection->GetOccupancy())               // occupancy
+              << temp;                                                    // HV info
 
     // update status info window
     for(int i = 0; i < 5; ++i)

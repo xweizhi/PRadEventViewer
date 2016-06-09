@@ -24,9 +24,9 @@ void HyCalScene::drawForeground(QPainter *painter, const QRectF &rect)
 
     // print scalar boxes
     if(showScalars) {
+        painter->setFont(QFont("times", 16, QFont::Bold));
         for(auto it = scalarBoxList.begin(); it != scalarBoxList.end(); ++it)
         {
-            painter->setFont(QFont("times", 16, QFont::Bold));
             QPen pen(it->textColor);
             pen.setWidth(2);
             pen.setCosmetic(true);
@@ -48,9 +48,9 @@ void HyCalScene::drawForeground(QPainter *painter, const QRectF &rect)
     // this to be impelmented to show the tdc groups and cluster reconstruction
     if(console->GetAnnoType() == ShowTDC)
     {
+       painter->setFont(QFont("times", 24, QFont::Bold));
        for (auto it = tdcBoxList.begin(); it != tdcBoxList.end(); ++it)
         {
-            painter->setFont(QFont("times", 24, QFont::Bold));
             QPen pen(it->textColor);
             pen.setWidth(2);
             pen.setCosmetic(true);

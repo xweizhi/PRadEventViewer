@@ -74,7 +74,7 @@ PRadDataHandler::~PRadDataHandler()
 // decode event buffer
 void PRadDataHandler::Decode(const void *buffer)
 {
-    PRadEventHeader *header = (PRadEventHeader *)buffer;
+   PRadEventHeader *header = (PRadEventHeader *)buffer;
     parser->parseEventByHeader(header);
 }
 
@@ -344,6 +344,15 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
     }
 }
 
+
+// signal of new event
+void PRadDataHandler::StartofNewEvent()
+{
+    // clear buffer for nes event
+    newEvent.clear();
+    totalE = 0; 
+}
+
 // signal of event end, save event or discard event in online mode
 void PRadDataHandler::EndofThisEvent()
 {
@@ -377,16 +386,12 @@ void PRadDataHandler::EndofThisEvent()
     }
     outfile.close();
 #endif
-
-    // clear buffer for next event
-    newEvent.clear();
-    totalE = 0;
 }
 
 // show the event to event viewer
 void PRadDataHandler::ChooseEvent(int idx)
 {
-
+    totalE = 0;
     EventData event;
 
     // != avoids operator definition for non-standard map
@@ -406,6 +411,8 @@ void PRadDataHandler::ChooseEvent(int idx)
     for(auto &adc : event.adc_data)
     {
         channelList[adc.channel_id]->UpdateEnergy(adc.value);
+        if(channelList[adc.channel_id]->GetType() == PRadDAQUnit::HyCalModule)
+            totalE += channelList[adc.channel_id]->GetEnergy();
     }
 
 }
