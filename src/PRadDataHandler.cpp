@@ -627,10 +627,25 @@ void PRadDataHandler::FitPedestal()
     }
 }
 
-void PRadDataHandler::CorrectGainFactor(const string &reference)
+void PRadDataHandler::CorrectGainFactor(const int &run, const int &ref)
 {
 #define PED_LED_REF 1000  // separation value for led signal and pedestal signal of reference PMT
 #define PED_LED_HYC 30 // separation value for led signal and pedestal signal of all HyCal Modules
+#define ALPHA_CORR 1228 // least run number that needs alpha correction
+
+
+    if(ref < 0 || ref > 2) {
+        cerr << "Unknown Reference PMT " << ref
+             << ", please choose Ref. PMT 1 - 3" << endl;
+        return;
+    }
+
+    string reference = "LMS" + to_string(ref);
+
+    // we had adjusted the timing window since run 1229, and the adjustment result in larger ADC
+    // value from alpha source , the correction is to bring the alpha source value to the same 
+    // level as before
+    const double correction[3] = {-597.3, -335.4, -219.4};
 
     // firstly, get the reference factor from LMS PMT
     // LMS 2 seems to be the best one for fitting
@@ -699,7 +714,12 @@ void PRadDataHandler::CorrectGainFactor(const string &reference)
         return;
     }
 
-    double ref_factor = (led_mean - ped_mean)/(alpha_mean - ped_mean);
+    double ref_factor = led_mean - ped_mean;
+
+    if(run >= ALPHA_CORR)
+        ref_factor /= alpha_mean - ped_mean + correction[ref];
+    else
+        ref_factor /= alpha_mean - ped_mean;
 
     for(auto channel : channelList)
     {

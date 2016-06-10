@@ -182,7 +182,7 @@ public:
                       const double &range_min,
                       const double &range_max) throw(PRadException);
     void FitPedestal();
-    void CorrectGainFactor(const string &reference = "LMS2");
+    void CorrectGainFactor(const int &run = 0, const int &ref = 2);
     void RefillEnergyHist();
 
 private:

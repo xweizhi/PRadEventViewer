@@ -31,25 +31,20 @@ public:
     {
         double factor;
         double base_gain;
-        double curr_gain;
 
         CalibrationConstant()
-        : factor(0), base_gain(0), curr_gain(0)
+        : factor(0), base_gain(0)
         {};
         CalibrationConstant(const double &calf, const double &gain)
-        : factor(calf), base_gain(gain), curr_gain(gain)
-        {};
-        CalibrationConstant(const double &calf, const double &gain, const double &cgain)
-        : factor(calf), base_gain(gain), curr_gain(cgain)
+        : factor(calf), base_gain(gain)
         {};
 
         void UpdateGainFactor(const double &gain)
         {
-            curr_gain = gain;
-            if(curr_gain)
-                factor *= base_gain/curr_gain;
-            else
-                factor = 0;
+            if(gain && base_gain) {
+                factor *= base_gain/gain;
+                base_gain = gain;
+            }
         };
     };
 

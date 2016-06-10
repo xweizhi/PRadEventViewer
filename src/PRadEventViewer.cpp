@@ -1129,7 +1129,13 @@ void PRadEventViewer::fitHistogram()
 
 void PRadEventViewer::correctGainFactor()
 {
-    handler->CorrectGainFactor();
+    QRegExp reg("[0-9]{6}");
+    if(reg.indexIn(fileName) != -1) {
+        int run_number = reg.cap(0).toInt();
+        handler->CorrectGainFactor(run_number);
+    } else {
+        handler->CorrectGainFactor();
+    }
     Refresh();
     UpdateHistCanvas();
 }
