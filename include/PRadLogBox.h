@@ -26,6 +26,8 @@ private:
     qint64 outpos;
     qint64 errpos;
     QFileSystemWatcher *fileWatcher;
+    QString out_path;
+    QString err_path;
     FILE *outRedir;
     FILE *errRedir;
     bool logOn;

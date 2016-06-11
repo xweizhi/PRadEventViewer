@@ -10,6 +10,7 @@
 
 #include <QFileSystemWatcher>
 #include <QFile>
+#include <QDate>
 #include <QTextStream>
 #include "PRadLogBox.h"
 #include <cstdio>
@@ -18,12 +19,17 @@
 PRadLogBox::PRadLogBox(QWidget *parent)
 : QTextEdit(parent), fileWatcher(new QFileSystemWatcher(this)), logOn(false)
 {
+    QDate today = QDate::currentDate();
+    QString date = QDate::shortMonthName(today.month()) + tr("_") + QString::number(today.day()) + tr("_") + QString::number(today.year());
+    out_path = tr("logs/") + tr("system_") + date + tr(".log");
+    err_path = tr("logs/") + tr("error_") + date + tr(".log");
+
     connect(fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(handleFileChange(QString)));
 
-    outRedir = freopen("logs/system.log", "a", stdout);
+    outRedir = freopen(out_path.toStdString().c_str(), "a", stdout);
     setvbuf(stdout,NULL,_IONBF,0);
 
-    errRedir = freopen("logs/error.log", "a", stderr);
+    errRedir = freopen(err_path.toStdString().c_str(), "a", stderr);
     setvbuf(stderr,NULL,_IONBF,0);
 
     TurnOnLog();
@@ -44,12 +50,12 @@ PRadLogBox::~PRadLogBox()
 
 void PRadLogBox::TurnOnLog()
 {
-    fileWatcher->addPath("logs/system.log");
-    QFile out_file("logs/system.log");
+    fileWatcher->addPath(out_path);
+    QFile out_file(out_path);
     outpos = out_file.size();
 
-    fileWatcher->addPath("logs/error.log");
-    QFile err_file("logs/error.log");
+    fileWatcher->addPath(err_path);
+    QFile err_file(err_path);
     errpos = err_file.size();
 
     logOn = true;
@@ -61,8 +67,8 @@ void PRadLogBox::TurnOffLog()
     if(!logOn)
         return;
 
-    fileWatcher->removePath("logs/system.log");
-    fileWatcher->removePath("logs/error.log");
+    fileWatcher->removePath(out_path);
+    fileWatcher->removePath(err_path);
     logOn = false;
 }
 
@@ -79,7 +85,7 @@ void PRadLogBox::handleFileChange(QString path)
 
 void PRadLogBox::ShowStdOut()
 {
-    QFile file("logs/system.log");
+    QFile file(out_path);
     file.open(QFile::ReadOnly | QFile::Text);
     qint64 curpos = file.size();
     if((curpos - outpos) < 0 ||
@@ -112,7 +118,7 @@ void PRadLogBox::ShowStdOut()
 
 void PRadLogBox::ShowStdErr()
 {
-    QFile file("logs/error.log");
+    QFile file(err_path);
     file.open(QFile::ReadOnly | QFile::Text);
     qint64 curpos = file.size();
 
