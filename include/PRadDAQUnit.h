@@ -27,26 +27,48 @@ public:
         : mean(m), sigma(s) {};
     };
 
-    struct CalibrationConstant
+    class CalibrationConstant
     {
+    public:
         double factor;
-        double base_gain;
+        double base_factor;
+        std::vector<double> base_gain;
 
+    public:
         CalibrationConstant()
-        : factor(0), base_gain(0)
+        : factor(0), base_factor(0)
         {};
-        CalibrationConstant(const double &calf, const double &gain)
-        : factor(calf), base_gain(gain)
+        CalibrationConstant(const double &calf, const std::vector<double> &gain)
+        : factor(calf), base_factor(calf), base_gain(gain)
         {};
 
-        void UpdateGainFactor(const double &gain)
+        void AddReferenceGain(const double &gain)
         {
-            if(gain && base_gain) {
-                factor *= base_gain/gain;
-                base_gain = gain;
+            base_gain.push_back(gain);
+        };
+
+        size_t GetReferenceNumber()
+        {
+            return base_gain.size();
+        };
+
+        double GetReferenceGain(const size_t &ref)
+        {
+            if(ref >= base_gain.size())
+                return 0.;
+            return base_gain.at(ref);
+        };
+
+        void GainCorrection(const double &gain, const size_t &ref)
+        {
+            if(ref >= base_gain.size())
+                return;
+            if(gain && base_gain.at(ref)) {
+                factor = base_factor * base_gain.at(ref)/gain;
             }
         };
     };
+
 
 public:
     PRadDAQUnit(const std::string &name, const ChannelAddress &daqAddr, const std::string &tdc = "");
@@ -56,7 +78,7 @@ public:
     std::string GetTDCName() {return tdcGroup;};
     void UpdatePedestal(const double &m, const double &s);
     void UpdateCalibrationConstant(const CalibrationConstant &c) {cal_const = c;};
-    void UpdateGainFactor(const double &g) {cal_const.UpdateGainFactor(g);};
+    void GainCorrection(const double &g, const int &ref) {cal_const.GainCorrection(g, ref);};
     void UpdateEnergy(const unsigned short &adcVal);
     void UpdateType(const ChannelType &t) {type = t;};
     void CleanBuffer();

@@ -134,7 +134,6 @@ public:
     void ReadChannelList(const string &path);
     void ReadPedestalFile(const string &path);
     void ReadCalibrationFile(const string &path);
-    void ReadGainFactor(const string &path);
     void Decode(const void *buffer);
     void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);
@@ -182,6 +181,7 @@ public:
                       const double &range_min,
                       const double &range_max) throw(PRadException);
     void FitPedestal();
+    void ReadGainFactor(const string &path, const int &ref = 2);
     void CorrectGainFactor(const int &run = 0, const int &ref = 2);
     void RefillEnergyHist();
 

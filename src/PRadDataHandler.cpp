@@ -730,7 +730,7 @@ void PRadDataHandler::CorrectGainFactor(const int &run, const int &ref)
         if(hist != nullptr) {
             double ch_led = fit_gaussian(hist) - channel->GetPedestal().mean;
             if(ch_led > PED_LED_HYC) {// meaningful led signal
-                channel->UpdateGainFactor(ch_led/ref_factor);
+                channel->GainCorrection(ch_led/ref_factor, ref);
             } else {
                 cout << "WARNING: Gain factor of " << channel->GetName()
                      << " is not updated due to bad fitting of LED signal."
@@ -871,8 +871,6 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
 
     string name;
     double calFactor;
-    double ref_gain[3];
-    int raw_gain;
     PRadDAQUnit *tmp;
 
     while(c_parser.ParseLine())
@@ -881,16 +879,18 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
             continue;
 
         if(c_parser.NbofElements() == 5) {
+            vector<double> ref_gain;
             name = c_parser.TakeFirst();
-            raw_gain = stoi(c_parser.TakeFirst());
-            ref_gain[0] = stod(c_parser.TakeFirst()); // ref 1
-            ref_gain[1] = stod(c_parser.TakeFirst()); // ref 2
-            ref_gain[2] = stod(c_parser.TakeFirst()); // ref 3
+            calFactor = stod(c_parser.TakeFirst());
 
-            //TODO, replace the edge with calibration factor
-            calFactor = 850./(double)raw_gain;
+            ref_gain.push_back(stod(c_parser.TakeFirst())); // ref 1
+            ref_gain.push_back(stod(c_parser.TakeFirst())); // ref 2
+            ref_gain.push_back(stod(c_parser.TakeFirst())); // ref 3
 
-            PRadDAQUnit::CalibrationConstant calConst(calFactor, ref_gain[1]); //TODO we only use reference 2 for now
+            if(calFactor)
+                calFactor = 850./calFactor;
+
+            PRadDAQUnit::CalibrationConstant calConst(calFactor, ref_gain); //TODO we only use reference 2 for now
 
             if((tmp = GetChannel(name)) != nullptr)
                 tmp->UpdateCalibrationConstant(calConst);
@@ -904,8 +904,14 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
     c_parser.CloseFile();
 }
 
-void PRadDataHandler::ReadGainFactor(const string &path)
+void PRadDataHandler::ReadGainFactor(const string &path, const int &ref)
 {
+    if(ref < 0 || ref > 2) {
+        cerr << "Unknown Reference PMT " << ref
+             << ", please choose Ref. PMT 1 - 3" << endl;
+        return;
+    }
+
     ConfigParser c_parser;
 
     if(!c_parser.OpenFile(path)) {
@@ -932,7 +938,7 @@ void PRadDataHandler::ReadGainFactor(const string &path)
             ref_gain[2] = stod(c_parser.TakeFirst());
 
             if((tmp = GetChannel(name)) != nullptr)
-                tmp->UpdateGainFactor(ref_gain[1]); //TODO we only use reference 2 for now
+                tmp->GainCorrection(ref_gain[ref-1], ref); //TODO we only use reference 2 for now
         } else {
             cout << "Unrecognized input format in gain factor file, skipped one line!"
                  << endl;

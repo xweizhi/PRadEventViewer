@@ -1,7 +1,7 @@
 #ifndef PRAD_DATA_STRUCT_H
 #define PRAD_DATA_STRUCT_H
 
-#include <string>
+#include "stddef.h"
 
 enum PRadEventType
 {
