@@ -3,7 +3,6 @@
 
 #include <QDialog>
 
-#define MAX_RANGE 1000000
 
 class QSpinBox;
 class QSlider;

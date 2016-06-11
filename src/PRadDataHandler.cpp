@@ -617,7 +617,7 @@ void PRadDataHandler::FitPedestal()
         if(pedHist == nullptr || pedHist->Integral() < 1000)
             continue;
 
-        pedHist->Fit("gaus", "q");
+        pedHist->Fit("gaus", "qw");
 
         TF1 *myfit = (TF1*) pedHist->GetFunction("gaus");
         double p0 = myfit->GetParameter(1);

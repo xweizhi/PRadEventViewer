@@ -83,9 +83,8 @@ bool ConfigParser::ParseLine()
 
 void ConfigParser::ParseLine(const string &line)
 {
-    queue<string>().swap(elements);
     string trim_line = trim(comment_out(line), white_space);
-    split(elements, trim_line, splitters);
+    elements = split(trim_line, splitters);
 }
 
 string ConfigParser::TakeFirst()
@@ -97,6 +96,19 @@ string ConfigParser::TakeFirst()
      elements.pop();
 
      return output;
+}
+
+vector<string> ConfigParser::TakeAll()
+{
+    vector<string> output;
+
+    while(elements.size())
+    {
+        output.push_back(elements.front());
+        elements.pop();
+    }
+
+    return output;
 }
 
 string ConfigParser::comment_out(const string &str, size_t index)
@@ -137,8 +149,10 @@ string ConfigParser::trim(const string &str,
     return str.substr(strBegin, strRange);
 }
 
-void ConfigParser::split(queue<string> &eles, const string &str, const string &s)
+queue<string> ConfigParser::split(const string &str, const string &s)
 {
+    queue<string> eles;
+
     char *cstr = new char[str.length() + 1];
 
     strcpy(cstr, str.c_str());
@@ -154,4 +168,6 @@ void ConfigParser::split(queue<string> &eles, const string &str, const string &s
     }
 
     delete cstr;
+
+    return eles;
 }

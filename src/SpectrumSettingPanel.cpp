@@ -16,6 +16,8 @@
 #include <QSlider>
 #include <QLabel>
 
+#define MAX_RANGE 100000
+
 SpectrumSettingPanel::SpectrumSettingPanel(QWidget *parent)
 : QDialog(parent), spectrum(nullptr), preset(false)
 {
@@ -111,10 +113,10 @@ QGroupBox *SpectrumSettingPanel::createRangeGroup()
     maxSpin = new QSpinBox();
     maxSlider = new QSlider(Qt::Horizontal);
 
-    minSpin->setRange(0, MAX_RANGE);
+    minSpin->setRange(0, MAX_RANGE-1);
     minSlider->setRange(0, MAX_RANGE);
-    maxSpin->setRange(10, MAX_RANGE);
-    maxSlider->setRange(10, MAX_RANGE);
+    maxSpin->setRange(1, MAX_RANGE);
+    maxSlider->setRange(1, MAX_RANGE);
 
     connect(minSlider, SIGNAL(valueChanged(int)), minSpin, SLOT(setValue(int)));
     connect(minSpin, SIGNAL(valueChanged(int)), minSlider, SLOT(setValue(int)));
@@ -196,8 +198,6 @@ void SpectrumSettingPanel::changeRangeMax(int value)
         customView->setChecked(true);
 
     maxSlider->setValue(value);
-    minSlider->setRange(0, value - 10);
-    minSpin->setRange(0, value - 10);
     spectrum->SetSpectrumRangeMax(value);
 }
 

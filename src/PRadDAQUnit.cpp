@@ -17,7 +17,7 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
 
     // some default histograms
     AddHist("PHYS", "Integer", (channelName + " Physics Events").c_str(), 2048, 0, 8191);
-    AddHist("PED", "Integer", (channelName + " Pedestal Events").c_str(), 2048, 0, 2047);
+    AddHist("PED", "Integer", (channelName + " Pedestal Events").c_str(), 1024, 0, 1023);
     AddHist("LMS", "Integer", (channelName + " LED Source").c_str(), 2048, 0, 8191);
 
     // default hist-trigger mapping

@@ -23,6 +23,7 @@ public:
     size_t NbofElements() {return elements.size();};
     std::string GetLine();
     std::string TakeFirst();
+    std::vector<std::string> TakeAll();
 
 private:
     std::string splitters;
@@ -34,9 +35,11 @@ private:
 
 private:
     std::string comment_out(const std::string &str, size_t index = 0);
-    std::string comment_out(const std::string &str, const std::string &c);
-    std::string trim(const std::string &str, const std::string &w);
-    void split(std::queue<std::string> &eles, const std::string &str, const std::string &s);
+
+public:
+    static std::string comment_out(const std::string &str, const std::string &c);
+    static std::string trim(const std::string &str, const std::string &w);
+    static std::queue<std::string> split(const std::string &str, const std::string &s);
 };
 
 
