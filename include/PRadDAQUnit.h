@@ -54,17 +54,17 @@ public:
 
         double GetReferenceGain(const size_t &ref)
         {
-            if(ref >= base_gain.size())
+            if((ref == 0) || (ref > base_gain.size()))
                 return 0.;
-            return base_gain.at(ref);
+            return base_gain.at(ref-1);
         };
 
         void GainCorrection(const double &gain, const size_t &ref)
         {
-            if(ref >= base_gain.size())
-                return;
-            if(gain && base_gain.at(ref)) {
-                factor = base_factor * base_gain.at(ref)/gain;
+            double base = GetReferenceGain(ref);
+
+            if((gain > 0.) && (base > 0.)) {
+                factor = base_factor * base/gain;
             }
         };
     };
@@ -99,6 +99,7 @@ public:
     unsigned short GetID() {return channelID;};
     const double &GetCalibrationFactor() {return cal_const.factor;};
     const double &GetEnergy() {return energy;};
+    double GetReferenceGain(const size_t &ref) {return cal_const.GetReferenceGain(ref);};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
     virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
 

@@ -890,7 +890,7 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
             if(calFactor)
                 calFactor = 850./calFactor;
 
-            PRadDAQUnit::CalibrationConstant calConst(calFactor, ref_gain); //TODO we only use reference 2 for now
+            PRadDAQUnit::CalibrationConstant calConst(calFactor, ref_gain);
 
             if((tmp = GetChannel(name)) != nullptr)
                 tmp->UpdateCalibrationConstant(calConst);
