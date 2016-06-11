@@ -113,8 +113,8 @@ QGroupBox *SpectrumSettingPanel::createRangeGroup()
     maxSpin = new QSpinBox();
     maxSlider = new QSlider(Qt::Horizontal);
 
-    minSpin->setRange(0, MAX_RANGE-1);
-    minSlider->setRange(0, MAX_RANGE);
+    minSpin->setRange(0, MAX_RANGE - 1);
+    minSlider->setRange(0, MAX_RANGE - 1);
     maxSpin->setRange(1, MAX_RANGE);
     maxSlider->setRange(1, MAX_RANGE);
 

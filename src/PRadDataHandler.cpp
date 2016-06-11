@@ -21,12 +21,7 @@
 #include "TH1.h"
 #include "TH2.h"
 
-//#define recon_test
-
-#ifdef recon_test
-#include <fstream>
-#include "HyCalClusters.h"
-#endif
+using namespace std;
 
 static bool operator < (const int &e, const EPICSValue &v)
 {
@@ -367,25 +362,6 @@ void PRadDataHandler::EndofThisEvent()
     if(newEvent.isPhysicsEvent()) {
         energyHist->Fill(totalE); // fill energy histogram
     }
-
-#ifdef recon_test
-    ofstream outfile;
-    outfile.open("HyCal_Hits.txt", ofstream::app);
-    // reconstruct it
-    HyCalClusters cluster;
-    for(auto &adc : newEvent.adc_data)
-    {
-        HyCalModule *module = dynamic_cast<HyCalModule*>(GetChannel(adc.channel_id));
-        if(module)
-            cluster.AddModule(module->GetGeometry().x, module->GetGeometry().y, module->Calibration(adc.value));
-    }
-    vector<HyCalClusters::HyCal_Hits> hits = cluster.ReconstructHits();
-    for(auto &hit : hits)
-    {
-        outfile << energyData.size() << "  " <<  hit.x << "  " << hit.y << "  "  << hit.E << endl;
-    }
-    outfile.close();
-#endif
 }
 
 // show the event to event viewer

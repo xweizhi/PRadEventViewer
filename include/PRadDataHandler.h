@@ -18,8 +18,6 @@
 #include "datastruct.h"
 #include "PRadException.h"
 
-using namespace std;
-
 class PRadEvioParser;
 class PRadDAQUnit;
 class PRadTDCGroup;
@@ -47,8 +45,8 @@ struct EventData
     unsigned char latch_word;
     unsigned char lms_phase;
     uint64_t timestamp;
-    vector< ADC_Data > adc_data;
-    vector< TDC_Data > tdc_data;
+    std::vector< ADC_Data > adc_data;
+    std::vector< TDC_Data > tdc_data;
 
     EventData()
     : type(0), lms_phase(0), timestamp(0)
@@ -56,7 +54,7 @@ struct EventData
     EventData(const PRadTriggerType &t)
     : type((unsigned char)t), lms_phase(0), timestamp(0)
     {};
-    EventData(const PRadTriggerType &t, vector< ADC_Data > &adc, vector< TDC_Data > &tdc)
+    EventData(const PRadTriggerType &t, std::vector< ADC_Data > &adc, std::vector< TDC_Data > &tdc)
     : type((unsigned char)t), lms_phase(0), timestamp(0), adc_data(adc), tdc_data(tdc)
     {};
 
@@ -95,12 +93,12 @@ struct EPICSValue
 
 struct ScalarChannel
 {
-    string name;
+    std::string name;
     unsigned int count;
     unsigned int gated_count;
 
     ScalarChannel() : name("undefined"), count(0), gated_count(0) {};
-    ScalarChannel(const string &n) : name(n), count(0), gated_count(0) {};
+    ScalarChannel(const std::string &n) : name(n), count(0), gated_count(0) {};
 };
 
 // a simple hash function for DAQ configuration
@@ -130,10 +128,10 @@ public:
     void AddChannel(PRadDAQUnit *channel);
     void AddTDCGroup(PRadTDCGroup *group);
     void RegisterChannel(PRadDAQUnit *channel);
-    void ReadTDCList(const string &path);
-    void ReadChannelList(const string &path);
-    void ReadPedestalFile(const string &path);
-    void ReadCalibrationFile(const string &path);
+    void ReadTDCList(const std::string &path);
+    void ReadChannelList(const std::string &path);
+    void ReadPedestalFile(const std::string &path);
+    void ReadCalibrationFile(const std::string &path);
     void Decode(const void *buffer);
     void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);
@@ -144,16 +142,16 @@ public:
     void ChooseEvent(int idx = 0);
     void UpdateTrgType(const unsigned char &trg);
     void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
-    void UpdateEPICS(const string &name, const float &value);
+    void UpdateEPICS(const std::string &name, const float &value);
     void AccumulateBeamCharge(const double &c);
-    float FindEPICSValue(const string &name);
-    float FindEPICSValue(const string &name, const int &event);
+    float FindEPICSValue(const std::string &name);
+    float FindEPICSValue(const std::string &name, const int &event);
     void PrintOutEPICS();
-    void PrintOutEPICS(const string &name);
+    void PrintOutEPICS(const std::string &name);
     unsigned int GetEventCount() {return energyData.size();};
     unsigned int GetScalarCount(const unsigned int &group = 0, const bool &gated = false);
     double GetBeamCharge() {return charge;};
-    vector<unsigned int> GetScalarsCount(const bool &gated = false);
+    std::vector<unsigned int> GetScalarsCount(const bool &gated = false);
     int GetCurrentEventNb();
     TH1D *GetEnergyHist() {return energyHist;};
     TH2I *GetTagEHist() {return TagEHist;};
@@ -167,21 +165,21 @@ public:
     void OnlineMode() {onlineMode = true;};
     void OfflineMode() {onlineMode = false;};
     void BuildChannelMap();
-    void SaveHistograms(const string &path);
+    void SaveHistograms(const std::string &path);
     PRadDAQUnit *GetChannel(const ChannelAddress &daqInfo);
-    PRadDAQUnit *GetChannel(const string &name);
+    PRadDAQUnit *GetChannel(const std::string &name);
     PRadDAQUnit *GetChannel(const unsigned short &id);
-    PRadTDCGroup *GetTDCGroup(const string &name);
+    PRadTDCGroup *GetTDCGroup(const std::string &name);
     PRadTDCGroup *GetTDCGroup(const ChannelAddress &addr);
-    const unordered_map< string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};
-    vector< PRadDAQUnit* > GetChannelList() {return channelList;};
-    void FitHistogram(const string &channel,
-                      const string &hist_name,
-                      const string &fit_func,
+    const std::unordered_map< std::string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};
+    std::vector< PRadDAQUnit* > GetChannelList() {return channelList;};
+    void FitHistogram(const std::string &channel,
+                      const std::string &hist_name,
+                      const std::string &fit_func,
                       const double &range_min,
                       const double &range_max) throw(PRadException);
     void FitPedestal();
-    void ReadGainFactor(const string &path, const int &ref = 2);
+    void ReadGainFactor(const std::string &path, const int &ref = 2);
     void CorrectGainFactor(const int &run = 0, const int &ref = 2);
     void RefillEnergyHist();
 
@@ -191,18 +189,18 @@ private:
     double charge;
     bool onlineMode;
 #ifdef MULTI_THREAD
-    mutex myLock;
+    std::mutex myLock;
 #endif
-    unordered_map< ChannelAddress, PRadDAQUnit* > map_daq;
-    unordered_map< string, PRadDAQUnit* > map_name;
-    unordered_map< string, PRadTDCGroup* > map_name_tdc;
-    unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
-    map< string, vector<EPICSValue> > epics_channels; // order is important to iterate variables in this case
-    vector< PRadDAQUnit* > channelList;
-    vector< PRadDAQUnit* > freeList;
-    vector< PRadTDCGroup* > tdcList;
-    vector< ScalarChannel > triggerScalars;
-    deque< EventData > energyData;
+    std::unordered_map< ChannelAddress, PRadDAQUnit* > map_daq;
+    std::unordered_map< std::string, PRadDAQUnit* > map_name;
+    std::unordered_map< std::string, PRadTDCGroup* > map_name_tdc;
+    std::unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
+    std::map< std::string, std::vector<EPICSValue> > epics_channels; // order is important to iterate variables in this case
+    std::vector< PRadDAQUnit* > channelList;
+    std::vector< PRadDAQUnit* > freeList;
+    std::vector< PRadTDCGroup* > tdcList;
+    std::vector< ScalarChannel > triggerScalars;
+    std::deque< EventData > energyData;
     EventData newEvent, lastEvent;
     TH1D *energyHist;
     TH2I *TagEHist;
