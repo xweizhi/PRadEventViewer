@@ -1,3 +1,10 @@
+//============================================================================//
+// Basic DAQ channel unit                                                     //
+// It could be HyCal Module, LMS PMT or Scintillator                          //
+// Chao Peng                                                                  //
+// 02/17/2016                                                                 //
+//============================================================================//
+
 #include "PRadDAQUnit.h"
 #include <iostream>
 #include <utility>

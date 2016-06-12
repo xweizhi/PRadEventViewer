@@ -1,3 +1,12 @@
+//============================================================================//
+// TDC Group, it actually is also a channel as PRad DAQ Unit                  //
+// TODO, merge this class to PRad DAQ Unit                                    //
+// , or develop a base class for these two                                    //
+//                                                                            //
+// Chao Peng                                                                  //
+// 05/17/2016                                                                 //
+//============================================================================//
+
 #include "PRadTDCGroup.h"
 #include "PRadDAQUnit.h"
 #include "TH1I.h"
