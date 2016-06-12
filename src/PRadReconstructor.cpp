@@ -1,11 +1,19 @@
 //============================================================================//
-// HyCal Cluster Reconstruction                                               //
+// PRad Cluster Reconstruction                                                //
 //                                                                            //
 // Weizhi Xiong                                                               //
 // 06/10/2016                                                                 //
 //============================================================================//
 
+#include <cmath>
+#include <iostream>
+#include <iomanip>
 #include "PRadReconstructor.h"
+#include "PRadDataHandler.h"
+#include "PRadDAQUnit.h"
+#include "ConfigParser.h"
+
+using namespace std;
 
 //____________________________________________________________
 PRadReconstructor::PRadReconstructor(){
@@ -104,7 +112,6 @@ vector<HyCalHit> * PRadReconstructor::CoarseHyCalReconstruct()
 //____________________________________________________________
 unsigned short PRadReconstructor::GetMaxEChannel()
 {
-  assert( !fModuleList->empty() );
   double theMaxValue = 0;
   unsigned short theMaxChannelID = 0xffff;
   bool foundNewCenter = false; 
@@ -132,8 +139,7 @@ unsigned short PRadReconstructor::GetMaxEChannel()
         bool ok = true;
         for (unsigned int j=0; j<fClusterCenterID.size(); j++){
           PRadDAQUnit* lastCenterModule = fModuleList->at( fClusterCenterID.at(j) );
-          distance = fmin( distance, Distance2Points( thisModule->GetX(), thisModule->GetY(), 
-                                                      lastCenterModule->GetX(), lastCenterModule->GetY()) );
+          distance = fmin( distance, Distance( thisModule->GetX(), thisModule->GetY(), lastCenterModule->GetX(), lastCenterModule->GetY()) );
           if (distance < 2*theClusterRadius){
             ok = false;
             //theMaxChannelID = i;
@@ -147,15 +153,10 @@ unsigned short PRadReconstructor::GetMaxEChannel()
   if (foundNewCenter) fClusterCenterID.push_back(theMaxChannelID);
   return theMaxChannelID;
 }
-//___________________________________________________________________________________________
-inline double PRadReconstructor::Distance2Points(double x1, double y1, double x2, double y2)
-{
-  return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
-}
 //__________________________________________________________________________________________
 inline bool PRadReconstructor::UseLogWeight(double x, double y)
 {
-  return true; //for now
+    return true; //for now
 }
 //___________________________________________________________________________________________
 vector<unsigned short> PRadReconstructor::FindCluster(unsigned short centerID, double* clusterEnergy)
@@ -172,23 +173,38 @@ vector<unsigned short> PRadReconstructor::FindCluster(unsigned short centerID, d
     else { clusterRadius = fBaseR*fMoliereRatio; }
     
     if ( thisModule->GetEnergy() > 0. && 
-          Distance2Points( thisModule->GetX(), thisModule->GetY(), centerX, centerY ) <= clusterRadius ){
+          Distance( thisModule->GetX(), thisModule->GetY(), centerX, centerY ) <= clusterRadius ){
       *clusterEnergy += thisModule->GetEnergy();
       collection.push_back(i);
     }
   }
   return collection;
 }
+//___________________________________________________________________________________________
+double PRadReconstructor::Distance(const double &x1, const double &y1, const double &x2, const double &y2)
+{
+    return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
+}
+//___________________________________________________________________________________________
+double PRadReconstructor::Distance(const double &x1, const double &y1, const double &x2, const double &y2, const double &z1, const double &z2)
+{
+    return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2) );
+}
 
+double PRadReconstructor::Distance(const vector<double> &p1, const vector<double> &p2)
+{
+    if(p1.size() != p2.size()) {
+        cerr << "Dimension is different, failed to calculate distance between two points!" << endl;
+        return 0.;
+    }
 
+    double quadratic_sum = 0.;
+    for(size_t i = 0; i < p1.size(); ++i)
+    {
+        double quadratic = p1.at(i) - p2.at(i);
+        quadratic *= quadratic;
+        quadratic_sum += quadratic;
+    }
 
-
-
-
-
-
-
-
-
-
-
+    return sqrt(quadratic_sum);
+}

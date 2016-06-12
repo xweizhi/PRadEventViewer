@@ -24,7 +24,6 @@ HEADERS += include/PRadEventViewer.h \
            include/HyCalModule.h \
            include/HyCalScene.h \
            include/HyCalView.h \
-           include/HyCalClusters.h\
            include/Spectrum.h \
            include/SpectrumSettingPanel.h \
            include/HtmlDelegate.h \
@@ -32,6 +31,7 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadTDCGroup.h \
            include/PRadEvioParser.h \
            include/PRadDataHandler.h \
+           include/PRadEventStruct.h \
            include/PRadETChannel.h \
            include/PRadETStation.h \
            include/ETSettingPanel.h \
@@ -50,7 +50,6 @@ SOURCES += src/main.cpp \
            src/HyCalModule.cpp \
            src/HyCalScene.cpp \
            src/HyCalView.cpp \
-           src/HyCalClusters.cpp\
            src/Spectrum.cpp \
            src/SpectrumSettingPanel.cpp \
            src/HtmlDelegate.cpp \

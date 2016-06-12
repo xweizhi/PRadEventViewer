@@ -68,10 +68,14 @@ first: all
 $(TARGET):  $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
-all: Makefile $(TARGET)
+all: Makefile $(TARGET) cleanobj
 
-clean:
+clean: cleanobj cleantgt
+
+cleanobj:
 	-$(DEL_FILE) $(OBJECTS)
+
+cleantgt:
 	-$(DEL_FILE) $(TARGET)
 
 PRadDAQUnit.o: ../src/PRadDAQUnit.cpp 
