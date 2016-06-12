@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
                 for(int j = i + 1; j < argc; ++j)
                 {
                     if(*argv[j] == '-') {
-                        i = j;
+                        i = j-1;
                         break;
                     }
                     input = argv[j];
