@@ -286,7 +286,6 @@ void PRadEventViewer::createControlPanel()
     histTypeBox = new QComboBox();
     histTypeBox->addItem(tr("Energy&TDC Hist"));
     histTypeBox->addItem(tr("Module Hist"));
-    histTypeBox->addItem(tr("Dynode Hist"));
     histTypeBox->addItem(tr("Tagger Hist"));
     annoTypeBox = new QComboBox();
     annoTypeBox->addItem(tr("No Annotation"));
@@ -841,17 +840,6 @@ void PRadEventViewer::UpdateHistCanvas()
             histCanvas->UpdateHist(2, selection->GetHist("LMS"));
             histCanvas->UpdateHist(3, selection->GetHist("PED"));
         }
-        break;
-
-    case DynodeSumHist:
-      {
-        PRadDAQUnit *dsum = handler->GetChannel("DSUM1");
-        if(dsum != nullptr) {
-            histCanvas->UpdateHist(1, dsum->GetHist("PHYS"));
-            histCanvas->UpdateHist(2, dsum->GetHist("PED"));
-            histCanvas->UpdateHist(3, dsum->GetHist("LMS"));
-        }
-      }
         break;
 
      case TaggerHist:

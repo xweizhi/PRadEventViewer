@@ -40,7 +40,6 @@ QT_END_NAMESPACE
 enum HistType {
     EnergyTDCHist,
     ModuleHist,
-    DynodeSumHist,
     TaggerHist,
 };
 
