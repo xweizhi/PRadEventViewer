@@ -21,9 +21,9 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
                          const QString &rid,
                          const ChannelAddress &daqAddr,
                          const QString &tdc,
-                         const GeoInfo &geo)
-: PRadDAQUnit(rid.toStdString(), daqAddr, tdc.toStdString()),
-  console(p), name(rid), geometry(geo), m_hover(false), m_selected(false),
+                         const Geometry &geo)
+: PRadDAQUnit(rid.toStdString(), daqAddr, tdc.toStdString(), geo),
+  console(p), name(rid), m_hover(false), m_selected(false),
   color(Qt::white), font(QFont("times",10))
 {
     // initialize the item
@@ -31,22 +31,6 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
 
     // detect if mouse is hovering on this item
     setAcceptHoverEvents(true);
-
-    switch(geo.type)
-    {
-    case LeadGlass:
-    case LeadTungstate:
-        PRadDAQUnit::UpdateType(PRadDAQUnit::HyCalModule);
-        break;
-    case Scintillator:
-        PRadDAQUnit::UpdateType(PRadDAQUnit::Scintillator);
-        break;
-    case LightMonitor:
-        PRadDAQUnit::UpdateType(PRadDAQUnit::LMS_PMT);
-        break;
-    default:
-        break;
-    }
 }
 
 HyCalModule::~HyCalModule()

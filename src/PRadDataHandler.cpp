@@ -271,7 +271,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
         // so lock the thread to prevent concurrent access
         myLock.lock();
 #endif
-        if(channel->GetType() == PRadDAQUnit::HyCalModule)
+        if(channel->IsHyCalModule())
             totalE += channel->Calibration(sparVal); // calculate total energy of this event
         newEvent.add_adc(word); // store this data word
 #ifdef MULTI_THREAD
@@ -387,7 +387,7 @@ void PRadDataHandler::ChooseEvent(int idx)
     for(auto &adc : event.adc_data)
     {
         channelList[adc.channel_id]->UpdateEnergy(adc.value);
-        if(channelList[adc.channel_id]->GetType() == PRadDAQUnit::HyCalModule)
+        if(channelList[adc.channel_id]->IsHyCalModule())
             totalE += channelList[adc.channel_id]->GetEnergy();
     }
 
@@ -699,7 +699,7 @@ void PRadDataHandler::CorrectGainFactor(const int &run, const int &ref)
 
     for(auto channel : channelList)
     {
-        if(channel->GetType() != PRadDAQUnit::HyCalModule)
+        if(!channel->IsHyCalModule())
             continue;
 
         TH1 *hist = channel->GetHist("LMS");
@@ -769,6 +769,7 @@ void PRadDataHandler::ReadChannelList(const string &path)
     string moduleName;
     ChannelAddress daqAddr;
     string tdcGroup;
+    PRadDAQUnit::Geometry geo;
 
     // some info that is not read from list
     while (c_parser.ParseLine())
@@ -776,15 +777,21 @@ void PRadDataHandler::ReadChannelList(const string &path)
         if(!c_parser.NbofElements())
             continue;
 
-        if(c_parser.NbofElements() == 8) {
+        if(c_parser.NbofElements() >= 10) {
             moduleName = c_parser.TakeFirst();
             daqAddr.crate = stoi(c_parser.TakeFirst());
             daqAddr.slot = stoi(c_parser.TakeFirst());
             daqAddr.channel = stoi(c_parser.TakeFirst());
             tdcGroup = c_parser.TakeFirst();
 
-            PRadDAQUnit *specialCh = new PRadDAQUnit(moduleName, daqAddr, tdcGroup);
-            AddChannel(specialCh);
+            geo.type = (PRadDAQUnit::ChannelType) stoi(c_parser.TakeFirst());
+            geo.size_x = stod(c_parser.TakeFirst()); 
+            geo.size_y = stod(c_parser.TakeFirst()); 
+            geo.x = stod(c_parser.TakeFirst()); 
+            geo.y = stod(c_parser.TakeFirst()); 
+ 
+            PRadDAQUnit *new_ch = new PRadDAQUnit(moduleName, daqAddr, tdcGroup, geo);
+            AddChannel(new_ch);
         } else {
             cout << "Unrecognized input format in channel list file, skipped one line!"
                  << endl;
@@ -938,7 +945,7 @@ void PRadDataHandler::RefillEnergyHist()
         double ene = 0.;
         for(auto &adc : event.adc_data)
         {
-            if(channelList[adc.channel_id]->GetType() == PRadDAQUnit::HyCalModule)
+            if(channelList[adc.channel_id]->IsHyCalModule())
                 ene += channelList[adc.channel_id]->Calibration(adc.value);
         }
         energyHist->Fill(ene);

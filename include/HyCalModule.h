@@ -13,32 +13,12 @@ class PRadEventViewer;
 class HyCalModule : public QGraphicsItem, public PRadDAQUnit
 {
 public:
-    enum ModuleType
-    {
-        LeadGlass,
-        LeadTungstate,
-        Scintillator,
-        LightMonitor,
-    };
-
-    struct GeoInfo
-    {
-        ModuleType type;
-        double size_x;
-        double size_y;
-        double x;
-        double y;
-        GeoInfo() {};
-        GeoInfo(ModuleType t, double sx, double sy, double xx, double yy)
-        : type(t), size_x(sx), size_y(sy), x(xx), y(yy) {};
-    };
-
 public:
     HyCalModule(PRadEventViewer* const p,
                 const QString &rid,
                 const ChannelAddress &daqAddr,
                 const QString &tdc,
-                const GeoInfo &geo);
+                const PRadDAQUnit::Geometry &geo);
     virtual ~HyCalModule();
 
     void Initialize();
@@ -52,7 +32,6 @@ public:
     void UpdateHVSetup(ChannelAddress &set) {hv_addr = set;};
     QString GetReadID() {return name;};
     ChannelAddress GetHVInfo() {return hv_addr;};
-    GeoInfo GetGeometry() {return geometry;};
 
     // overload
     QRectF boundingRect() const;
@@ -69,7 +48,6 @@ private:
     PRadEventViewer *console;
     QString name;
     ChannelAddress hv_addr;
-    GeoInfo geometry;
 
     bool m_hover;
     bool m_selected;

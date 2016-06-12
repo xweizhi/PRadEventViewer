@@ -146,7 +146,6 @@ void PRadEventViewer::generateHyCalModules()
 {
     readModuleList();
     handler->ReadTDCList("config/tdc_group_list.txt");
-    handler->ReadChannelList("config/special_channels.txt");
 
     // end of channel/module reading
     buildModuleMap();
@@ -428,7 +427,7 @@ void PRadEventViewer::readModuleList()
     ChannelAddress daqAddr;
     ChannelAddress hvAddr;
     QString tdcGroup;
-    HyCalModule::GeoInfo geometry;
+    PRadDAQUnit::Geometry geometry;
 
     // some info that is not read from list
     // initialize first
@@ -445,7 +444,7 @@ void PRadEventViewer::readModuleList()
             daqAddr.channel = std::stoi(c_parser.TakeFirst());
             tdcGroup = QString::fromStdString(c_parser.TakeFirst());
 
-            geometry.type = (HyCalModule::ModuleType)std::stoi(c_parser.TakeFirst());
+            geometry.type = (PRadDAQUnit::ChannelType)std::stoi(c_parser.TakeFirst());
             geometry.size_x = std::stod(c_parser.TakeFirst());
             geometry.size_y = std::stod(c_parser.TakeFirst());
             geometry.x = std::stod(c_parser.TakeFirst());
@@ -510,7 +509,7 @@ void PRadEventViewer::buildModuleMap()
                 continue;
 
             has_module = true;
-            HyCalModule::GeoInfo geo = module->GetGeometry();
+            PRadDAQUnit::Geometry geo = module->GetGeometry();
             xmax = std::max(geo.x + geo.size_x/2., xmax);
             xmin = std::min(geo.x - geo.size_x/2., xmin);
             ymax = std::max(geo.y + geo.size_y/2., ymax);
@@ -879,7 +878,7 @@ void PRadEventViewer::UpdateStatusInfo()
 
     ChannelAddress daqInfo = selection->GetDAQInfo();
     ChannelAddress hvInfo = selection->GetHVInfo();
-    HyCalModule::GeoInfo geoInfo = selection->GetGeometry();
+    PRadDAQUnit::Geometry geoInfo = selection->GetGeometry();
 
     switch(geoInfo.type)
     {
