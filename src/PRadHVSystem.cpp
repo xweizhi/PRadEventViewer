@@ -1,6 +1,5 @@
 //============================================================================//
-// A C++ wrapper class to use CAENHVWrapper library                           //
-// It is not finished yet                                                     //
+// High Voltage control class                                                 //
 //                                                                            //
 // Chao Peng                                                                  //
 // 02/17/2016                                                                 //

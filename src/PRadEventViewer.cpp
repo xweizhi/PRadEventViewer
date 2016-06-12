@@ -677,7 +677,6 @@ void PRadEventViewer::openFile()
 //        QtConcurrent::run(this, &PRadEventViewer::readEventFromFile, fileName);
         fileName = file;
         readEventFromFile(fileName);
-        cout << handler->GetBeamCharge() << endl;
         UpdateStatusBar(DATA_FILE);
     }
 
