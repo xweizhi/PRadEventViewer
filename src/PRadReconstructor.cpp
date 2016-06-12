@@ -17,51 +17,51 @@ using namespace std;
 
 //____________________________________________________________
 PRadReconstructor::PRadReconstructor(){
-  fMoliereCrystal = 20.5;
-  fMoliereLeadGlass = 38.2;
-  fMoliereRatio = fMoliereLeadGlass/fMoliereCrystal;
-  fBaseR = 60.;
-  fCorrectFactor = 1.;
-  fMaxNCluster = 10;
-  fMinClusterCenterE = 20.;
-  fMinClusterE = 100.;
+    fMoliereCrystal = 20.5;
+    fMoliereLeadGlass = 38.2;
+    fMoliereRatio = fMoliereLeadGlass/fMoliereCrystal;
+    fBaseR = 60.;
+    fCorrectFactor = 1.;
+    fMaxNCluster = 10;
+    fMinClusterCenterE = 20.;
+    fMinClusterE = 100.;
 }
 //____________________________________________________________
 void PRadReconstructor::Clear()
 {
-  fHyCalHit.clear();
-  fClusterCenterID.clear();
+    fHyCalHit.clear();
+    fClusterCenterID.clear();
 }
 //____________________________________________________________
 void PRadReconstructor::InitConfig(const string &path)
 {
-  ConfigParser c_parser;
+    ConfigParser c_parser(": ,\t"); // self-defined splitters
 
-  if(!c_parser.OpenFile(path)) {
-     cout << "Cannot open file " << path << endl;
-  }
+    if(!c_parser.OpenFile(path)) {
+         cout << "Cannot open file " << path << endl;
+     }
   
-  while(c_parser.ParseLine()) {
+    while(c_parser.ParseLine()) {
     
-    if (c_parser.NbofElements() != 2) continue;
+        if (c_parser.NbofElements() != 2) continue;
 
-    string parName = c_parser.TakeFirst();
+        string parName = c_parser.TakeFirst();
     
-    if (parName.compare("MAX_N_CLUSTER") == 0){
+        if (parName.compare("MAX_N_CLUSTER") == 0){
 
-      fMaxNCluster = stof(c_parser.TakeFirst());
+            fMaxNCluster = stof(c_parser.TakeFirst());
 
-    }else if (parName.compare("MIN_CLUSTER_CENTER_E") == 0){
+        } else if (parName.compare("MIN_CLUSTER_CENTER_E") == 0) {
 
-      fMinClusterCenterE= stod(c_parser.TakeFirst());
+            fMinClusterCenterE= stod(c_parser.TakeFirst());
 
-    }else if (parName.compare("MIN_CLUSTER_E") == 0){
+        } else if (parName.compare("MIN_CLUSTER_E") == 0) {
       
-      fMinClusterE = stof(c_parser.TakeFirst());    
+            fMinClusterE = stof(c_parser.TakeFirst());
 
-    }
+        }
  
-  }
+    }
 
 }
 //________________________________________________________________
@@ -73,7 +73,7 @@ vector<HyCalHit> * PRadReconstructor::CoarseHyCalReconstruct()
   double weightY = 0.;
   double totalWeight = 0.;
 
-  for (unsigned short i=0; i< fMaxNCluster; i++){
+  for (unsigned short i = 0; i < fMaxNCluster; ++i){
     int theMaxModuleID = GetMaxEChannel();
    
     if (theMaxModuleID == 0xffff) break;//this happens if no module has large enough energy
@@ -81,7 +81,10 @@ vector<HyCalHit> * PRadReconstructor::CoarseHyCalReconstruct()
     double clusterEnergy = 0.;
     vector<unsigned short> collection = FindCluster(theMaxModuleID, &clusterEnergy);
     
-    if (clusterEnergy <= fMinClusterE) { i--; continue;}
+    if (clusterEnergy <= fMinClusterE) {
+        i--;
+        continue;
+    }
     weightX = 0.;
     weightY = 0.;
     totalWeight = 0.;
@@ -190,7 +193,7 @@ double PRadReconstructor::Distance(const double &x1, const double &y1, const dou
 {
     return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2) );
 }
-
+//___________________________________________________________________________________________
 double PRadReconstructor::Distance(const vector<double> &p1, const vector<double> &p2)
 {
     if(p1.size() != p2.size()) {

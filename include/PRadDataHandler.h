@@ -62,7 +62,7 @@ public:
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
     void FillTaggerHist(TDCV1190Data &tdcData);
-    void ChooseEvent(int idx = 0);
+    void ChooseEvent(int idx = -1);
     void UpdateTrgType(const unsigned char &trg);
     void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
     void UpdateEPICS(const std::string &name, const float &value);
@@ -74,6 +74,7 @@ public:
     unsigned int GetEventCount() {return energyData.size();};
     unsigned int GetScalarCount(const unsigned int &group = 0, const bool &gated = false);
     double GetBeamCharge() {return charge;};
+    void SetOnlineMode(const bool &mode);
     std::vector<unsigned int> GetScalarsCount(const bool &gated = false);
     int GetCurrentEventNb();
     TH1D *GetEnergyHist() {return energyHist;};
@@ -85,8 +86,6 @@ public:
     void Clear();
     void StartofNewEvent();
     void EndofThisEvent();
-    void OnlineMode() {onlineMode = true;};
-    void OfflineMode() {onlineMode = false;};
     void BuildChannelMap();
     void SaveHistograms(const std::string &path);
     PRadDAQUnit *GetChannel(const ChannelAddress &daqInfo);
@@ -124,7 +123,7 @@ private:
     std::vector< PRadTDCGroup* > tdcList;
     std::vector< ScalarChannel > triggerScalars;
     std::deque< EventData > energyData;
-    EventData newEvent, lastEvent;
+    EventData newEvent;
     TH1D *energyHist;
     TH2I *TagEHist;
     TH2I *TagTHist;

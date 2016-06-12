@@ -73,6 +73,11 @@ void PRadDataHandler::Decode(const void *buffer)
     parser->parseEventByHeader(header);
 }
 
+void PRadDataHandler::SetOnlineMode(const bool &mode)
+{
+    onlineMode = mode;
+}
+
 // add DAQ channels
 void PRadDataHandler::AddChannel(PRadDAQUnit *channel)
 {
@@ -215,7 +220,7 @@ float PRadDataHandler::FindEPICSValue(const string &name)
 
 float PRadDataHandler::FindEPICSValue(const string &name, const int &event)
 {
-    if(onlineMode || (unsigned int)event >= energyData.size())
+    if((unsigned int)event >= energyData.size())
         return FindEPICSValue(name);
 
     int index = energyData.at(event).event_number;
@@ -353,11 +358,11 @@ void PRadDataHandler::EndofThisEvent()
 {
     newEvent.event_number = parser->eventNb;
 
-    if(onlineMode) { // online mode only saves the last event, to reduce usage of memory
-        lastEvent = newEvent;
-    } else {
-        energyData.push_back(newEvent); // save event
+    if(onlineMode && energyData.size()) { // online mode only saves the last event, to reduce usage of memory
+        energyData.pop_front();
     }
+
+    energyData.push_back(newEvent); // save event
 
     if(newEvent.isPhysicsEvent()) {
         energyHist->Fill(totalE); // fill energy histogram
@@ -376,12 +381,13 @@ void PRadDataHandler::ChooseEvent(int idx)
         channel->UpdateEnergy(0);
     }
 
-    if(onlineMode) { // online mode only show the last event
-        event = lastEvent;
-    } else { // offline mode, pick the event given by console
-        if((unsigned int)idx >= energyData.size())
-            return;
-        event = energyData[idx];
+    if (energyData.size()) { // offline mode, pick the event given by console
+        if((unsigned int) idx >= energyData.size())
+            event = energyData.back();
+        else
+            event = energyData.at(idx);
+    } else {
+        return;
     }
 
     for(auto &adc : event.adc_data)
@@ -390,7 +396,6 @@ void PRadDataHandler::ChooseEvent(int idx)
         if(channelList[adc.channel_id]->IsHyCalModule())
             totalE += channelList[adc.channel_id]->GetEnergy();
     }
-
 }
 
 // find channels
@@ -508,14 +513,10 @@ void PRadDataHandler::SaveHistograms(const string &path)
 
 EventData &PRadDataHandler::GetEventData(const unsigned int &index)
 {
-    if(onlineMode) {
-        return lastEvent;
+    if(index >= energyData.size()) {
+        return energyData.back();
     } else {
-        if(index >= energyData.size()) {
-            return energyData.back();
-        } else {
-            return energyData.at(index);
-        }
+        return energyData.at(index);
     }
 }
 

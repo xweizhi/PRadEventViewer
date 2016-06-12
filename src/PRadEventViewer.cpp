@@ -1261,7 +1261,7 @@ void PRadEventViewer::startOnlineMode()
 
     onlineDisAction->setEnabled(true);
     // Successfully attach to ET, change to online mode
-    handler->OnlineMode();
+    handler->SetOnlineMode(true);
 
     // Clean buffer
     eraseModuleBuffer();
@@ -1287,7 +1287,7 @@ void PRadEventViewer::stopOnlineMode()
                              tr("Online Monitor"),
                              tr("Dettached from ET!"));
 
-    handler->OfflineMode();
+    handler->SetOnlineMode(false);
 
     // Enable buttons
     onlineEnAction->setEnabled(true);
