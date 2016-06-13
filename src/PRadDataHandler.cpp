@@ -370,7 +370,7 @@ void PRadDataHandler::EndofThisEvent()
 }
 
 // show the event to event viewer
-void PRadDataHandler::ChooseEvent(int idx)
+void PRadDataHandler::ChooseEvent(const int &idx)
 {
     totalE = 0;
     EventData event;

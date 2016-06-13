@@ -62,7 +62,7 @@ public:
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
     void FillTaggerHist(TDCV1190Data &tdcData);
-    void ChooseEvent(int idx = -1);
+    void ChooseEvent(const int &idx = -1);
     void UpdateTrgType(const unsigned char &trg);
     void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
     void UpdateEPICS(const std::string &name, const float &value);

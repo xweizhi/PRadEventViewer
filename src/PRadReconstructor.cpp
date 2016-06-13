@@ -67,8 +67,9 @@ ConfigValue PRadReconstructor::GetConfigValue(const string &name)
     return it->second;
 }
 //________________________________________________________________
-vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct()
+vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(const int &event_index)
 {
+    fHandler->ChooseEvent(event_index);
     Clear(); // clear all the saved buffer before analyzing the next event
 
     double weightX = 0.;

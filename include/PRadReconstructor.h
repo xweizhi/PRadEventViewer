@@ -21,7 +21,7 @@ public:
     ConfigValue GetConfigValue(const std::string &var_name);
     void Clear();
     void SetHandler(PRadDataHandler *theHandler);
-    std::vector<HyCalHit> &CoarseHyCalReconstruct();
+    std::vector<HyCalHit> &CoarseHyCalReconstruct(const int &idx = -1);
   
 protected:
     unsigned short getMaxEChannel();
