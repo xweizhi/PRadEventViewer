@@ -8,10 +8,10 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
+#include <unordered_map>
 #include "PRadReconstructor.h"
 #include "PRadDataHandler.h"
 #include "PRadDAQUnit.h"
-#include "ConfigParser.h"
 
 using namespace std;
 
@@ -31,6 +31,7 @@ void PRadReconstructor::Clear()
 {
     fHyCalHit.clear();
     fClusterCenterID.clear();
+    fConfigMap.clear();
 }
 //____________________________________________________________
 void PRadReconstructor::InitConfig(const string &path)
@@ -40,29 +41,30 @@ void PRadReconstructor::InitConfig(const string &path)
     if(!c_parser.OpenFile(path)) {
          cout << "Cannot open file " << path << endl;
      }
-  
-    while(c_parser.ParseLine()) {
-    
-        if (c_parser.NbofElements() != 2) continue;
-
-        string parName = c_parser.TakeFirst();
-    
-        if (parName.compare("MAX_N_CLUSTER") == 0){
-
-            fMaxNCluster = stof(c_parser.TakeFirst());
-
-        } else if (parName.compare("MIN_CLUSTER_CENTER_E") == 0) {
-
-            fMinClusterCenterE= stod(c_parser.TakeFirst());
-
-        } else if (parName.compare("MIN_CLUSTER_E") == 0) {
-      
-            fMinClusterE = stof(c_parser.TakeFirst());
-
-        }
  
+    unordered_map<string, float> variable_map;
+
+    while(c_parser.ParseLine())
+    {
+        if (c_parser.NbofElements() != 2)
+            continue;
+
+        string var_name = c_parser.TakeFirst();
+        ConfigValue var_value = c_parser.TakeFirst();
+        fConfigMap[var_name] = var_value;
     }
 
+    fMaxNCluster = GetConfigValue("MAX_N_CLUSTER").ToInt();
+    fMinClusterCenterE = GetConfigValue("MIN_CLUSTER_CENTER_E").ToDouble();
+    fMinClusterE = GetConfigValue("MIN_CLUSTER_E").ToDouble();
+}
+
+ConfigValue PRadReconstructor::GetConfigValue(const string &name)
+{
+    auto it = fConfigMap.find(name);
+    if(it == fConfigMap.end())
+        return ConfigValue();
+    return it->second;
 }
 //________________________________________________________________
 vector<HyCalHit> * PRadReconstructor::CoarseHyCalReconstruct()
@@ -74,12 +76,12 @@ vector<HyCalHit> * PRadReconstructor::CoarseHyCalReconstruct()
   double totalWeight = 0.;
 
   for (unsigned short i = 0; i < fMaxNCluster; ++i){
-    int theMaxModuleID = GetMaxEChannel();
+    int theMaxModuleID = getMaxEChannel();
    
     if (theMaxModuleID == 0xffff) break;//this happens if no module has large enough energy
     
     double clusterEnergy = 0.;
-    vector<unsigned short> collection = FindCluster(theMaxModuleID, &clusterEnergy);
+    vector<unsigned short> collection = findCluster(theMaxModuleID, &clusterEnergy);
     
     if (clusterEnergy <= fMinClusterE) {
         i--;
@@ -96,7 +98,7 @@ vector<HyCalHit> * PRadReconstructor::CoarseHyCalReconstruct()
       double thisY = thisModule->GetY();
 
       double weight = thisModule->GetEnergy()/clusterEnergy;
-      if (UseLogWeight(thisX, thisY)) weight = 10. + log(weight);
+      if (useLogWeight(thisX, thisY)) weight = 10. + log(weight);
       if (weight > 0.){
         weightX += weight*thisX;
         weightY += weight*thisY;
@@ -113,7 +115,7 @@ vector<HyCalHit> * PRadReconstructor::CoarseHyCalReconstruct()
  return &fHyCalHit; 
 }
 //____________________________________________________________
-unsigned short PRadReconstructor::GetMaxEChannel()
+unsigned short PRadReconstructor::getMaxEChannel()
 {
   double theMaxValue = 0;
   unsigned short theMaxChannelID = 0xffff;
@@ -157,12 +159,12 @@ unsigned short PRadReconstructor::GetMaxEChannel()
   return theMaxChannelID;
 }
 //__________________________________________________________________________________________
-inline bool PRadReconstructor::UseLogWeight(double x, double y)
+inline bool PRadReconstructor::useLogWeight(double x, double y)
 {
     return true; //for now
 }
 //___________________________________________________________________________________________
-vector<unsigned short> PRadReconstructor::FindCluster(unsigned short centerID, double* clusterEnergy)
+vector<unsigned short> PRadReconstructor::findCluster(unsigned short centerID, double* clusterEnergy)
 {
   double clusterRadius = 0.;
   double centerX = fModuleList->at(centerID)->GetX();

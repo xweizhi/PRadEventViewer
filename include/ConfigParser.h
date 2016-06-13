@@ -1,11 +1,83 @@
 #ifndef CONFIG_PARSER_H
 #define CONFIG_PARSER_H
 
-#include <fstream>
 #include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
 #include <vector>
 #include <queue>
+#include <stdexcept>
+#include <typeinfo>
 
+// demangle type name
+#ifdef __GNUG__
+#include <cstdlib>
+#include <memory>
+#include <cxxabi.h>
+// gnu compiler needs to demangle type info
+static std::string demangle(const char* name)
+{
+
+    int status = 0;
+
+    //enable c++11 by passing the flag -std=c++11 to g++
+    std::unique_ptr<char, void(*)(void*)> res {
+        abi::__cxa_demangle(name, NULL, NULL, &status),
+        std::free
+    };
+
+    return (status==0) ? res.get() : name ;
+}
+#else
+// do nothing if not gnu compiler
+static std::string demangle(const char* name)
+{
+    return name;
+}
+#endif
+
+// config value class
+class ConfigValue
+{
+public:
+    std::string _value;
+
+    ConfigValue()
+    : _value("0")
+    {};
+    ConfigValue(const std::string &v)
+    : _value(v)
+    {};
+
+    template<typename T>
+    T Convert()
+    {
+        std::stringstream iss(_value);
+        T _cvalue;
+
+        if( iss >> _cvalue ) {
+            return _cvalue;
+        } else {
+            throw std::runtime_error("Config Value: Failed to convert " + _value + " to " + demangle(typeid(T).name()));
+        }
+    };
+
+    double ToDouble();
+    int ToInt();
+    unsigned int ToUInt();
+    float ToFloat();
+
+    operator std::string() const
+    {
+        return _value;
+    };
+};
+
+// show string content of the config value to ostream
+std::ostream &operator << (std::ostream &os, ConfigValue &b);
+
+// config parser class
 class ConfigParser
 {
 public:
@@ -22,8 +94,8 @@ public:
     void ParseLine(const std::string &line);
     size_t NbofElements() {return elements.size();};
     std::string GetLine();
-    std::string TakeFirst();
-    std::vector<std::string> TakeAll();
+    ConfigValue TakeFirst();
+    std::vector<ConfigValue> TakeAll();
 
 private:
     std::string splitters;

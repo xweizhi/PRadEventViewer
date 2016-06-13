@@ -10,6 +10,32 @@
 
 using namespace std;
 
+std::ostream &operator << (std::ostream &os, ConfigValue &b)
+{
+    return  os << b._value;
+};
+
+
+double ConfigValue::ToDouble()
+{
+    return Convert<double>();
+}
+
+int ConfigValue::ToInt()
+{
+    return Convert<int>();
+}
+
+float ConfigValue::ToFloat()
+{
+    return Convert<float>();
+}
+
+unsigned int ConfigValue::ToUInt()
+{
+    return Convert<unsigned int>();
+}
+
 ConfigParser::ConfigParser(const string &s,
                            const string &w,
                            const vector<string> &c)
@@ -94,24 +120,23 @@ void ConfigParser::ParseLine(const string &line)
     elements = split(trim_line, splitters);
 }
 
-string ConfigParser::TakeFirst()
+ConfigValue ConfigParser::TakeFirst()
 {
     if(elements.empty())
-        return "";
+        return ConfigValue("0");
+    string output = elements.front();
+    elements.pop();
 
-     string output = elements.front();
-     elements.pop();
-
-     return output;
+    return ConfigValue(output);
 }
 
-vector<string> ConfigParser::TakeAll()
+vector<ConfigValue> ConfigParser::TakeAll()
 {
-    vector<string> output;
+    vector<ConfigValue> output;
 
     while(elements.size())
     {
-        output.push_back(elements.front());
+        output.push_back(ConfigValue(elements.front()));
         elements.pop();
     }
 

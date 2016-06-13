@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
         }
     }
     ConfigParser parser;
-    unordered_map<string, vector<string>> eles_map;
+    unordered_map<string, vector<ConfigValue>> eles_map;
 
     if(input_list.size() < 2) {
         cerr << "Less than 2 input files, no need to combine" << endl;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         if(!parser.NbofElements())
             continue;
         string key = parser.TakeFirst();
-        vector<string> ori_eles = parser.TakeAll();
+        vector<ConfigValue> ori_eles = parser.TakeAll();
 
         eles_map[key] = ori_eles;
     }
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
                 cout << "Cannot find key " << key << " in original map" << endl;
                 continue;
             }
-            vector<string> new_eles = parser.TakeAll();
+            vector<ConfigValue> new_eles = parser.TakeAll();
             it->second.insert(it->second.end(), new_eles.begin(), new_eles.end());
         }
         parser.CloseFile();
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     for(auto ele : eles_map)
     {
         outfile << setw(12) << ele.first;
-        vector<string> eles = ele.second;
+        vector<ConfigValue> eles = ele.second;
         for(auto e : eles)
         {
             outfile << setw(12) << e;

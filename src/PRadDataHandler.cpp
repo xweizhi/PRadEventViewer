@@ -741,9 +741,9 @@ void PRadDataHandler::ReadTDCList(const string &path)
 
        if(c_parser.NbofElements() == 4) {
             name = c_parser.TakeFirst();
-            addr.crate = stoi(c_parser.TakeFirst());
-            addr.slot = stoi(c_parser.TakeFirst());
-            addr.channel = stoi(c_parser.TakeFirst());
+            addr.crate = c_parser.TakeFirst().Convert<size_t>();
+            addr.slot = c_parser.TakeFirst().Convert<size_t>();
+            addr.channel = c_parser.TakeFirst().Convert<size_t>();
 
             AddTDCGroup(new PRadTDCGroup(name, addr));
         } else {
@@ -780,16 +780,16 @@ void PRadDataHandler::ReadChannelList(const string &path)
 
         if(c_parser.NbofElements() >= 10) {
             moduleName = c_parser.TakeFirst();
-            daqAddr.crate = stoi(c_parser.TakeFirst());
-            daqAddr.slot = stoi(c_parser.TakeFirst());
-            daqAddr.channel = stoi(c_parser.TakeFirst());
+            daqAddr.crate = c_parser.TakeFirst().Convert<size_t>();
+            daqAddr.slot = c_parser.TakeFirst().Convert<size_t>();
+            daqAddr.channel = c_parser.TakeFirst().Convert<size_t>();
             tdcGroup = c_parser.TakeFirst();
 
-            geo.type = (PRadDAQUnit::ChannelType) stoi(c_parser.TakeFirst());
-            geo.size_x = stod(c_parser.TakeFirst()); 
-            geo.size_y = stod(c_parser.TakeFirst()); 
-            geo.x = stod(c_parser.TakeFirst()); 
-            geo.y = stod(c_parser.TakeFirst()); 
+            geo.type = PRadDAQUnit::ChannelType(c_parser.TakeFirst().Convert<int>());
+            geo.size_x = c_parser.TakeFirst().Convert<double>();
+            geo.size_y = c_parser.TakeFirst().Convert<double>();
+            geo.x = c_parser.TakeFirst().Convert<double>();
+            geo.y = c_parser.TakeFirst().Convert<double>();
  
             PRadDAQUnit *new_ch = new PRadDAQUnit(moduleName, daqAddr, tdcGroup, geo);
             AddChannel(new_ch);
@@ -824,11 +824,11 @@ void PRadDataHandler::ReadPedestalFile(const string &path)
             continue;
 
         if(c_parser.NbofElements() == 5) {
-            daqInfo.crate = stoi(c_parser.TakeFirst());
-            daqInfo.slot = stoi(c_parser.TakeFirst());
-            daqInfo.channel = stoi(c_parser.TakeFirst());
-            val = stod(c_parser.TakeFirst());
-            sigma = stod(c_parser.TakeFirst());
+            daqInfo.crate = c_parser.TakeFirst().Convert<size_t>();
+            daqInfo.slot = c_parser.TakeFirst().Convert<size_t>();
+            daqInfo.channel = c_parser.TakeFirst().Convert<size_t>();
+            val = c_parser.TakeFirst().Convert<double>();
+            sigma = c_parser.TakeFirst().Convert<double>();
 
             if((tmp = GetChannel(daqInfo)) != nullptr)
                 tmp->UpdatePedestal(val, sigma);
@@ -865,11 +865,11 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
         if(c_parser.NbofElements() == 5) {
             vector<double> ref_gain;
             name = c_parser.TakeFirst();
-            calFactor = stod(c_parser.TakeFirst());
+            calFactor = c_parser.TakeFirst().Convert<double>();
 
-            ref_gain.push_back(stod(c_parser.TakeFirst())); // ref 1
-            ref_gain.push_back(stod(c_parser.TakeFirst())); // ref 2
-            ref_gain.push_back(stod(c_parser.TakeFirst())); // ref 3
+            ref_gain.push_back(c_parser.TakeFirst().Convert<double>()); // ref 1
+            ref_gain.push_back(c_parser.TakeFirst().Convert<double>()); // ref 2
+            ref_gain.push_back(c_parser.TakeFirst().Convert<double>()); // ref 3
 
             if(calFactor)
                 calFactor = 850./calFactor;
@@ -917,9 +917,9 @@ void PRadDataHandler::ReadGainFactor(const string &path, const int &ref)
 
         if(c_parser.NbofElements() == 2) {
             name = c_parser.TakeFirst();
-            ref_gain[0] = stod(c_parser.TakeFirst());
-            ref_gain[1] = stod(c_parser.TakeFirst());
-            ref_gain[2] = stod(c_parser.TakeFirst());
+            ref_gain[0] = c_parser.TakeFirst().Convert<double>();
+            ref_gain[1] = c_parser.TakeFirst().Convert<double>();
+            ref_gain[2] = c_parser.TakeFirst().Convert<double>();
 
             if((tmp = GetChannel(name)) != nullptr)
                 tmp->GainCorrection(ref_gain[ref-1], ref); //TODO we only use reference 2 for now
