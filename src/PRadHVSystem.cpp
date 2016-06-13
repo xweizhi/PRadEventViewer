@@ -211,11 +211,11 @@ void PRadHVSystem::RestoreSetting(const string &path)
         float VSet;
 
         crate_name = c_parser.TakeFirst();
-        slot = c_parser.TakeFirst().Convert<int>();
-        channel = c_parser.TakeFirst().Convert<unsigned short>();
+        slot = c_parser.TakeFirst().Int();
+        channel = c_parser.TakeFirst().UShort();
         channel_name = c_parser.TakeFirst();
         c_parser.TakeFirst(); // VMon, not used
-        VSet = c_parser.TakeFirst().Convert<float>();
+        VSet = c_parser.TakeFirst().Float();
 
         CAEN_Channel *ch = GetChannel(crate_name, slot, channel);
 

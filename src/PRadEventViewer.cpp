@@ -438,20 +438,20 @@ void PRadEventViewer::readModuleList()
 
         if(c_parser.NbofElements() == 13) {
             moduleName = QString::fromStdString(c_parser.TakeFirst());
-            daqAddr.crate = c_parser.TakeFirst().Convert<size_t>();
-            daqAddr.slot = c_parser.TakeFirst().Convert<size_t>();
-            daqAddr.channel = c_parser.TakeFirst().Convert<size_t>();
+            daqAddr.crate = c_parser.TakeFirst().ULong();
+            daqAddr.slot = c_parser.TakeFirst().ULong();
+            daqAddr.channel = c_parser.TakeFirst().ULong();
             tdcGroup = QString::fromStdString(c_parser.TakeFirst());
 
-            geometry.type = PRadDAQUnit::ChannelType(c_parser.TakeFirst().Convert<int>());
-            geometry.size_x = c_parser.TakeFirst().Convert<double>();
-            geometry.size_y = c_parser.TakeFirst().Convert<double>();
-            geometry.x = c_parser.TakeFirst().Convert<double>();
-            geometry.y = c_parser.TakeFirst().Convert<double>();
+            geometry.type = PRadDAQUnit::ChannelType(c_parser.TakeFirst().Int());
+            geometry.size_x = c_parser.TakeFirst().Double();
+            geometry.size_y = c_parser.TakeFirst().Double();
+            geometry.x = c_parser.TakeFirst().Double();
+            geometry.y = c_parser.TakeFirst().Double();
 
-            hvAddr.crate = c_parser.TakeFirst().Convert<size_t>();
-            hvAddr.slot = c_parser.TakeFirst().Convert<size_t>();
-            hvAddr.channel = c_parser.TakeFirst().Convert<size_t>();
+            hvAddr.crate = c_parser.TakeFirst().ULong();
+            hvAddr.slot = c_parser.TakeFirst().ULong();
+            hvAddr.channel = c_parser.TakeFirst().ULong();
 
             HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, geometry);
             newModule->UpdateHVSetup(hvAddr);

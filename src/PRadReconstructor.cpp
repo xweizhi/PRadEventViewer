@@ -54,9 +54,9 @@ void PRadReconstructor::InitConfig(const string &path)
         fConfigMap[var_name] = var_value;
     }
 
-    fMaxNCluster = GetConfigValue("MAX_N_CLUSTER").ToInt();
-    fMinClusterCenterE = GetConfigValue("MIN_CLUSTER_CENTER_E").ToDouble();
-    fMinClusterE = GetConfigValue("MIN_CLUSTER_E").ToDouble();
+    fMaxNCluster = GetConfigValue("MAX_N_CLUSTER").Int();
+    fMinClusterCenterE = GetConfigValue("MIN_CLUSTER_CENTER_E").Double();
+    fMinClusterE = GetConfigValue("MIN_CLUSTER_E").Double();
 }
 
 ConfigValue PRadReconstructor::GetConfigValue(const string &name)

@@ -7,7 +7,6 @@
 #include <fstream>
 #include <vector>
 #include <queue>
-#include <stdexcept>
 #include <typeinfo>
 
 // demangle type name
@@ -56,17 +55,27 @@ public:
         std::stringstream iss(_value);
         T _cvalue;
 
-        if( iss >> _cvalue ) {
-            return _cvalue;
-        } else {
-            throw std::runtime_error("Config Value: Failed to convert " + _value + " to " + demangle(typeid(T).name()));
+        if(!(iss>>_cvalue)) {
+            std::cerr <<"Config Value Warning: Failed to convert " + _value + " to " + demangle(typeid(T).name()) << std::endl;
         }
+
+        return _cvalue;
     };
 
-    double ToDouble();
-    int ToInt();
-    unsigned int ToUInt();
-    float ToFloat();
+    char Char();
+    unsigned char UChar();
+    short Short();
+    unsigned short UShort();
+    int Int();
+    unsigned int UInt();
+    long Long();
+    long long LongLong();
+    unsigned long ULong();
+    unsigned long long ULongLong();
+    float Float();
+    double Double();
+    long double LongDouble();
+    const char *c_str();
 
     operator std::string() const
     {

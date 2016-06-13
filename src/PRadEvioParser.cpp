@@ -427,7 +427,7 @@ void PRadEvioParser::parseEPICS(const uint32_t *data)
     while(c_parser->ParseLine())
     {
         if(c_parser->NbofElements() == 2) {
-            float number = c_parser->TakeFirst().ToFloat();
+            float number = c_parser->TakeFirst().Float();
             string name = c_parser->TakeFirst();
             myHandler->UpdateEPICS(name, number);
         }

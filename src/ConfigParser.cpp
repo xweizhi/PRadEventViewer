@@ -10,32 +10,84 @@
 
 using namespace std;
 
+// Config Value
 std::ostream &operator << (std::ostream &os, ConfigValue &b)
 {
     return  os << b._value;
 };
 
-
-double ConfigValue::ToDouble()
+char ConfigValue::Char()
 {
-    return Convert<double>();
+    return (char)stoi(_value);
 }
 
-int ConfigValue::ToInt()
+unsigned char ConfigValue::UChar()
 {
-    return Convert<int>();
+    return (unsigned char)stoul(_value);
 }
 
-float ConfigValue::ToFloat()
+short ConfigValue::Short()
 {
-    return Convert<float>();
+    return (short)stoi(_value);
 }
 
-unsigned int ConfigValue::ToUInt()
+unsigned short ConfigValue::UShort()
 {
-    return Convert<unsigned int>();
+    return (unsigned short)stoul(_value);
 }
 
+int ConfigValue::Int()
+{
+    return stoi(_value);
+}
+
+unsigned int ConfigValue::UInt()
+{
+    return (unsigned int)stoul(_value);
+}
+
+long ConfigValue::Long()
+{
+    return stol(_value);
+}
+
+long long ConfigValue::LongLong()
+{
+    return stoll(_value);
+}
+
+unsigned long ConfigValue::ULong()
+{
+    return stoul(_value);
+}
+
+unsigned long long ConfigValue::ULongLong()
+{
+    return stoull(_value);
+}
+
+float ConfigValue::Float()
+{
+    return stof(_value);
+}
+
+double ConfigValue::Double()
+{
+    return stod(_value);
+}
+
+long double ConfigValue::LongDouble()
+{
+    return stold(_value);
+}
+
+const char *ConfigValue::c_str()
+{
+    return _value.c_str();
+}
+
+
+// Config Parser
 ConfigParser::ConfigParser(const string &s,
                            const string &w,
                            const vector<string> &c)
