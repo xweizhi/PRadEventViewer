@@ -15,8 +15,13 @@ public:
     virtual ~PRadTDCGroup();
     void AddChannel(PRadDAQUnit *ch);
     void AssignID(const int &id) {groupID = id;};
+    void AddTimeMeasure(const unsigned short &count);
+    void AddTimeMeasure(const std::vector<unsigned short> &counts);
+    void UpdateTimeMeasure(const std::vector<unsigned short> &counts);
     void CleanBuffer();
+    void ClearTimeMeasure();
     size_t GetNbOfChs() {return groupList.size();};
+    std::vector<unsigned short> &GetTimeMeasure() {return timeMeasure;};
     const std::vector<PRadDAQUnit *> &GetGroupList() {return groupList;};
     const std::string &GetName() {return groupName;};
     const ChannelAddress &GetAddress() {return address;};
@@ -48,9 +53,10 @@ public:
 
 private:
     std::string groupName;
-    TH1I *tdcHist;
-    std::vector<PRadDAQUnit *> groupList;
     ChannelAddress address;
+    std::vector<PRadDAQUnit *> groupList;
+    std::vector<unsigned short> timeMeasure;
+    TH1I *tdcHist;
     int groupID;
 };
 

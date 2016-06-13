@@ -381,6 +381,11 @@ void PRadDataHandler::ChooseEvent(const int &idx)
         channel->UpdateEnergy(0);
     }
 
+    for(auto &tdc_ch : tdcList)
+    {
+        tdc_ch->ClearTimeMeasure();
+    }
+
     if (energyData.size()) { // offline mode, pick the event given by console
         if((unsigned int) idx >= energyData.size())
             event = energyData.back();
@@ -395,6 +400,11 @@ void PRadDataHandler::ChooseEvent(const int &idx)
         channelList[adc.channel_id]->UpdateEnergy(adc.value);
         if(channelList[adc.channel_id]->IsHyCalModule())
             totalE += channelList[adc.channel_id]->GetEnergy();
+    }
+
+    for(auto &tdc : event.tdc_data)
+    {
+        tdcList[tdc.channel_id]->AddTimeMeasure(tdc.value);
     }
 }
 

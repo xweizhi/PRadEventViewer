@@ -31,4 +31,25 @@ void PRadTDCGroup::AddChannel(PRadDAQUnit *ch)
 void PRadTDCGroup::CleanBuffer()
 {
     tdcHist->Reset();
+    ClearTimeMeasure();
+}
+
+void PRadTDCGroup::ClearTimeMeasure()
+{
+    timeMeasure.clear();
+}
+
+void PRadTDCGroup::AddTimeMeasure(const unsigned short &count)
+{
+    timeMeasure.push_back(count);
+}
+
+void PRadTDCGroup::AddTimeMeasure(const std::vector<unsigned short> &counts)
+{
+    timeMeasure.insert(timeMeasure.end(), counts.begin(), counts.end());
+}
+
+void PRadTDCGroup::UpdateTimeMeasure(const std::vector<unsigned short> &counts)
+{
+    timeMeasure = counts;
 }

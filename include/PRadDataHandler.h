@@ -94,7 +94,7 @@ public:
     PRadTDCGroup *GetTDCGroup(const std::string &name);
     PRadTDCGroup *GetTDCGroup(const ChannelAddress &addr);
     const std::unordered_map< std::string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};
-    std::vector< PRadDAQUnit* > GetChannelList() {return channelList;};
+    std::vector< PRadDAQUnit* > &GetChannelList() {return channelList;};
     void FitHistogram(const std::string &channel,
                       const std::string &hist_name,
                       const std::string &fit_func,
