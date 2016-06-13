@@ -20,17 +20,18 @@ public:
     void InitConfig(const std::string &path);
     ConfigValue GetConfigValue(const std::string &var_name);
     void Clear();
-    void SetModuleList(std::vector<PRadDAQUnit*> * theList) { fModuleList = theList; }
-    std::vector<HyCalHit> * CoarseHyCalReconstruct();
+    void SetHandler(PRadDataHandler *theHandler);
+    std::vector<HyCalHit> &CoarseHyCalReconstruct();
   
 protected:
     unsigned short getMaxEChannel();
     //void GEMCoorToLab(float* x, float *y, int type);
     //void HyCalCoorToLab(float* x, float *y);
     bool useLogWeight(double x, double y);
-    std::vector<unsigned short> findCluster(unsigned short cneterID, double* clusterEnergy);
+    std::vector<unsigned short> findCluster(unsigned short cneterID, double &clusterEnergy);
 
-    std::vector<PRadDAQUnit*> * fModuleList;
+    PRadDataHandler *fHandler;
+    std::vector<PRadDAQUnit*> fModuleList;
     std::vector<unsigned short> fClusterCenterID;
     std::vector<HyCalHit> fHyCalHit;
     std::vector<float>* fGEM1XHit;
@@ -54,6 +55,7 @@ protected:
     std::unordered_map<std::string, ConfigValue> fConfigMap;
 
 public:
+    static double Distance(PRadDAQUnit *u1, PRadDAQUnit *u2);
     static double Distance(const double &x1, const double &y1, const double &x2, const double &y2);
     static double Distance(const double &x1, const double &y1, const double &x2, const double &y2, const double &z1, const double &z2);
     static double Distance(const std::vector<double> &p1, const std::vector<double> &p2);
