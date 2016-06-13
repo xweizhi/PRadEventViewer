@@ -56,7 +56,11 @@ public:
         T _cvalue;
 
         if(!(iss>>_cvalue)) {
-            std::cerr <<"Config Value Warning: Failed to convert " + _value + " to " + demangle(typeid(T).name()) << std::endl;
+            std::cerr << "Config Value Warning: Undefined value returned, failed to convert "
+                      <<  _value
+                      << " to "
+                      << demangle(typeid(T).name())
+                      << std::endl;
         }
 
         return _cvalue;
