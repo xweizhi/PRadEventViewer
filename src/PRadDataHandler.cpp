@@ -962,3 +962,122 @@ void PRadDataHandler::RefillEnergyHist()
         energyHist->Fill(ene);
     }
 }
+
+void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
+{
+    ifstream input;
+
+    try {
+        input.open(path, mode);
+
+        input.seekg(0, input.end);
+        int length = input.tellg();
+        input.seekg(0, input.beg);
+
+        while(input.tellg() < length && input.tellg() != -1)
+        {
+            EventData event;
+            ReadFromDST(input, event);
+            energyData.push_back(event);
+        }
+
+    } catch(PRadException &e) {
+        cerr << e.FailureType() << ": "
+             << e.FailureDesc() << endl
+             << "Write to DST Aborted!" << endl;
+    } catch(exception &e) {
+        cerr << e.what() << endl
+             << "Write to DST Aborted!" << endl;
+    }
+
+    input.close();
+
+}
+
+void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRadException)
+{
+     if(!dst_file.is_open())
+         throw PRadException("READ DST", "input file is not opened!");
+
+     // event information
+     dst_file.read((char*) &data.event_number, sizeof(data.event_number));
+     dst_file.read((char*) &data.type        , sizeof(data.type));
+     dst_file.read((char*) &data.latch_word  , sizeof(data.latch_word));
+     dst_file.read((char*) &data.lms_phase   , sizeof(data.lms_phase));
+     dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
+
+     size_t adc_size, tdc_size;
+     unsigned short channel_id, value;
+     dst_file.read((char*) &adc_size, sizeof(adc_size));
+
+     for(size_t i = 0; i < adc_size; ++i)
+     {
+         dst_file.read((char*) &channel_id, sizeof(channel_id));
+         dst_file.read((char*) &value     , sizeof(channel_id));
+         data.add_adc(ADC_Data(channel_id, value));
+     }
+    
+     dst_file.read((char*) &tdc_size, sizeof(tdc_size));
+
+     for(size_t i = 0; i < tdc_size; ++i)
+     {
+         dst_file.read((char*) &channel_id, sizeof(channel_id));
+         dst_file.read((char*) &value     , sizeof(channel_id));
+         data.add_tdc(TDC_Data(channel_id, value));
+     }
+ }
+
+void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
+{
+    ofstream output;
+
+    try {
+        output.open(path, mode);
+
+        for(auto &event : energyData)
+        {
+            WriteToDST(output, event);
+        }
+
+    } catch(PRadException &e) {
+        cerr << e.FailureType() << ": "
+             << e.FailureDesc() << endl
+             << "Write to DST Aborted!" << endl;
+    } catch(exception &e) {
+        cerr << e.what() << endl
+             << "Write to DST Aborted!" << endl;
+    }
+
+    output.close();
+}
+
+void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) throw(PRadException)
+{
+     if(!dst_file.is_open())
+         throw PRadException("WRITE DST", "output file is not opened!");
+
+     // event information
+     dst_file.write((char*) &data.event_number, sizeof(data.event_number));
+     dst_file.write((char*) &data.type        , sizeof(data.type));
+     dst_file.write((char*) &data.latch_word  , sizeof(data.latch_word));
+     dst_file.write((char*) &data.lms_phase   , sizeof(data.lms_phase));
+     dst_file.write((char*) &data.timestamp   , sizeof(data.timestamp));
+
+     // adc data bank
+     size_t adc_size = data.adc_data.size();
+     size_t tdc_size = data.tdc_data.size();
+
+     dst_file.write((char*) &adc_size, sizeof(adc_size));
+     for(auto &adc : data.adc_data)
+     {
+         dst_file.write((char*) &adc.channel_id, sizeof(adc.channel_id));
+         dst_file.write((char*) &adc.value, sizeof(adc.value));
+     }
+
+     dst_file.write((char*) &tdc_size, sizeof(tdc_size));
+     for(auto &tdc : data.tdc_data)
+     {
+         dst_file.write((char*) &tdc.channel_id, sizeof(tdc.channel_id));
+         dst_file.write((char*) &tdc.value, sizeof(tdc.value));
+     }     
+}

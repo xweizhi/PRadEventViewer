@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <map>
 #include <deque>
+#include <fstream>
 #include "datastruct.h"
 #include "PRadEventStruct.h"
 #include "PRadException.h"
@@ -81,7 +82,7 @@ public:
     TH2I *GetTagEHist() {return TagEHist;};
     TH2I *GetTagTHist() {return TagTHist;};
     EventData &GetEventData(const unsigned int &index);
-    size_t GetEventDataSize() {return energyData.size();};
+    EventData &GetLastEvent();
     double GetEnergy() {return totalE;};
     void Clear();
     void StartofNewEvent();
@@ -104,7 +105,11 @@ public:
     void ReadGainFactor(const std::string &path, const int &ref = 2);
     void CorrectGainFactor(const int &run = 0, const int &ref = 2);
     void RefillEnergyHist();
-
+    void WriteToDST(const std::string &pat, std::ios::openmode mode = std::ios::out | std::ios::binary | std::ios::app);
+    void WriteToDST(std::ofstream &dst_file, const EventData &data) throw(PRadException);
+    void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
+    void ReadFromDST(std::ifstream &dst_file, EventData &data) throw(PRadException);
+ 
 private:
     PRadEvioParser *parser;
     double totalE;
