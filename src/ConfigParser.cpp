@@ -16,6 +16,47 @@ std::ostream &operator << (std::ostream &os, ConfigValue &b)
     return  os << b._value;
 };
 
+
+ConfigValue::ConfigValue(const string &value)
+: _value(value)
+{}
+
+ConfigValue::ConfigValue(const int &value)
+: _value(to_string(value))
+{}
+
+ConfigValue::ConfigValue(const long &value)
+: _value(to_string(value))
+{}
+
+ConfigValue::ConfigValue(const long long &value)
+: _value(to_string(value))
+{}
+
+ConfigValue::ConfigValue(const unsigned &value)
+: _value(to_string(value))
+{}
+
+ConfigValue::ConfigValue(const unsigned long &value)
+: _value(to_string(value))
+{}
+
+ConfigValue::ConfigValue(const unsigned long long &value)
+: _value(to_string(value))
+{}
+
+ConfigValue::ConfigValue(const float &value)
+: _value(to_string(value))
+{}
+
+ConfigValue::ConfigValue(const double &value)
+: _value(to_string(value))
+{}
+
+ConfigValue::ConfigValue(const long double &value)
+: _value(to_string(value))
+{}
+
 char ConfigValue::Char()
 {
     return (char)stoi(_value);

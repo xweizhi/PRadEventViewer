@@ -45,9 +45,17 @@ public:
     ConfigValue()
     : _value("0")
     {};
-    ConfigValue(const std::string &v)
-    : _value(v)
-    {};
+
+    ConfigValue(const std::string &value);
+    ConfigValue(const int &value);
+    ConfigValue(const long &value);
+    ConfigValue(const long long &value);
+    ConfigValue(const unsigned &value);
+    ConfigValue(const unsigned long &value);
+    ConfigValue(const unsigned long long &value);
+    ConfigValue(const float &value);
+    ConfigValue(const double &value);
+    ConfigValue(const long double &value);
 
     template<typename T>
     T Convert()
