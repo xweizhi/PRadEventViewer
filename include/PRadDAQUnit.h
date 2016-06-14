@@ -137,11 +137,11 @@ public:
                 histograms[n] = new TH1I(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
                 break;
             case 'F':
-            case "f":
+            case 'f':
                 histograms[n] = new TH1F(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
                 break;
             case 'D':
-            case "d":
+            case 'd':
                 histograms[n] = new TH1D(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
                 break;
             default:
