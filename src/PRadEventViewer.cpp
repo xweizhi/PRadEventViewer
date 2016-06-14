@@ -1152,6 +1152,9 @@ void PRadEventViewer::correctGainFactor()
     } else {
         handler->CorrectGainFactor();
     }
+
+    // Refill the histogram to show the changes
+    handler->RefillEnergyHist();
     Refresh();
     UpdateHistCanvas();
 }

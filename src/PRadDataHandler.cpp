@@ -726,9 +726,6 @@ void PRadDataHandler::CorrectGainFactor(const int &run, const int &ref)
             }
         }
     }
-
-    // refill energy hist since calibration constant changed
-    RefillEnergyHist();
 }
 
 void PRadDataHandler::ReadTDCList(const string &path)
@@ -1143,7 +1140,7 @@ int PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &
     if(numbers.size() > pos) {
 
         if(verbose) {
-            cout << "Data Handler: run number is automatcially determined from file name."
+            cout << "Data Handler: Run number is automatcially determined from file name."
                  << endl
                  << "File name: " << name
                  << endl
