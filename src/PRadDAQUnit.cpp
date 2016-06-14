@@ -6,7 +6,6 @@
 //============================================================================//
 
 #include "PRadDAQUnit.h"
-#include <iostream>
 #include <utility>
 
 PRadDAQUnit::PRadDAQUnit(const std::string &name,
@@ -24,9 +23,9 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
     }
 
     // some default histograms
-    AddHist("PHYS", "Integer", (channelName + " Physics Events").c_str(), 2048, 0, 8191);
-    AddHist("PED", "Integer", (channelName + " Pedestal Events").c_str(), 1024, 0, 1023);
-    AddHist("LMS", "Integer", (channelName + " LED Source").c_str(), 2048, 0, 8191);
+    AddHist("PHYS", "Integer", (channelName + " Physics Events"), 2048., 0., 8191.);
+    AddHist("PED", "Integer", (channelName + " Pedestal Events"), 1024., 0., 1023.);
+    AddHist("LMS", "Integer", (channelName + " LED Source"), 2048., 0., 8191.);
 
     // default hist-trigger mapping
 //    MapHist("PED", TI_Error);
@@ -61,31 +60,6 @@ void PRadDAQUnit::AddHist(const std::string &n)
         histograms[n] = new TH1I(hist_name.c_str(), n.c_str(), 2048, 0, 8191);
     } else {
         std::cout << "WARNING: " << channelName << ", hist " << n << " exists, skip adding it." << std::endl;
-    }
-}
-
-template<typename... Args>
-void PRadDAQUnit::AddHist(const std::string &n, const std::string &type, Args&&... args)
-{
-    if(GetHist(n) == nullptr) {
-        std::string hist_name = channelName + "_" + n;
-        switch(type.at(0))
-        {
-        case 'I':
-            histograms[n] = new TH1I(hist_name.c_str(), std::forward<Args>(args)...);
-            break;
-        case 'F':
-            histograms[n] = new TH1F(hist_name.c_str(), std::forward<Args>(args)...);
-            break;
-        case 'D':
-            histograms[n] = new TH1D(hist_name.c_str(), std::forward<Args>(args)...);
-            break;
-        default:
-            std::cout << "WARNING: " << channelName << ", does not support histogram type " << type << std::endl;
-            break;
-        }
-    } else {
-        std::cout << "WARNING: "<< channelName << ", hist " << n << " exists, skip adding it." << std::endl;
     }
 }
 

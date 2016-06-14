@@ -91,7 +91,8 @@ public slots:
     void Refresh();
 
 private slots:
-    void openFile();
+    void openDataFile();
+    void initializeFromFile();
     void openPedFile();
     void openCalibrationFile();
     void openGainFactorFile();

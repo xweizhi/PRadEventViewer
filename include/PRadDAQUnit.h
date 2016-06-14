@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 #include <unordered_map>
 #include "TH1.h"
 #include "datastruct.h"
@@ -102,8 +103,6 @@ public:
     void UpdateGeometry(const Geometry &geo) {geometry = geo;};
     void CleanBuffer();
     void AddHist(const std::string &name);
-    template<typename... Args>
-    void AddHist(const std::string &name, const std::string &type, Args&&... args);
     void MapHist(const std::string &name, PRadTriggerType type);
     template<typename T>
     void FillHist(const T& t, const PRadTriggerType &type);
@@ -125,6 +124,32 @@ public:
     bool IsHyCalModule() {return (geometry.type == LeadGlass) || (geometry.type == LeadTungstate);};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
     virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
+
+    template<typename... Args>
+    void AddHist(const std::string &n, const std::string &type, const std::string &title, Args&&... args)
+    {
+        if(GetHist(n) == nullptr) {
+            std::string hist_name = channelName + "_" + n;
+            switch(type.at(0))
+            {
+            case 'I':
+                histograms[n] = new TH1I(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
+                break;
+            case 'F':
+                histograms[n] = new TH1F(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
+                break;
+            case 'D':
+                histograms[n] = new TH1D(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
+                break;
+            default:
+                std::cout << "WARNING: " << channelName << ", does not support histogram type " << type << std::endl;
+                break;
+            }
+        } else {
+            std::cout << "WARNING: "<< channelName << ", hist " << n << " exists, skip adding it." << std::endl;
+        }
+    }
+
 
     bool operator < (const PRadDAQUnit &rhs) const
     {

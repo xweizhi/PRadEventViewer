@@ -1096,3 +1096,63 @@ void PRadDataHandler::ReadFromEvio(const string &path)
 {
     parser->ReadEvioFile(path.c_str());
 }
+
+void PRadDataHandler::InitializeByData(const string &path, int run)
+{
+    if(!path.empty()) {
+        // auto update run number
+        if(run < 0)
+            run = GetRunNumberFromFileName(path);
+
+        cout << "Data Handler: Initializing from data file "
+             << "\"" << path << "\", "
+             << "run number: " << run
+             << " ." << endl;
+
+         parser->ReadEvioFile(path.c_str());
+    }
+
+    FitPedestal();
+
+    CorrectGainFactor(run);
+
+    Clear();
+
+    cout << "Data Handler: Channel Pedestal and Gain Factors are adjusted according to data." << endl;
+}
+
+int PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &pos, const bool &verbose)
+{
+    // get rid of suffix
+    auto nameEnd = name.find(".evio");
+
+    if(nameEnd == string::npos)
+        nameEnd = name.size();
+    else
+        nameEnd -= 1;
+
+    // get rid of directories
+    auto nameBeg = name.find_last_of("/");
+    if(nameBeg == string::npos)
+        nameBeg = 0;
+    else
+        nameBeg += 1;
+
+    vector<int> numbers = ConfigParser::find_integer(name.substr(nameBeg, nameEnd - nameBeg + 1));
+
+    if(numbers.size() > pos) {
+
+        if(verbose) {
+            cout << "Data Handler: run number is automatcially determined from file name."
+                 << endl
+                 << "File name: " << name
+                 << endl
+                 << "Run number: " << numbers.at(pos)
+                 << endl;
+        }
+
+        return numbers.at(pos);
+    }
+
+    return 0;
+}

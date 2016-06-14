@@ -7,6 +7,7 @@
 
 #include "ConfigParser.h"
 #include <cstring>
+#include <climits>
 
 using namespace std;
 
@@ -295,4 +296,64 @@ queue<string> ConfigParser::split(const string &str, const string &s)
     delete cstr;
 
     return eles;
+}
+
+vector<int> ConfigParser::find_integer(const string &str)
+{
+    vector<int> result;
+
+    find_integer_helper(str, result);
+
+    return result;
+}
+
+void ConfigParser::find_integer_helper(const string &str, vector<int> &result)
+{
+   if(str.empty())
+       return;
+
+   int negative = 1;
+   auto numBeg = str.find_first_of("-0123456789");
+   if(numBeg == string::npos)
+       return;
+
+   // check negative sign
+   string str2 = str.substr(numBeg);
+
+   if(str2.at(0) == '-')
+   {
+       negative = -1;
+       int num_check;
+
+       do {
+           str2.erase(0, 1);
+
+           if(str2.empty())
+               return;
+
+           num_check = str2.at(0) - '0';
+       } while (num_check > 9 || num_check < 0);
+   }
+
+   auto numEnd = str2.find_first_not_of("0123456789");
+   if(numEnd == string::npos)
+       numEnd = str2.size();
+
+   int num = 0;
+   size_t i = 0;
+
+   for(; i < numEnd; ++i)
+   {
+       if( (num > INT_MAX/10) ||
+           (num == INT_MAX/10 && ((str2.at(i) - '0') > (INT_MAX - num*10))) )
+       {
+           ++i;
+           break;
+       }
+
+       num = num*10 + str2.at(i) - '0';
+   }
+
+   result.push_back(negative*num);
+   find_integer_helper(str2.substr(i), result);
 }

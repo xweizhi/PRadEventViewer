@@ -198,7 +198,7 @@ void PRadEventViewer::createMainMenu()
     QAction *quitAction = fileMenu->addAction(tr("&Quit"));
     quitAction->setShortcuts(QKeySequence::Quit);
 
-    connect(openDataAction, SIGNAL(triggered()), this, SLOT(openFile()));
+    connect(openDataAction, SIGNAL(triggered()), this, SLOT(openDataFile()));
     connect(openPedAction, SIGNAL(triggered()), this, SLOT(openPedFile()));
     connect(saveHistAction, SIGNAL(triggered()), this, SLOT(saveHistToFile()));
     connect(savePedAction, SIGNAL(triggered()), this, SLOT(savePedestalFile()));
@@ -235,8 +235,9 @@ void PRadEventViewer::createMainMenu()
     // calibration related
     QMenu *caliMenu = new QMenu(tr("&Calibration"));
 
-
-    QAction *openCalFileAction = caliMenu->addAction(tr("Read Calibration File"));
+    QAction *initializeAction = caliMenu->addAction(tr("Initialize From Data File")); 
+    
+    QAction *openCalFileAction = caliMenu->addAction(tr("Read Calibration Constants"));
 
     QAction *openGainFileAction = caliMenu->addAction(tr("Normalize Gain From File"));
 
@@ -244,6 +245,7 @@ void PRadEventViewer::createMainMenu()
 
     QAction *fitPedAction = caliMenu->addAction(tr("Update Pedestal From Data"));
 
+    connect(initializeAction, SIGNAL(triggered()), this, SLOT(initializeFromFile()));
     connect(openCalFileAction, SIGNAL(triggered()), this, SLOT(openCalibrationFile()));
     connect(openGainFileAction, SIGNAL(triggered()), this, SLOT(openGainFactorFile()));
     connect(correctGainAction, SIGNAL(triggered()), this, SLOT(correctGainFactor()));
@@ -649,7 +651,7 @@ void PRadEventViewer::eraseModuleBuffer()
 //============================================================================//
 
 // open file
-void PRadEventViewer::openFile()
+void PRadEventViewer::openDataFile()
 {
     QString codaData;
     codaData.sprintf("%s", getenv("CODA_DATA"));
@@ -703,6 +705,33 @@ void PRadEventViewer::openPedFile()
     if (!fileName.isEmpty()) {
         handler->ReadPedestalFile(fileName.toStdString());
     }
+}
+
+// initialize handler from data file
+void PRadEventViewer::initializeFromFile()
+{
+    QString codaData;
+    codaData.sprintf("%s", getenv("CODA_DATA"));
+    if (codaData.isEmpty())
+        codaData = QDir::currentPath();
+
+    QStringList filters;
+    filters << "Data files (*.dat *.ev *.evio *.evio.*)"
+            << "All files (*)";
+
+    QString file = getFileName(tr("Choose the first data file in a run"), codaData, filters, "");
+
+    if (file.isEmpty())
+        return;
+
+    PRadBenchMark timer;
+
+    handler->InitializeByData(file.toStdString());
+
+    cout << "Initialized data handler from file "
+         << "\"" << file.toStdString() << "\"."
+         << " Used " << timer.GetElapsedTime() << " ms."
+         << endl;
 }
 
 // open calibration factor file
