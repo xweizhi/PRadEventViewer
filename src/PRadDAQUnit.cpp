@@ -138,9 +138,14 @@ unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal)
     return adcVal - sparsify;
 }
 
+double PRadDAQUnit::GetEnergy(const unsigned short &adcVal)
+{
+    return Calibration(Sparsification(adcVal));
+}
+
 double PRadDAQUnit::GetEnergy()
 {
-    return Calibration(Sparsification(adc_value));
+    return GetEnergy(adc_value);
 }
 
 

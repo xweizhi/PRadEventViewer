@@ -116,6 +116,7 @@ public:
     const double &GetCalibrationFactor() {return cal_const.factor;};
     const unsigned short &GetADC() {return adc_value;};
     double GetEnergy();
+    double GetEnergy(const unsigned short &adcVal);
     double GetReferenceGain(const size_t &ref) {return cal_const.GetReferenceGain(ref);};
     Geometry GetGeometry() {return geometry;};
     double GetX() {return geometry.x;};

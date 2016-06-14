@@ -972,7 +972,7 @@ void PRadDataHandler::RefillEnergyHist()
         for(auto &adc : event.adc_data)
         {
             if(channelList[adc.channel_id]->IsHyCalModule())
-                ene += channelList[adc.channel_id]->Calibration(adc.value);
+                ene += channelList[adc.channel_id]->GetEnergy(adc.value);
         }
         energyHist->Fill(ene);
     }
