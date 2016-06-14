@@ -157,7 +157,7 @@ void HyCalModule::SetColor(const double &val)
 
 void HyCalModule::ShowEnergy()
 {
-     double energy;
+    double energy;
     if(IsHyCalModule())
         energy = Calibration(adc_value);
     else

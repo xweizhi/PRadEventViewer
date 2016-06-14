@@ -123,7 +123,7 @@ public:
     const ChannelType &GetType() {return geometry.type;};
     bool IsHyCalModule() {return (geometry.type == LeadGlass) || (geometry.type == LeadTungstate);};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
-    virtual bool Sparsification(const unsigned short &adcVal);
+    virtual unsigned short Sparsification(const unsigned short &adcVal);
 
     template<typename T>
     void FillHist(const T& t, const size_t &pos)

@@ -282,17 +282,18 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     channel->FillHist(adcData.val, newEvent.type);
 
     if(newEvent.isPhysicsEvent()) {
-        if(channel->Sparsification(adcData.val)) {
-            ADC_Data word(channel->GetID(), adcData.val); // save id because it saves memory
+        unsigned short sparsify = channel->Sparsification(adcData.val);
+
+        if(sparsify) {
 #ifdef MULTI_THREAD
             // unfortunately, we have some non-local variable to deal with
             // so lock the thread to prevent concurrent access
             myLock.lock();
 #endif
             if(channel->IsHyCalModule())
-                totalE += channel->Calibration(adcData.val); // calculate total energy of this event
+                totalE += channel->Calibration(sparsify); // calculate total energy of this event
 
-            newEvent.add_adc(word); // store this data word
+            newEvent.add_adc(ADC_Data(channel->GetID(), adcData.val)); // store this data word
 #ifdef MULTI_THREAD
             myLock.unlock();
 #endif

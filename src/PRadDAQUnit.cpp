@@ -108,10 +108,7 @@ void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 // universe calibration code, can be implemented by derivative class
 double PRadDAQUnit::Calibration(const unsigned short &adcVal)
 {
-    if(adcVal < sparsify)
-        return 0.;
-
-    return (double) (adcVal - sparsify)*cal_const.factor;
+    return (double) adcVal*cal_const.factor;
 }
 
 // erase current data
@@ -132,17 +129,18 @@ void PRadDAQUnit::ResetHistograms()
 
 // zero suppression, triggered when adc value is statistically
 // above pedestal (5 sigma)
-bool PRadDAQUnit::Sparsification(const unsigned short &adcVal)
+unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal)
 {
     if(adcVal < sparsify)
-        return false;
+        return 0;
 
     ++occupancy;
-    return true;
+    return adcVal - sparsify;
 }
 
 double PRadDAQUnit::GetEnergy()
 {
-    return Calibration(adc_value);
+    return Calibration(Sparsification(adc_value));
 }
+
 
