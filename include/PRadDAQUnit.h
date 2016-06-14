@@ -185,6 +185,7 @@ protected:
     std::string tdcGroup;
     int occupancy;
     unsigned short sparsify;
+    unsigned short threshold;
     unsigned short channelID;
     CalibrationConstant cal_const;
     double energy;

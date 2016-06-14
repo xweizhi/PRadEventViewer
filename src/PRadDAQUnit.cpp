@@ -13,7 +13,7 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const std::string &tdc,
                          const Geometry &geo)
 : channelName(name), geometry(geo), address(daqAddr), pedestal(Pedestal(0, 0)),
-  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), energy(0)
+  tdcGroup(tdc), occupancy(0), sparsify(0), threshold(0), channelID(0), energy(0)
 {
     std::string hist_name;
 
@@ -111,6 +111,7 @@ void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 {
     pedestal = Pedestal(m, s);
     sparsify = (unsigned short)(pedestal.mean + 5*pedestal.sigma + 0.5); // round
+    threshold = (unsigned short)(pedestal.mean + 0.5);
 }
 
 void PRadDAQUnit::UpdateEnergy(const unsigned short &adcVal)
@@ -141,10 +142,10 @@ unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal, const b
 {
     if(adcVal < sparsify)
         return 0;
-    else {
-        if(count)
-            ++occupancy;
-        return adcVal - sparsify;
-    }
+
+    if(count)
+        ++occupancy;
+
+    return adcVal - threshold;
 }
 
