@@ -70,7 +70,7 @@ PRadDataHandler::~PRadDataHandler()
 void PRadDataHandler::Decode(const void *buffer)
 {
    PRadEventHeader *header = (PRadEventHeader *)buffer;
-    parser->parseEventByHeader(header);
+    parser->ParseEventByHeader(header);
 }
 
 void PRadDataHandler::SetOnlineMode(const bool &mode)
@@ -143,9 +143,9 @@ void PRadDataHandler::Clear()
     energyData.clear();
     totalE = 0;
     charge = 0;
-    parser->eventNb = 0;
     newEvent.clear();
     energyHist->Reset();
+    parser->SetEventNumber(0);
 
     for(auto &channel : channelList)
     {
@@ -162,7 +162,7 @@ void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
 {
     if(newEvent.type && (newEvent.type != trg)) {
         cerr << "ERROR: Trigger type mismatch at event "
-             << parser->eventNb
+             << parser->GetEventNumber()
              << ", was " << (int) newEvent.type
              << " now " << (int) trg
              << endl;
@@ -188,16 +188,17 @@ void PRadDataHandler::UpdateScalarGroup(const unsigned int &size, const unsigned
 void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
 {
     auto it = epics_channels.find(name);
+    int ev = parser->GetEventNumber();
 
     if(it == epics_channels.end()) {
         vector<EPICSValue> epics_ch;
-        epics_ch.push_back(EPICSValue((int)parser->eventNb, value));
+        epics_ch.push_back(EPICSValue(ev, value));
         epics_channels[name] = epics_ch;
     } else {
         if(onlineMode) {
-            (*it).second.back() = EPICSValue(parser->eventNb, value);
+            (*it).second.back() = EPICSValue(ev, value);
         } else {
-            (*it).second.push_back(EPICSValue(parser->eventNb, value));
+            (*it).second.push_back(EPICSValue(ev, value));
         }
     }
 }
@@ -354,9 +355,9 @@ void PRadDataHandler::StartofNewEvent()
 }
 
 // signal of event end, save event or discard event in online mode
-void PRadDataHandler::EndofThisEvent()
+void PRadDataHandler::EndofThisEvent(const unsigned int &ev)
 {
-    newEvent.event_number = parser->eventNb;
+    newEvent.event_number = ev;
 
     if(onlineMode && energyData.size()) { // online mode only saves the last event, to reduce usage of memory
         energyData.pop_front();
@@ -450,7 +451,7 @@ PRadTDCGroup *PRadDataHandler::GetTDCGroup(const ChannelAddress &addr)
 
 int PRadDataHandler::GetCurrentEventNb()
 {
-    return (int)parser->eventNb;
+    return (int)parser->GetEventNumber();
 }
 
 void PRadDataHandler::PrintOutEPICS()
@@ -967,6 +968,12 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
     try {
         input.open(path, mode);
 
+        if(!input.is_open()) {
+            cerr << "Cannot open input file " << path
+                 << ", stop reading!" << endl;
+            return;
+        }
+
         input.seekg(0, input.end);
         int length = input.tellg();
         input.seekg(0, input.beg);
@@ -1031,6 +1038,12 @@ void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
     try {
         output.open(path, mode);
 
+        if(!output.is_open()) {
+            cerr << "Cannot open output file " << path
+                 << ", stop writing!" << endl;
+            return;
+        }
+
         for(auto &event : energyData)
         {
             WriteToDST(output, event);
@@ -1077,4 +1090,9 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
          dst_file.write((char*) &tdc.channel_id, sizeof(tdc.channel_id));
          dst_file.write((char*) &tdc.value, sizeof(tdc.value));
      }     
+}
+
+void PRadDataHandler::ReadFromEvio(const string &path)
+{
+    parser->ReadEvioFile(path.c_str());
 }

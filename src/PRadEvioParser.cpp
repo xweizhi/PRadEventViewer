@@ -14,37 +14,15 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 
 #define HEADER_SIZE 2
+#define MAX_BUFFER_SIZE 100000
 
 using namespace std;
 
-PRadTriggerType bit_word_to_trigger_type(const unsigned int &bit)
+PRadEvioParser::PRadEvioParser(PRadDataHandler *handler)
+: myHandler(handler), c_parser(new ConfigParser()), event_number(0)
 {
-    int trg = 0;
-    for(; (bit >> trg) > 0; ++trg)
-    {
-        if(trg >= MAX_Trigger) {
-            return TI_Error;
-        }
-    }
-
-    return (PRadTriggerType) trg; 
-}
-
-unsigned int trigger_type_to_bit_word(const PRadTriggerType &trg)
-{
-    if(trg == TI_Error)
-        return 0;
-    else
-        return 1 << (int) trg;
-}
-
-PRadEvioParser::PRadEvioParser(PRadDataHandler *handler) : myHandler(handler)
-{
-    c_parser = new ConfigParser();
-    eventNb = 0;
 }
 
 PRadEvioParser::~PRadEvioParser()
@@ -52,7 +30,66 @@ PRadEvioParser::~PRadEvioParser()
     delete c_parser;
 }
 
-void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
+// Simple binary reading for evio format files
+void PRadEvioParser::ReadEvioFile(const char *filepath)
+{
+    ifstream evio_in(filepath, ios::binary | ios::in);
+
+    if(!evio_in.is_open()) {
+        cerr << "Cannot open evio file " << filepath << endl;
+        return;
+    }
+
+    evio_in.seekg(0, evio_in.end);
+    int length = evio_in.tellg();
+    evio_in.seekg(0, evio_in.beg);
+
+    uint32_t *buffer = new uint32_t[MAX_BUFFER_SIZE];
+
+    while(evio_in.tellg() < length && evio_in.tellg() != -1)
+    {
+        try {
+            getEvioBlock(evio_in, buffer);
+        } catch (PRadException &e) {
+            cerr << e.FailureType() << ": " 
+                 << e.FailureDesc() << endl;
+            cerr << "Abort reading from file " << filepath << endl;
+            break;
+        }
+    }
+
+    delete [] buffer;
+}
+
+size_t PRadEvioParser::getEvioBlock(ifstream &in, uint32_t *buf) throw(PRadException)
+{
+#define CODA_BLOCK_SIZE 8
+
+    streamsize buf_size = sizeof(uint32_t);
+
+    // read the block size
+    in.read((char*) &buf[0], buf_size);
+
+    if(buf[0] > MAX_BUFFER_SIZE)
+    {
+        throw PRadException("Read Evio Block", "buffer size is not enough for the block (size " + to_string(buf[0]) + ")");
+    }
+
+    // read the whole block in
+    in.read((char*) &buf[1], buf_size * (buf[0] - 1));
+
+    size_t index = CODA_BLOCK_SIZE; // strip off block header
+
+    while(index < buf[0])
+    {
+        ParseEventByHeader((PRadEventHeader *) &buf[index]);
+        index += buf[index] + 1;
+    }
+
+    return buf[0];
+}
+
+void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
 {
     // first check event type
     switch(header->tag)
@@ -116,7 +153,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
             case LIVE_BANK: // bank contains the live time
                 break;
             case EVINFO_BANK: // Bank contains the event information
-                eventNb = buffer[index];
+                event_number = buffer[index];
                 break;
             case TI_BANK: // Bank 0x4, TI data, contains live time and event type information
                 parseTIData(&buffer[index], dataSize, evtHeader->num);
@@ -152,7 +189,7 @@ void PRadEvioParser::parseEventByHeader(PRadEventHeader *header)
                 }
                 break;
             case GEM_BANK: // Bank 0x8, gem data, single FEC right now
-                parseGEMData(&buffer[index], dataSize, evtHeader->num);
+//                parseGEMData(&buffer[index], dataSize, evtHeader->num);
                 break;
             }
             break;
@@ -237,8 +274,6 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
 void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id)
 {
 #define GEMDATA_APVBEG 0x00434441 //&0x00ffffff
-#define GEMDATA_SECTION_BEG 0x00002000
-#define GEMDATA_SECTION_END 0xc0da0100
 #define GEMDATA_FECEND 0xfafafafa
 // gem data structure
 // single FEC
@@ -261,10 +296,6 @@ void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size, cons
             gemData.APV = (data[i]>>24)&0xff;
             i += 2;
             for(; (data[i]&0xffffff) != data[0] && data[i] != GEMDATA_FECEND; ++i) {
-                if((i+8) < size && data[i] == GEMDATA_SECTION_BEG && data[i+7] == GEMDATA_SECTION_END) {
-                    i += 7; // strip off section words
-                    continue;
-                }
                 gemData.val.first = data[i]&0xffff;
                 gemData.val.second = (data[i]>>16)&0xffff;
                 myHandler->FeedData(gemData); // two adc values are sent in one package to reduce the number of function calls
@@ -296,7 +327,7 @@ void PRadEvioParser::parseTDCV767(const uint32_t *data, const size_t &size, cons
     for(size_t i = 1; i < size - 1; ++i)
     {
         if(data[i]&V767_INVALID_BIT) {
-            cerr << "Event: "<< dec << eventNb
+            cerr << "Event: "<< dec << event_number
                  << ", invalid data word: "
                  << "0x" << hex << setw(8) << setfill('0') << data[i]
                  << endl;
@@ -395,7 +426,7 @@ void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
 void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const int &roc_id)
 {
     // update trigger type
-    myHandler->UpdateTrgType(bit_word_to_trigger_type(data[2]>>24));
+    myHandler->UpdateTrgType(bit_to_trigger(data[2]>>24));
 
     if(roc_id == PRadTS) {// we will be more interested in the TI-master
         // check block header first
@@ -433,3 +464,26 @@ void PRadEvioParser::parseEPICS(const uint32_t *data)
         }
     }
 }
+
+PRadTriggerType PRadEvioParser::bit_to_trigger(const unsigned int &bit)
+{
+    int trg = 0;
+    for(; (bit >> trg) > 0; ++trg)
+    {
+        if(trg >= MAX_Trigger) {
+            return TI_Error;
+        }
+    }
+
+    return (PRadTriggerType) trg; 
+}
+
+unsigned int PRadEvioParser::trigger_to_bit(const PRadTriggerType &trg)
+{
+    if(trg == TI_Error)
+        return 0;
+    else
+        return 1 << (int) trg;
+}
+
+

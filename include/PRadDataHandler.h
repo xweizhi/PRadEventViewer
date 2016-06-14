@@ -86,7 +86,7 @@ public:
     double GetEnergy() {return totalE;};
     void Clear();
     void StartofNewEvent();
-    void EndofThisEvent();
+    void EndofThisEvent(const unsigned int &ev = 0);
     void BuildChannelMap();
     void SaveHistograms(const std::string &path);
     PRadDAQUnit *GetChannel(const ChannelAddress &daqInfo);
@@ -109,6 +109,7 @@ public:
     void WriteToDST(std::ofstream &dst_file, const EventData &data) throw(PRadException);
     void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
     void ReadFromDST(std::ifstream &dst_file, EventData &data) throw(PRadException);
+    void ReadFromEvio(const std::string &path);
  
 private:
     PRadEvioParser *parser;
