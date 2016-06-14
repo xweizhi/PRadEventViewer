@@ -19,6 +19,7 @@ public:
     void AddTimeMeasure(const std::vector<unsigned short> &counts);
     void UpdateTimeMeasure(const std::vector<unsigned short> &counts);
     void CleanBuffer();
+    void ResetHistograms();
     void ClearTimeMeasure();
     size_t GetNbOfChs() {return groupList.size();};
     std::vector<unsigned short> &GetTimeMeasure() {return timeMeasure;};
@@ -26,6 +27,7 @@ public:
     const std::string &GetName() {return groupName;};
     const ChannelAddress &GetAddress() {return address;};
     const int &GetID() {return groupID;};
+    void FillHist(const unsigned short &time);
     TH1I *GetHist() {return tdcHist;};
 
     bool operator < (const PRadTDCGroup &rhs) const

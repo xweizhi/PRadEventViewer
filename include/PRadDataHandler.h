@@ -119,6 +119,7 @@ public:
 
     // analysis tools
     void InitializeByData(const std::string &path = "", int run = -1);
+    void ResetChannelHists();
     void SaveHistograms(const std::string &path);
     void FitHistogram(const std::string &channel,
                       const std::string &hist_name,
@@ -129,6 +130,7 @@ public:
     void ReadGainFactor(const std::string &path, const int &ref = 2);
     void CorrectGainFactor(const int &run = 0, const int &ref = 2);
     void RefillEnergyHist();
+    void RefillChannelHists();
 
     // other functions
     int GetRunNumberFromFileName(const std::string &name, const size_t &pos = 0, const bool &verbose = true);

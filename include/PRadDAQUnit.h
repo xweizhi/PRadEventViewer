@@ -102,10 +102,9 @@ public:
     void UpdateEnergy(const unsigned short &adcVal);
     void UpdateGeometry(const Geometry &geo) {geometry = geo;};
     void CleanBuffer();
+    void ResetHistograms();
     void AddHist(const std::string &name);
     void MapHist(const std::string &name, PRadTriggerType type);
-    template<typename T>
-    void FillHist(const T& t, const PRadTriggerType &type);
     TH1 *GetHist(const std::string &name = "PHYS");
     TH1 *GetHist(PRadTriggerType type) {return hist[(size_t)type];};
     std::vector<TH1*> GetHistList();
@@ -124,6 +123,14 @@ public:
     bool IsHyCalModule() {return (geometry.type == LeadGlass) || (geometry.type == LeadTungstate);};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
     virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
+
+    template<typename T>
+    void FillHist(const T& t, const size_t &pos)
+    {
+        if(hist[pos]) {
+            hist[pos]->Fill(t);
+        }
+    };
 
     template<typename... Args>
     void AddHist(const std::string &n, const std::string &type, const std::string &title, Args&&... args)

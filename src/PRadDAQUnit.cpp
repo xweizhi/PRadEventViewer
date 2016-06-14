@@ -77,15 +77,6 @@ void PRadDAQUnit::MapHist(const std::string &name, PRadTriggerType type)
     hist[index] = hist_trg;
 }
 
-template<>
-void PRadDAQUnit::FillHist<unsigned short>(const unsigned short &val, const PRadTriggerType &type)
-{
-    size_t index = (size_t) type;
-    if(hist[index]) {
-        hist[index]->Fill(val);
-    }
-}
-
 TH1 *PRadDAQUnit::GetHist(const std::string &n)
 {
     auto it = histograms.find(n);
@@ -129,6 +120,11 @@ double PRadDAQUnit::Calibration(const unsigned short &val)
 void PRadDAQUnit::CleanBuffer()
 {
     occupancy = 0;
+    ResetHistograms();
+}
+
+void PRadDAQUnit::ResetHistograms()
+{
     for(auto &ele : histograms)
     {
         if(ele.second)

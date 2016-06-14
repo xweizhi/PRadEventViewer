@@ -158,6 +158,19 @@ void PRadDataHandler::Clear()
     }
 }
 
+void PRadDataHandler::ResetChannelHists()
+{
+    for(auto &channel : channelList)
+    {
+        channel->ResetHistograms();
+    }
+
+    for(auto &tdc : tdcList)
+    {
+        tdc->ResetHistograms();
+    }
+}
+
 void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
 {
     if(newEvent.type && (newEvent.type != trg)) {
@@ -265,7 +278,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // get the channel
     PRadDAQUnit *channel = it->second;
 
-    channel->FillHist(adcData.val, (PRadTriggerType)newEvent.type);
+    channel->FillHist(adcData.val, newEvent.type);
 
     unsigned short sparVal = channel->Sparsification(adcData.val, newEvent.isPhysicsEvent());
 
@@ -300,7 +313,7 @@ void PRadDataHandler::FeedData(TDCV767Data &tdcData)
         return;
 
     PRadTDCGroup *tdc = it->second;
-    tdc->GetHist()->Fill(tdcData.val);
+    tdc->FillHist(tdcData.val);
 
     newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
 }
@@ -314,7 +327,7 @@ void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
         }
 
         PRadTDCGroup *tdc = it->second;
-        tdc->GetHist()->Fill(tdcData.val);
+        tdc->FillHist(tdcData.val);
 
         newEvent.add_tdc(TDC_Data(tdc->GetID(), tdcData.val));
     } else {
@@ -328,7 +341,6 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
     {
         int e_ch = tdcData.config.channel + (tdcData.config.slot - 3)*64;
         TagEHist->Fill(tdcData.val, e_ch);
-        newEvent.add_tdc(TDC_Data(e_ch+1001, tdcData.val));
     }
     if(tdcData.config.slot == 14)
     {
@@ -341,7 +353,6 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
         t_ch += t_lr*64;
 
         TagTHist->Fill(tdcData.val, t_ch);
-        newEvent.add_tdc(TDC_Data(t_ch+2001, tdcData.val));
     }
 }
 
@@ -957,6 +968,27 @@ void PRadDataHandler::RefillEnergyHist()
         energyHist->Fill(ene);
     }
 }
+
+// Refill other histograms from energy data.
+// However, the adc values are all sparsified (pedestal subtracted)
+void PRadDataHandler::RefillChannelHists()
+{
+    ResetChannelHists();
+
+    for(auto &event : energyData)
+    {
+        for(auto &adc : event.adc_data)
+        {
+            channelList[adc.channel_id]->FillHist(adc.value, event.type);
+        }
+
+        for(auto &tdc : event.tdc_data)
+        {
+            tdcList[tdc.channel_id]->FillHist(tdc.value);
+        }
+    }
+}
+
 
 void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
 {
