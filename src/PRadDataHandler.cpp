@@ -1007,24 +1007,34 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
      dst_file.read((char*) &data.lms_phase   , sizeof(data.lms_phase));
      dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
 
-     size_t adc_size, tdc_size;
+     size_t adc_size, tdc_size, gem_size;
      unsigned short channel_id, value;
-     dst_file.read((char*) &adc_size, sizeof(adc_size));
+     unsigned char fec, adc, strip;
 
+     dst_file.read((char*) &adc_size, sizeof(adc_size));
      for(size_t i = 0; i < adc_size; ++i)
      {
          dst_file.read((char*) &channel_id, sizeof(channel_id));
-         dst_file.read((char*) &value     , sizeof(channel_id));
+         dst_file.read((char*) &value     , sizeof(value));
          data.add_adc(ADC_Data(channel_id, value));
      }
     
      dst_file.read((char*) &tdc_size, sizeof(tdc_size));
-
      for(size_t i = 0; i < tdc_size; ++i)
      {
          dst_file.read((char*) &channel_id, sizeof(channel_id));
-         dst_file.read((char*) &value     , sizeof(channel_id));
+         dst_file.read((char*) &value     , sizeof(value));
          data.add_tdc(TDC_Data(channel_id, value));
+     }
+
+     dst_file.read((char*) &gem_size, sizeof(gem_size));
+     for(size_t i = 0; i < gem_size; ++i)
+     {
+         dst_file.read((char*) &fec  , sizeof(fec));
+         dst_file.read((char*) &adc  , sizeof(adc));
+         dst_file.read((char*) &strip, sizeof(strip));
+         dst_file.read((char*) &value, sizeof(value));
+         data.add_gem(GEM_Data(fec, adc, strip, value));
      }
  }
 
@@ -1073,20 +1083,30 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
      // adc data bank
      size_t adc_size = data.adc_data.size();
      size_t tdc_size = data.tdc_data.size();
+     size_t gem_size = data.gem_data.size();
 
      dst_file.write((char*) &adc_size, sizeof(adc_size));
      for(auto &adc : data.adc_data)
      {
          dst_file.write((char*) &adc.channel_id, sizeof(adc.channel_id));
-         dst_file.write((char*) &adc.value, sizeof(adc.value));
+         dst_file.write((char*) &adc.value     , sizeof(adc.value));
      }
 
      dst_file.write((char*) &tdc_size, sizeof(tdc_size));
      for(auto &tdc : data.tdc_data)
      {
          dst_file.write((char*) &tdc.channel_id, sizeof(tdc.channel_id));
-         dst_file.write((char*) &tdc.value, sizeof(tdc.value));
-     }     
+         dst_file.write((char*) &tdc.value     , sizeof(tdc.value));
+     }
+ 
+     dst_file.write((char*) &gem_size, sizeof(gem_size));
+     for(auto &gem : data.gem_data)
+     {
+         dst_file.write((char*) &gem.fec  , sizeof(gem.fec));
+         dst_file.write((char*) &gem.adc  , sizeof(gem.adc));
+         dst_file.write((char*) &gem.strip, sizeof(gem.strip));
+         dst_file.write((char*) &gem.value, sizeof(gem.value));
+     }
 }
 
 void PRadDataHandler::ReadFromEvio(const string &path)

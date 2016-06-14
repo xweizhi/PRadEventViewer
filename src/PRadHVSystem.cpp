@@ -7,7 +7,6 @@
 
 #include "PRadHVSystem.h"
 #include "PRadEventViewer.h"
-#include "PRadDataHandler.h"
 #include "ConfigParser.h"
 #include <cstdlib>
 #include <cstring>
