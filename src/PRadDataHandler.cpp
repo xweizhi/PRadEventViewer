@@ -278,26 +278,35 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // get the channel
     PRadDAQUnit *channel = it->second;
 
+    // fill histograms by trigger type
     channel->FillHist(adcData.val, newEvent.type);
 
-    unsigned short sparVal = channel->Sparsification(adcData.val, newEvent.isPhysicsEvent());
-
-    if(sparVal) // only store events above pedestal in memory
-    {
-        ADC_Data word(channel->GetID(), sparVal); // save id because it saves memory
+    if(newEvent.isPhysicsEvent()) {
+        if(channel->Sparsification(adcData.val)) {
+            ADC_Data word(channel->GetID(), adcData.val); // save id because it saves memory
 #ifdef MULTI_THREAD
-        // unfortunately, we have some non-local variable to deal with
-        // so lock the thread to prevent concurrent access
-        myLock.lock();
+            // unfortunately, we have some non-local variable to deal with
+            // so lock the thread to prevent concurrent access
+            myLock.lock();
 #endif
-        if(channel->IsHyCalModule())
-            totalE += channel->Calibration(sparVal); // calculate total energy of this event
-        newEvent.add_adc(word); // store this data word
+            if(channel->IsHyCalModule())
+                totalE += channel->Calibration(adcData.val); // calculate total energy of this event
+
+            newEvent.add_adc(word); // store this data word
 #ifdef MULTI_THREAD
-        myLock.unlock();
+            myLock.unlock();
+#endif
+        }
+    } else if (newEvent.isMonitorEvent()) {
+#ifdef MULTI_THREAD
+            myLock.lock();
+#endif
+        newEvent.add_adc(ADC_Data(channel->GetID(), adcData.val)); 
+#ifdef MULTI_THREAD
+            myLock.unlock();
 #endif
     }
-
+    
 }
 
 // feed GEM data
@@ -390,7 +399,7 @@ void PRadDataHandler::ChooseEvent(const int &idx)
     // != avoids operator definition for non-standard map
     for(auto &channel : channelList)
     {
-        channel->UpdateEnergy(0);
+        channel->UpdateADC(0);
     }
 
     for(auto &tdc_ch : tdcList)
@@ -409,9 +418,8 @@ void PRadDataHandler::ChooseEvent(const int &idx)
 
     for(auto &adc : event.adc_data)
     {
-        channelList[adc.channel_id]->UpdateEnergy(adc.value);
-        if(channelList[adc.channel_id]->IsHyCalModule())
-            totalE += channelList[adc.channel_id]->GetEnergy();
+        channelList[adc.channel_id]->UpdateADC(adc.value);
+        totalE += channelList[adc.channel_id]->GetEnergy();
     }
 
     for(auto &tdc : event.tdc_data)
@@ -1158,7 +1166,7 @@ void PRadDataHandler::InitializeByData(const string &path, int run)
              << "run number: " << run
              << " ." << endl;
 
-         parser->ReadEvioFile(path.c_str());
+        parser->ReadEvioFile(path.c_str());
     }
 
     FitPedestal();

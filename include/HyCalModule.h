@@ -28,7 +28,7 @@ public:
     void ShowPedestal() {SetColor(pedestal.mean);};
     void ShowPedSigma() {SetColor(pedestal.sigma);};
     void ShowOccupancy() {SetColor(occupancy);};
-    void ShowEnergy() {SetColor(energy);};
+    void ShowEnergy();
     void UpdateHVSetup(ChannelAddress &set) {hv_addr = set;};
     QString GetReadID() {return name;};
     ChannelAddress GetHVInfo() {return hv_addr;};

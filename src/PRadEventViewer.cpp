@@ -728,6 +728,8 @@ void PRadEventViewer::initializeFromFile()
 
     handler->InitializeByData(file.toStdString());
 
+    updateEventRange();
+
     cout << "Initialized data handler from file "
          << "\"" << file.toStdString() << "\"."
          << " Used " << timer.GetElapsedTime() << " ms."

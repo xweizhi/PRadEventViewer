@@ -70,6 +70,11 @@ struct EventData
                  (type == PHYS_TaggerE)      ||
                  (type == PHYS_Scintillator) );
     };
+    bool isMonitorEvent()
+    {
+        return ( (type == LMS_Led) ||
+                 (type == LMS_Alpha) );
+    }
 };
 
 struct EPICSValue

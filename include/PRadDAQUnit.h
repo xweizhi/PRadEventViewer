@@ -99,7 +99,7 @@ public:
     void UpdatePedestal(const double &m, const double &s);
     void UpdateCalibrationConstant(const CalibrationConstant &c) {cal_const = c;};
     void GainCorrection(const double &g, const int &ref) {cal_const.GainCorrection(g, ref);};
-    void UpdateEnergy(const unsigned short &adcVal);
+    void UpdateADC(const unsigned short &adcVal) {adc_value = adcVal;};
     void UpdateGeometry(const Geometry &geo) {geometry = geo;};
     void CleanBuffer();
     void ResetHistograms();
@@ -114,7 +114,8 @@ public:
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
     const double &GetCalibrationFactor() {return cal_const.factor;};
-    const double &GetEnergy() {return energy;};
+    const unsigned short &GetADC() {return adc_value;};
+    double GetEnergy();
     double GetReferenceGain(const size_t &ref) {return cal_const.GetReferenceGain(ref);};
     Geometry GetGeometry() {return geometry;};
     double GetX() {return geometry.x;};
@@ -122,7 +123,7 @@ public:
     const ChannelType &GetType() {return geometry.type;};
     bool IsHyCalModule() {return (geometry.type == LeadGlass) || (geometry.type == LeadTungstate);};
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
-    virtual unsigned short Sparsification(const unsigned short &adcVal, const bool &count = true);
+    virtual bool Sparsification(const unsigned short &adcVal);
 
     template<typename T>
     void FillHist(const T& t, const size_t &pos)
@@ -192,10 +193,9 @@ protected:
     std::string tdcGroup;
     int occupancy;
     unsigned short sparsify;
-    unsigned short threshold;
     unsigned short channelID;
+    unsigned short adc_value;
     CalibrationConstant cal_const;
-    double energy;
     TH1 *hist[MAX_Trigger];
     std::unordered_map<std::string, TH1*> histograms;
 };

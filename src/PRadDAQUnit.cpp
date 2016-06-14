@@ -13,7 +13,7 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const std::string &tdc,
                          const Geometry &geo)
 : channelName(name), geometry(geo), address(daqAddr), pedestal(Pedestal(0, 0)),
-  tdcGroup(tdc), occupancy(0), sparsify(0), threshold(0), channelID(0), energy(0)
+  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), adc_value(0)
 {
     std::string hist_name;
 
@@ -101,19 +101,17 @@ std::vector<TH1*> PRadDAQUnit::GetHistList()
 void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 {
     pedestal = Pedestal(m, s);
-    sparsify = (unsigned short)(pedestal.mean + 5*pedestal.sigma + 0.5); // round
-    threshold = (unsigned short)(pedestal.mean + 0.5);
-}
 
-void PRadDAQUnit::UpdateEnergy(const unsigned short &adcVal)
-{
-    energy = Calibration(adcVal);
+    sparsify = (unsigned short)(pedestal.mean + 5*pedestal.sigma + 0.5); // round
 }
 
 // universe calibration code, can be implemented by derivative class
-double PRadDAQUnit::Calibration(const unsigned short &val)
+double PRadDAQUnit::Calibration(const unsigned short &adcVal)
 {
-    return (double)val*cal_const.factor;
+    if(adcVal < sparsify)
+        return 0.;
+
+    return (double) (adcVal - sparsify)*cal_const.factor;
 }
 
 // erase current data
@@ -134,14 +132,17 @@ void PRadDAQUnit::ResetHistograms()
 
 // zero suppression, triggered when adc value is statistically
 // above pedestal (5 sigma)
-unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal, const bool &count)
+bool PRadDAQUnit::Sparsification(const unsigned short &adcVal)
 {
     if(adcVal < sparsify)
-        return 0;
+        return false;
 
-    if(count)
-        ++occupancy;
+    ++occupancy;
+    return true;
+}
 
-    return adcVal - threshold;
+double PRadDAQUnit::GetEnergy()
+{
+    return Calibration(adc_value);
 }
 

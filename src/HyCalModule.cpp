@@ -155,6 +155,19 @@ void HyCalModule::SetColor(const double &val)
     color = console->GetColor(val);
 }
 
+void HyCalModule::ShowEnergy()
+{
+     double energy;
+    if(IsHyCalModule())
+        energy = Calibration(adc_value);
+    else
+        energy = (adc_value - pedestal.mean)*0.15;
+
+    if(energy < 1.)
+        color = Qt::white;
+    else
+        SetColor(energy);
+}
 // calculate module position according to its id
 // also calculate trigger group because we grouped them by positions
 // this function is not needed anymore since we will read all the information from list
