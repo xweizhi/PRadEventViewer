@@ -159,7 +159,7 @@ void HyCalModule::ShowEnergy()
 {
     double energy;
     if(IsHyCalModule())
-        energy = Calibration(adc_value);
+        energy = GetEnergy();
     else
         energy = (adc_value - pedestal.mean)*0.15;
 
