@@ -133,12 +133,15 @@ public:
             switch(type.at(0))
             {
             case 'I':
+            case 'i':
                 histograms[n] = new TH1I(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
                 break;
             case 'F':
+            case "f":
                 histograms[n] = new TH1F(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
                 break;
             case 'D':
+            case "d":
                 histograms[n] = new TH1D(hist_name.c_str(), title.c_str(), std::forward<Args>(args)...);
                 break;
             default:
