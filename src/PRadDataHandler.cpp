@@ -199,9 +199,9 @@ void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
     auto it = epics_map.find(name);
 
     if(it == epics_map.end()) {
-        cout << "Data Handler:: Received data from EPICS channel " << name
-             << ", which was unregistered. Assign a new channel id " << epics_values.size()
-             << " to it." << endl;
+        cout << "Data Handler:: Received data from unregistered EPICS channel " << name
+             << ". Assign a new channel id " << epics_values.size()
+             << "." << endl;
         epics_map[name] = epics_values.size();
         epics_values.push_back(value);
     } else {
@@ -215,7 +215,7 @@ void PRadDataHandler::AccumulateBeamCharge(const double &c)
         charge += c;
 }
 
-float PRadDataHandler::FindEPICSValue(const string &name)
+float PRadDataHandler::GetEPICSValue(const string &name)
 {
     auto it = epics_map.find(name);
     if(it == epics_map.end())
@@ -224,10 +224,10 @@ float PRadDataHandler::FindEPICSValue(const string &name)
     return epics_values.at(it->second);
 }
 
-float PRadDataHandler::FindEPICSValue(const string &name, const int &index)
+float PRadDataHandler::GetEPICSValue(const string &name, const int &index)
 {
     if((unsigned int)index >= energyData.size())
-        return FindEPICSValue(name);
+        return GetEPICSValue(name);
 
     auto it = epics_map.find(name);
     if(it == epics_map.end())
@@ -236,9 +236,12 @@ float PRadDataHandler::FindEPICSValue(const string &name, const int &index)
     size_t channel_id = it->second;
     unsigned int epics_idx = (unsigned int) energyData.at(index).last_epics;
 
-    if(epics_idx > epicsData.size())
+    if( (epics_idx > epicsData.size()) ||
+        (channel_id > epicsData.at(epics_idx).values.size()) )
+    {
         return EPICS_UNDEFINED_VALUE;
-
+    }
+        
     return epicsData.at(epics_idx).values.at(channel_id);
 }
 

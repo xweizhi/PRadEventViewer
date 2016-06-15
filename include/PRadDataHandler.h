@@ -126,8 +126,8 @@ public:
     EventData &GetLastEvent();
     EPICSData &GetEPICSData(const unsigned int &index);
     double GetEnergy() {return totalE;};
-    float FindEPICSValue(const std::string &name);
-    float FindEPICSValue(const std::string &name, const int &index);
+    float GetEPICSValue(const std::string &name);
+    float GetEPICSValue(const std::string &name, const int &index);
     void PrintOutEPICS();
     void PrintOutEPICS(const std::string &name);
 
