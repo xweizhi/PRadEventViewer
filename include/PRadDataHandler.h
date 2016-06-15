@@ -44,6 +44,17 @@ namespace std
     };
 }
 
+// helper struct
+struct epics_ch
+{
+    std::string name;
+    size_t id;
+
+    epics_ch(const std::string &n, const size_t &i)
+    : name(n), id(i)
+    {};
+};
+
 class PRadDataHandler
 {
 public:
@@ -73,6 +84,7 @@ public:
     void ReadChannelList(const std::string &path);
     void ReadPedestalFile(const std::string &path);
     void ReadCalibrationFile(const std::string &path);
+    void ReadEPICSChannels(const std::string &path);
 
     // dst data file
     void WriteToDST(const std::string &pat, std::ios::openmode mode = std::ios::out | std::ios::binary | std::ios::app);
@@ -86,7 +98,7 @@ public:
 
     // data handler
     void Clear();
-    void StartofNewEvent();
+    void StartofNewEvent(const unsigned char &tag);
     void EndofThisEvent(const unsigned int &ev = 0);
     void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);
@@ -103,6 +115,7 @@ public:
     int GetCurrentEventNb();
     void ChooseEvent(const int &idx = -1);
     unsigned int GetEventCount() {return energyData.size();};
+    unsigned int GetEPICSEventCount() {return epicsData.size();};
     unsigned int GetScalarCount(const unsigned int &group = 0, const bool &gated = false);
     double GetBeamCharge() {return charge;};
     std::vector<unsigned int> GetScalarsCount(const bool &gated = false);
@@ -111,9 +124,10 @@ public:
     TH2I *GetTagTHist() {return TagTHist;};
     EventData &GetEventData(const unsigned int &index);
     EventData &GetLastEvent();
+    EPICSData &GetEPICSData(const unsigned int &index);
     double GetEnergy() {return totalE;};
     float FindEPICSValue(const std::string &name);
-    float FindEPICSValue(const std::string &name, const int &event);
+    float FindEPICSValue(const std::string &name, const int &index);
     void PrintOutEPICS();
     void PrintOutEPICS(const std::string &name);
 
@@ -134,6 +148,8 @@ public:
 
     // other functions
     int GetRunNumberFromFileName(const std::string &name, const size_t &pos = 0, const bool &verbose = true);
+    std::vector<epics_ch> GetSortedEPICSList();
+    void SaveEPICSChannels(const std::string &path);
 
 private:
     PRadEvioParser *parser;
@@ -147,12 +163,14 @@ private:
     std::unordered_map< std::string, PRadDAQUnit* > map_name;
     std::unordered_map< std::string, PRadTDCGroup* > map_name_tdc;
     std::unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
-    std::map< std::string, std::vector<EPICSValue> > epics_channels; // order is important to iterate variables in this case
+    std::unordered_map< std::string, size_t > epics_map;
+    std::vector< float > epics_values;
     std::vector< PRadDAQUnit* > channelList;
     std::vector< PRadDAQUnit* > freeList; // channels that should be freed by handler
     std::vector< PRadTDCGroup* > tdcList;
     std::vector< ScalarChannel > triggerScalars;
     std::deque< EventData > energyData;
+    std::deque< EPICSData > epicsData;
     EventData newEvent;
     TH1D *energyHist;
     TH2I *TagEHist;

@@ -16,7 +16,7 @@ enum PRadEventType
 
 enum PRadTriggerType
 {
-    TI_Error = 0,
+    NotFromTI = 0,
     PHYS_LeadGlassSum,
     PHYS_TotalSum,
     LMS_Led,
@@ -24,6 +24,7 @@ enum PRadTriggerType
     PHYS_TaggerE,
     PHYS_Scintillator,
     MAX_Trigger,
+    Undefined,
 };
 
 enum EvioBankType

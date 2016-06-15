@@ -36,64 +36,80 @@ struct GEM_Data
     {};
 };
 
-struct EventData
+struct EPICSData
 {
     int event_number;
+    std::vector<float> values;
+
+    EPICSData()
+    {};
+    EPICSData(const int &ev, std::vector<float> &val)
+    : event_number(ev), values(val)
+    {};
+};
+
+struct EventData
+{
+// members
+    int event_number;
     unsigned char type;
-    unsigned char latch_word;
-    unsigned char lms_phase;
+    unsigned char trigger;
     uint64_t timestamp;
+    int last_epics;
     std::vector< ADC_Data > adc_data;
     std::vector< TDC_Data > tdc_data;
     std::vector< GEM_Data > gem_data;
 
+// constructors
     EventData()
-    : type(0), lms_phase(0), timestamp(0)
+    : type(0), trigger(0), timestamp(0), last_epics(-1)
     {};
-    EventData(const PRadTriggerType &t)
-    : type((unsigned char)t), lms_phase(0), timestamp(0)
+    EventData(const unsigned char &t)
+    : type(t), trigger(0), timestamp(0), last_epics(-1)
     {};
-    EventData(const PRadTriggerType &t, std::vector< ADC_Data > &adc, std::vector< TDC_Data > &tdc)
-    : type((unsigned char)t), lms_phase(0), timestamp(0), adc_data(adc), tdc_data(tdc)
+    EventData(const unsigned char &t,
+              const PRadTriggerType &tr,
+              std::vector<ADC_Data> &adc,
+              std::vector<TDC_Data> &tdc,
+              std::vector<GEM_Data> &gem)
+    : type(t), trigger((unsigned char)tr), timestamp(0), last_epics(-1),
+      adc_data(adc), tdc_data(tdc), gem_data(gem)
     {};
 
-    void clear() {type = 0; adc_data.clear(); tdc_data.clear();};
+// functions
+    void initialize(const unsigned char &t = 0) // for data taking
+    {
+        type = t;
+        trigger = 0;
+        adc_data.clear();
+        tdc_data.clear();
+        gem_data.clear();
+    };
+    void clear() // fully clear
+    {
+        initialize();
+        event_number = 0;
+        timestamp = 0;
+        last_epics = -1;
+    };
     void update_type(const unsigned char &t) {type = t;};
+    void update_trigger(const unsigned char &t) {trigger = t;};
     void update_time(const uint64_t &t) {timestamp = t;};
     void add_adc(const ADC_Data &a) {adc_data.push_back(a);};
     void add_tdc(const TDC_Data &t) {tdc_data.push_back(t);};
     void add_gem(const GEM_Data &g) {gem_data.push_back(g);};
     bool isPhysicsEvent()
     {
-        return ( (type == PHYS_LeadGlassSum) ||
-                 (type == PHYS_TotalSum)     ||
-                 (type == PHYS_TaggerE)      ||
-                 (type == PHYS_Scintillator) );
+        return ( (trigger == PHYS_LeadGlassSum) ||
+                 (trigger == PHYS_TotalSum)     ||
+                 (trigger == PHYS_TaggerE)      ||
+                 (trigger == PHYS_Scintillator) );
     };
     bool isMonitorEvent()
     {
-        return ( (type == LMS_Led) ||
-                 (type == LMS_Alpha) );
+        return ( (trigger == LMS_Led) ||
+                 (trigger == LMS_Alpha) );
     }
-};
-
-struct EPICSValue
-{
-    int att_event;
-    float value;
-
-    EPICSValue()
-    : att_event(0), value(0)
-    {};
-    EPICSValue(const int &e, const float &v)
-    : att_event(e), value(v)
-    {};
-
-    bool operator < (const int &e) const
-    {
-        return att_event < e;
-    }
-
 };
 
 struct ScalarChannel

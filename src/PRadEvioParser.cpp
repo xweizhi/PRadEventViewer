@@ -97,7 +97,7 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
     case CODA_Event:
     case CODA_Sync:
     case EPICS_Info:
-        myHandler->StartofNewEvent();
+        myHandler->StartofNewEvent(header->tag);
         break; // go on to process
     case CODA_Prestart:
     case CODA_Go:
@@ -225,7 +225,7 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
     }
 #endif
 
-    myHandler->EndofThisEvent(); // inform handler the end of event
+    myHandler->EndofThisEvent(event_number); // inform handler the end of event
 }
 
 void PRadEvioParser::parseADC1881M(const uint32_t *data)
@@ -471,7 +471,7 @@ PRadTriggerType PRadEvioParser::bit_to_trigger(const unsigned int &bit)
     for(; (bit >> trg) > 0; ++trg)
     {
         if(trg >= MAX_Trigger) {
-            return TI_Error;
+            return Undefined;
         }
     }
 
@@ -480,7 +480,7 @@ PRadTriggerType PRadEvioParser::bit_to_trigger(const unsigned int &bit)
 
 unsigned int PRadEvioParser::trigger_to_bit(const PRadTriggerType &trg)
 {
-    if(trg == TI_Error)
+    if(trg == NotFromTI)
         return 0;
     else
         return 1 << (int) trg;

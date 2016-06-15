@@ -21,13 +21,9 @@
 #include "TH1.h"
 #include "TH2.h"
 
+#define EPICS_UNDEFINED_VALUE -9999.9
+
 using namespace std;
-
-static bool operator < (const int &e, const EPICSValue &v)
-{
-    return e < v.att_event;
-}
-
 
 PRadDataHandler::PRadDataHandler()
 : parser(new PRadEvioParser(this)), totalE(0), charge(0), onlineMode(false)
@@ -69,7 +65,7 @@ PRadDataHandler::~PRadDataHandler()
 // decode event buffer
 void PRadDataHandler::Decode(const void *buffer)
 {
-   PRadEventHeader *header = (PRadEventHeader *)buffer;
+    PRadEventHeader *header = (PRadEventHeader *)buffer;
     parser->ParseEventByHeader(header);
 }
 
@@ -173,14 +169,14 @@ void PRadDataHandler::ResetChannelHists()
 
 void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
 {
-    if(newEvent.type && (newEvent.type != trg)) {
+    if(newEvent.trigger && (newEvent.trigger != trg)) {
         cerr << "ERROR: Trigger type mismatch at event "
              << parser->GetEventNumber()
-             << ", was " << (int) newEvent.type
+             << ", was " << (int) newEvent.trigger
              << " now " << (int) trg
              << endl;
     }
-    newEvent.type = trg;
+    newEvent.trigger = trg;
 }
 
 void PRadDataHandler::UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated)
@@ -200,19 +196,16 @@ void PRadDataHandler::UpdateScalarGroup(const unsigned int &size, const unsigned
 
 void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
 {
-    auto it = epics_channels.find(name);
-    int ev = parser->GetEventNumber();
+    auto it = epics_map.find(name);
 
-    if(it == epics_channels.end()) {
-        vector<EPICSValue> epics_ch;
-        epics_ch.push_back(EPICSValue(ev, value));
-        epics_channels[name] = epics_ch;
+    if(it == epics_map.end()) {
+        cout << "Data Handler:: Received data from EPICS channel " << name
+             << ", which was unregistered. Assign a new channel id " << epics_values.size()
+             << " to it." << endl;
+        epics_map[name] = epics_values.size();
+        epics_values.push_back(value);
     } else {
-        if(onlineMode) {
-            (*it).second.back() = EPICSValue(ev, value);
-        } else {
-            (*it).second.push_back(EPICSValue(ev, value));
-        }
+        epics_values.at(it->second) = value;
     }
 }
 
@@ -224,42 +217,33 @@ void PRadDataHandler::AccumulateBeamCharge(const double &c)
 
 float PRadDataHandler::FindEPICSValue(const string &name)
 {
-    auto it = epics_channels.find(name);
-    if(it == epics_channels.end())
-        return 0;
+    auto it = epics_map.find(name);
+    if(it == epics_map.end())
+        return EPICS_UNDEFINED_VALUE;
 
-    vector<EPICSValue> &data = (*it).second;
-    return data.back().value;
+    return epics_values.at(it->second);
 }
 
-float PRadDataHandler::FindEPICSValue(const string &name, const int &event)
+float PRadDataHandler::FindEPICSValue(const string &name, const int &index)
 {
-    if((unsigned int)event >= energyData.size())
+    if((unsigned int)index >= energyData.size())
         return FindEPICSValue(name);
 
-    int index = energyData.at(event).event_number;
- 
-    auto it = epics_channels.find(name);
-    if(it == epics_channels.end())
-        return 0;
+    auto it = epics_map.find(name);
+    if(it == epics_map.end())
+        return EPICS_UNDEFINED_VALUE;
 
-    vector<EPICSValue> &data = (*it).second;
+    size_t channel_id = it->second;
+    unsigned int epics_idx = (unsigned int) energyData.at(index).last_epics;
 
-    if(data.size() < 1)
-        return 0;
+    if(epics_idx > epicsData.size())
+        return EPICS_UNDEFINED_VALUE;
 
-    if(index < data.at(0))
-        return data.at(0).value;
-
-    auto idx = upper_bound(data.begin(), data.end(), index) - data.begin() - 1;
-
-    return data.at(idx).value;
+    return epicsData.at(epics_idx).values.at(channel_id);
 }
 
 void PRadDataHandler::FeedData(JLabTIData &tiData)
 {
-    newEvent.lms_phase = tiData.lms_phase;
-    newEvent.latch_word = tiData.latch_word;
     newEvent.timestamp = tiData.time_high;
     newEvent.timestamp <<= 32;
     newEvent.timestamp |= tiData.time_low;
@@ -279,7 +263,7 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     PRadDAQUnit *channel = it->second;
 
     // fill histograms by trigger type
-    channel->FillHist(adcData.val, newEvent.type);
+    channel->FillHist(adcData.val, newEvent.trigger);
 
     if(newEvent.isPhysicsEvent()) {
         unsigned short sparsify = channel->Sparsification(adcData.val);
@@ -298,13 +282,14 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
             myLock.unlock();
 #endif
         }
+
     } else if (newEvent.isMonitorEvent()) {
 #ifdef MULTI_THREAD
-            myLock.lock();
+        myLock.lock();
 #endif
         newEvent.add_adc(ADC_Data(channel->GetID(), adcData.val)); 
 #ifdef MULTI_THREAD
-            myLock.unlock();
+        myLock.unlock();
 #endif
     }
     
@@ -368,26 +353,39 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
 
 
 // signal of new event
-void PRadDataHandler::StartofNewEvent()
+void PRadDataHandler::StartofNewEvent(const unsigned char &tag)
 {
     // clear buffer for nes event
-    newEvent.clear();
-    totalE = 0; 
+    newEvent.initialize(tag);
+    totalE = 0;
 }
 
 // signal of event end, save event or discard event in online mode
 void PRadDataHandler::EndofThisEvent(const unsigned int &ev)
 {
-    newEvent.event_number = ev;
+    if(newEvent.type == CODA_Event) {
 
-    if(onlineMode && energyData.size()) { // online mode only saves the last event, to reduce usage of memory
-        energyData.pop_front();
-    }
+        newEvent.event_number = ev;
 
-    energyData.push_back(newEvent); // save event
+        if(onlineMode && energyData.size()) { // online mode only saves the last event, to reduce usage of memory
+            energyData.pop_front();
+        }
 
-    if(newEvent.isPhysicsEvent()) {
-        energyHist->Fill(totalE); // fill energy histogram
+        energyData.push_back(newEvent); // save event
+
+        if(newEvent.isPhysicsEvent()) {
+            energyHist->Fill(totalE); // fill energy histogram
+        }
+
+    } else if(newEvent.type == EPICS_Info) {
+
+        if(onlineMode && epicsData.size()) {
+            epicsData.pop_front();
+        }
+
+        epicsData.push_back(EPICSData(ev, epics_values));
+        newEvent.last_epics = epicsData.size() - 1; // update the epics info on newEvent
+
     }
 }
 
@@ -474,32 +472,62 @@ int PRadDataHandler::GetCurrentEventNb()
     return (int)parser->GetEventNumber();
 }
 
+vector<epics_ch> PRadDataHandler::GetSortedEPICSList()
+{
+    vector<epics_ch> epics_list;
+
+    for(auto &ch : epics_map)
+    {
+        epics_list.push_back(epics_ch(ch.first, ch.second));
+    }
+
+    sort(epics_list.begin(), epics_list.end(), [](const epics_ch &a, const epics_ch &b) {return a.id < b.id;});
+
+    return epics_list;
+}
+
 void PRadDataHandler::PrintOutEPICS()
 {
-    for(auto &epics_ch : epics_channels)
+    vector<epics_ch> epics_list = GetSortedEPICSList();
+     
+    for(auto &ch : epics_list)
     {
-        cout << epics_ch.first << ": "
-             << epics_ch.second.back().value
-             << endl;
+        cout << ch.name << ": " << epics_values.at(ch.id) << endl;
     }
 }
 
 void PRadDataHandler::PrintOutEPICS(const string &name)
 {
-    auto it = epics_channels.find(name);
-    if(it == epics_channels.end()) {
+    auto it = epics_map.find(name);
+    if(it == epics_map.end()) {
         cout << "Did not find the EPICS channel "
              << name << endl;
         return;
     }
 
-    auto channel_data = it->second;
+    cout << name << ": " << epics_values.at(it->second) << endl;
+}
 
-    cout << "Channel " << name << " data are: " << endl;
-    for(auto &data : channel_data)
-    {
-        cout << data.att_event << "  " << data.value << endl;
+void PRadDataHandler::SaveEPICSChannels(const string &path)
+{
+    ofstream out(path);
+
+    if(!out.is_open()) {
+        cerr << "Cannot open file "
+             << "\"" << path << "\""
+             << " to save EPICS channels!"
+             << endl;
+        return;
     }
+
+    vector<epics_ch> epics_list = GetSortedEPICSList();
+
+    for(auto &ch : epics_list)
+    {
+        out << ch.name << endl;
+    }
+
+    out.close();
 }
 
 void PRadDataHandler::SaveHistograms(const string &path)
@@ -548,6 +576,15 @@ EventData &PRadDataHandler::GetEventData(const unsigned int &index)
         return energyData.back();
     } else {
         return energyData.at(index);
+    }
+}
+
+EPICSData &PRadDataHandler::GetEPICSData(const unsigned int &index)
+{
+    if(index >= epicsData.size()) {
+        return epicsData.back();
+    } else {
+        return epicsData.at(index);
     }
 }
 
@@ -830,15 +867,54 @@ void PRadDataHandler::ReadChannelList(const string &path)
     c_parser.CloseFile();
 }
 
+void PRadDataHandler::ReadEPICSChannels(const string &path)
+{
+    ConfigParser c_parser;
+
+    if(!c_parser.OpenFile(path)) {
+        cout << "WARNING: Fail to open EPICS channel file "
+             << "\"" << path << "\""
+             << ", no EPICS channel created!"
+             << endl;
+        return;
+    }
+
+    string name;
+    float initial_value = EPICS_UNDEFINED_VALUE;
+
+    while(c_parser.ParseLine())
+    {
+        if(!c_parser.NbofElements())
+            continue;
+
+        if(c_parser.NbofElements() == 1) {
+            name = c_parser.TakeFirst();
+            if(epics_map.find(name) == epics_map.end()) {
+                epics_map[name] = epics_values.size();
+                epics_values.push_back(initial_value);
+            } else {
+                cout << "Duplicated epics channel " << name
+                     << ", its channel id is " << epics_map[name]
+                     << endl;
+            }
+        } else {
+            cout << "Unrecognized input format in  epics channel file, skipped one line!"
+                 << endl;
+        }
+    }
+
+    c_parser.CloseFile();
+};
+
 void PRadDataHandler::ReadPedestalFile(const string &path)
 {
     ConfigParser c_parser;
 
     if(!c_parser.OpenFile(path)) {
         cout << "WARNING: Fail to open pedestal file "
-                  << "\"" << path << "\""
-                  << ", no pedestal data are read!"
-                  << endl;
+             << "\"" << path << "\""
+             << ", no pedestal data are read!"
+             << endl;
         return;
     }
 
@@ -867,7 +943,7 @@ void PRadDataHandler::ReadPedestalFile(const string &path)
     }
 
     c_parser.CloseFile();
-}
+};
 
 void PRadDataHandler::ReadCalibrationFile(const string &path)
 {
@@ -988,7 +1064,7 @@ void PRadDataHandler::RefillChannelHists()
     {
         for(auto &adc : event.adc_data)
         {
-            channelList[adc.channel_id]->FillHist(adc.value, event.type);
+            channelList[adc.channel_id]->FillHist(adc.value, event.trigger);
         }
 
         for(auto &tdc : event.tdc_data)
@@ -1044,8 +1120,7 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
      // event information
      dst_file.read((char*) &data.event_number, sizeof(data.event_number));
      dst_file.read((char*) &data.type        , sizeof(data.type));
-     dst_file.read((char*) &data.latch_word  , sizeof(data.latch_word));
-     dst_file.read((char*) &data.lms_phase   , sizeof(data.lms_phase));
+     dst_file.read((char*) &data.trigger     , sizeof(data.trigger));
      dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
 
      size_t adc_size, tdc_size, gem_size;
@@ -1117,8 +1192,7 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
      // event information
      dst_file.write((char*) &data.event_number, sizeof(data.event_number));
      dst_file.write((char*) &data.type        , sizeof(data.type));
-     dst_file.write((char*) &data.latch_word  , sizeof(data.latch_word));
-     dst_file.write((char*) &data.lms_phase   , sizeof(data.lms_phase));
+     dst_file.write((char*) &data.trigger     , sizeof(data.trigger));
      dst_file.write((char*) &data.timestamp   , sizeof(data.timestamp));
 
      // adc data bank

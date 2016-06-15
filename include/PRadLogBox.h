@@ -3,7 +3,7 @@
 
 #include <QTextEdit>
 
-#define MAX_NEWLOG_LENGTH 2048
+#define MAX_NEWLOG_LENGTH 40*256
 
 class QFileSystemWatcher;
 

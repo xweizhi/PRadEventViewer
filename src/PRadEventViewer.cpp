@@ -150,6 +150,7 @@ void PRadEventViewer::generateHyCalModules()
     // end of channel/module reading
     buildModuleMap();
 
+    handler->ReadEPICSChannels("config/epics_channels.txt");
     handler->ReadPedestalFile("config/pedestal.dat");
     handler->ReadCalibrationFile("config/calibration.txt");
 
@@ -680,8 +681,9 @@ void PRadEventViewer::openDataFile()
         UpdateStatusBar(DATA_FILE);
     }
 
-    cout << "Parsed " << handler->GetEventCount() << " events from "
-         << fileList.size() << " files."
+    cout << "Parsed " << handler->GetEventCount() << " events and "
+         << handler->GetEPICSEventCount() << " EPICS events from "
+         << fileList.size() << " files." << endl
          << " Used " << timer.GetElapsedTime() << " ms."
          << endl;
 
@@ -731,7 +733,7 @@ void PRadEventViewer::initializeFromFile()
     updateEventRange();
 
     cout << "Initialized data handler from file "
-         << "\"" << file.toStdString() << "\"."
+         << "\"" << file.toStdString() << "\"." << endl
          << " Used " << timer.GetElapsedTime() << " ms."
          << endl;
 }
