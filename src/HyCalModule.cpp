@@ -24,7 +24,7 @@ HyCalModule::HyCalModule(PRadEventViewer* const p,
                          const Geometry &geo)
 : PRadDAQUnit(rid.toStdString(), daqAddr, tdc.toStdString(), geo),
   console(p), name(rid), m_hover(false), m_selected(false),
-  color(Qt::white), font(QFont("times",10))
+  color(Qt::white), font(QFont("times",10)), custom_value(0.)
 {
     // initialize the item
     Initialize();

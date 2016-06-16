@@ -268,10 +268,14 @@ void PRadEventViewer::createMainMenu()
     QAction *snapShotAction = toolMenu->addAction(tr("Take SnapShot"));
     snapShotAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_S));
 
+    QAction *showCustomAction = toolMenu->addAction(tr("Show Custom Map"));
+    showCustomAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_C));
+
     connect(eraseAction, SIGNAL(triggered()), this, SLOT(eraseBufferAction()));
     connect(findPeakAction, SIGNAL(triggered()), this, SLOT(findPeak()));
     connect(fitHistAction, SIGNAL(triggered()), this, SLOT(fitHistogram()));
     connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
+    connect(showCustomAction, SIGNAL(triggered()), this, SLOT(openCustomMap()));
 
     menuBar()->addMenu(toolMenu);
 
@@ -302,6 +306,7 @@ void PRadEventViewer::createControlPanel()
     viewModeBox->addItem(tr("Ped. Sigma View"));
     viewModeBox->addItem(tr("High Voltage View"));
     viewModeBox->addItem(tr("HV Setting View"));
+    viewModeBox->addItem(tr("Custom Map View"));
 
     spectrumSettingButton = new QPushButton("Spectrum Settings");
 
@@ -383,10 +388,10 @@ void PRadEventViewer::setupInfoWindow()
 
     // add new items to status info
     QStringList statusProperty;
-    statusProperty << tr("  Module ID") << tr("  Module Type") << tr("  DAQ Address") << tr("  TDC Group") << tr("  HV Address")
-                   << tr("  Pedestal") << tr("  Event No.") << tr("  Energy") << tr("  Fired Count") << tr("  High Voltage");
+    statusProperty << tr("  Module ID") << tr("  Module Type") << tr("  DAQ Address") << tr("  TDC Group") << tr("  HV Address") << tr("  Occupancy")
+                   << tr("  Pedestal") << tr("  Event No.") << tr("  Energy") << tr("  ADC Count") << tr("  High Voltage") << tr("  Custom Value");
 
-    for(int i = 0; i < 5; ++i) // row iteration
+    for(int i = 0; i < 6; ++i) // row iteration
     {
         statusItem[i] = new QTreeWidgetItem(statusInfoWidget);
         for(int j = 0; j < 4; ++ j) // column iteration
@@ -394,9 +399,9 @@ void PRadEventViewer::setupInfoWindow()
             if(j&1) { // odd column
                 statusItem[i]->setFont(j, font);
             } else { // even column
-                statusItem[i]->setText(j, statusProperty.at(5*j/2 + i));
+                statusItem[i]->setText(j, statusProperty.at(6*j/2 + i));
             }
-            if(!(i&1)) { // even row
+            if(i&1) { // even row
                 statusItem[i]->setBackgroundColor(j, QColor(255,255,208));
             }
         }
@@ -632,6 +637,9 @@ void PRadEventViewer::Refresh()
         handler->ChooseEvent(event_index); // fetch data from handler
         ModuleAction(&HyCalModule::ShowEnergy);
         break;
+    case CustomView:
+        ModuleAction(&HyCalModule::ShowCustomValue);
+        break;
     }
 
     UpdateStatusInfo();
@@ -693,19 +701,16 @@ void PRadEventViewer::openDataFile()
 // open pedestal file
 void PRadEventViewer::openPedFile()
 {
-    QString codaData = QDir::currentPath() + "/config";
+    QString dir = QDir::currentPath() + "/config";
 
     QStringList filters;
     filters << "Data files (*.dat *.txt)"
             << "All files (*)";
 
-    fileName = getFileName(tr("Open pedestal file"),
-                           codaData,
-                           filters,
-                           "");
+    QString file = getFileName(tr("Open pedestal file"), dir, filters, "");
 
-    if (!fileName.isEmpty()) {
-        handler->ReadPedestalFile(fileName.toStdString());
+    if (!file.isEmpty()) {
+        handler->ReadPedestalFile(file.toStdString());
     }
 }
 
@@ -741,37 +746,46 @@ void PRadEventViewer::initializeFromFile()
 // open calibration factor file
 void PRadEventViewer::openCalibrationFile()
 {
-    QString codaData = QDir::currentPath() + "/config";
+    QString dir = QDir::currentPath() + "/config";
 
     QStringList filters;
     filters << "Data files (*.dat *.txt)"
             << "All files (*)";
 
-    fileName = getFileName(tr("Open calibration constants file"),
-                           codaData,
-                           filters,
-                           "");
+    QString file = getFileName(tr("Open calibration constants file"), dir, filters, "");
 
-    if (!fileName.isEmpty()) {
-        handler->ReadCalibrationFile(fileName.toStdString());
+    if (!file.isEmpty()) {
+        handler->ReadCalibrationFile(file.toStdString());
     }
 }
 
 void PRadEventViewer::openGainFactorFile()
 {
-    QString codaData = QDir::currentPath() + "/config";
+    QString dir = QDir::currentPath() + "/config";
 
     QStringList filters;
     filters << "Data files (*.dat *.txt)"
             << "All files (*)";
 
-    fileName = getFileName(tr("Open gain factors file"),
-                           codaData,
-                           filters,
-                           "");
+    QString file = getFileName(tr("Open gain factors file"), dir, filters, "");
 
-    if (!fileName.isEmpty()) {
-        handler->ReadGainFactor(fileName.toStdString());
+    if (!file.isEmpty()) {
+        handler->ReadGainFactor(file.toStdString());
+    }
+}
+
+void PRadEventViewer::openCustomMap()
+{
+    QString dir = QDir::currentPath();
+
+    QStringList filters;
+    filters << "Data files (*.dat *.txt)"
+            << "All files (*)";
+
+    QString file = getFileName(tr("Open custom value file"), dir, filters, "");
+
+    if (!file.isEmpty()) {
+        readCustomValue(file);
     }
 }
 
@@ -929,7 +943,8 @@ void PRadEventViewer::UpdateStatusInfo()
               << QString::fromStdString(selection->GetTDCName())          // tdc group
               << tr("C") + QString::number(hvInfo.crate)                  // hv crate
                  + tr(", S") + QString::number(hvInfo.slot)               // hv slot
-                 + tr(", Ch") + QString::number(hvInfo.channel);          // hv channel
+                 + tr(", Ch") + QString::number(hvInfo.channel)           // hv channel
+              << QString::number(selection->GetOccupancy());              // Occupancy
 
     PRadDAQUnit::Pedestal ped = selection->GetPedestal();
     PRadHVSystem::Voltage volt = hvSystem->GetVoltage(hvInfo.crate, hvInfo.slot, hvInfo.channel);
@@ -948,14 +963,15 @@ void PRadEventViewer::UpdateStatusInfo()
               << QString::number(currentEvent)                            // current event
               << QString::number(selection->GetEnergy()) + tr(" MeV / ")  // energy
                  + QString::number(handler->GetEnergy()) + tr(" MeV")     // total energy
-              << QString::number(selection->GetOccupancy())               // occupancy
-              << temp;                                                    // HV info
+              << QString::number(selection->GetADC())                     // ADC value
+              << temp                                                     // HV info
+              << QString::number(selection->GetCustomValue());            // custom value
 
     // update status info window
-    for(int i = 0; i < 5; ++i)
+    for(int i = 0; i < 6; ++i)
     {
         statusItem[i]->setText(1, valueList.at(i));
-        statusItem[i]->setText(3, valueList.at(5+i));
+        statusItem[i]->setText(3, valueList.at(6+i));
     }
 }
 
@@ -981,6 +997,50 @@ void PRadEventViewer::readEventFromFile(const QString &filepath)
         std::cerr << "?unknown exception" << endl;
     }
 }
+
+void PRadEventViewer::readCustomValue(const QString &filepath)
+{
+    ConfigParser c_parser;
+
+    if(!c_parser.OpenFile(filepath.toStdString())) {
+        std::cerr << "Cannot open custom map file "
+                  << "\"" << filepath.toStdString() << "\"."
+                  << std::endl;
+        return;
+    }
+
+    ModuleAction(&HyCalModule::UpdateCustomValue, 0.);
+
+    double min_value = 0.;
+    double max_value = 1.;
+
+    while(c_parser.ParseLine())
+    {
+        if(!c_parser.NbofElements())
+            continue;
+
+        if(c_parser.NbofElements() == 2) {
+            std::string name = c_parser.TakeFirst();
+            double value = c_parser.TakeFirst().Double();
+            HyCalModule *module = dynamic_cast<HyCalModule*>(handler->GetChannel(name));
+            if(module != nullptr) {
+                module->UpdateCustomValue(value);
+                min_value = min(value, min_value);
+                max_value = max(value, max_value);
+            }
+        } else {
+            std::cout << "Unrecognized custom map format, skipped one line." << std::endl;
+        }
+
+    }
+
+    viewModeBox->setCurrentIndex((int)CustomView);
+
+    specSetting->SetSpectrumRange(floor(min_value*1.3), floor(max_value*1.3));
+    specSetting->SetLinearScale();
+    Refresh();
+}
+
 
 QString PRadEventViewer::getFileName(const QString &title,
                                      const QString &dir,

@@ -1,5 +1,5 @@
 //============================================================================//
-// Derived from QDialog, provide a setting panel to change Spectrum settings  //
+// Derived from QDialog, provide a setting panel to Change Spectrum settings  //
 //                                                                            //
 // Chao Peng                                                                  //
 // 02/17/2016                                                                 //
@@ -12,8 +12,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QRadioButton>
-#include <QSpinBox>
-#include <QSlider>
+#include <QDoubleSpinBox>
 #include <QLabel>
 
 #define MAX_RANGE 100000
@@ -41,8 +40,8 @@ void SpectrumSettingPanel::ConnectSpectrum(Spectrum *s)
         connect(rainbow1, SIGNAL(clicked()), this, SLOT(changeType()));
         connect(rainbow2, SIGNAL(clicked()), this, SLOT(changeType()));
         connect(greyscale, SIGNAL(clicked()), this, SLOT(changeType()));
-        connect(minSpin, SIGNAL(valueChanged(int)), this, SLOT(changeRangeMin(int)));
-        connect(maxSpin, SIGNAL(valueChanged(int)), this, SLOT(changeRangeMax(int)));
+        connect(minSpin, SIGNAL(valueChanged(double)), this, SLOT(changeRangeMin(double)));
+        connect(maxSpin, SIGNAL(valueChanged(double)), this, SLOT(changeRangeMax(double)));
         connect(energyView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
         connect(occupancyView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
         connect(pedestalView, SIGNAL(clicked()), this, SLOT(changePreSetting()));
@@ -108,27 +107,15 @@ QGroupBox *SpectrumSettingPanel::createTypeGroup()
 QGroupBox *SpectrumSettingPanel::createRangeGroup()
 {
     QGroupBox *rangeGroup = new QGroupBox(tr("Spectrum Range Setting"));
-    minSpin = new QSpinBox();
-    minSlider = new QSlider(Qt::Horizontal);
-    maxSpin = new QSpinBox();
-    maxSlider = new QSlider(Qt::Horizontal);
+    minSpin = new QDoubleSpinBox();
+    maxSpin = new QDoubleSpinBox();
 
-    minSpin->setRange(0, MAX_RANGE - 1);
-    minSlider->setRange(0, MAX_RANGE - 1);
-    maxSpin->setRange(1, MAX_RANGE);
-    maxSlider->setRange(1, MAX_RANGE);
-
-    connect(minSlider, SIGNAL(valueChanged(int)), minSpin, SLOT(setValue(int)));
-    connect(minSpin, SIGNAL(valueChanged(int)), minSlider, SLOT(setValue(int)));
-
-    connect(maxSlider, SIGNAL(valueChanged(int)), maxSpin, SLOT(setValue(int)));
-    connect(maxSpin, SIGNAL(valueChanged(int)), maxSlider, SLOT(setValue(int)));
+    minSpin->setRange(-MAX_RANGE, MAX_RANGE);
+    maxSpin->setRange(-MAX_RANGE, MAX_RANGE);
 
     QFormLayout *layout = new QFormLayout;
     layout->addRow(new QLabel(tr("Minimum value")), minSpin);
-    layout->addRow(minSlider);
     layout->addRow(new QLabel(tr("Maximum value")), maxSpin);
-    layout->addRow(maxSlider);
 
     rangeGroup->setLayout(layout);
 
@@ -183,21 +170,19 @@ void SpectrumSettingPanel::changeType()
         spectrum->SetSpectrumType(Spectrum::GreyScale);
 }
 
-void SpectrumSettingPanel::changeRangeMin(int value)
+void SpectrumSettingPanel::changeRangeMin(double value)
 {
     if(!preset)
         customView->setChecked(true);
 
-    minSlider->setValue(value);
     spectrum->SetSpectrumRangeMin(value);
 }
 
-void SpectrumSettingPanel::changeRangeMax(int value)
+void SpectrumSettingPanel::changeRangeMax(double value)
 {
     if(!preset)
         customView->setChecked(true);
 
-    maxSlider->setValue(value);
     spectrum->SetSpectrumRangeMax(value);
 }
 
@@ -250,7 +235,26 @@ void SpectrumSettingPanel::ChoosePreSetting(int val)
     case 5:
         voltageView->setChecked(true);
         break;
-    default: return;
+    default:
+        return;
     }
     changePreSetting();
+}
+
+void SpectrumSettingPanel::SetSpectrumRange(double min, double max)
+{
+    minSpin->setValue(min);
+    maxSpin->setValue(max);
+}
+
+void SpectrumSettingPanel::SetLinearScale()
+{
+    linearScale->setChecked(true);
+    spectrum->SetSpectrumScale(Spectrum::LinearScale);
+}
+
+void SpectrumSettingPanel::SetLogScale()
+{
+    logScale->setChecked(true);
+    spectrum->SetSpectrumScale(Spectrum::LogScale);
 }

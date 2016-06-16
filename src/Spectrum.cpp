@@ -11,7 +11,7 @@
 #include <cmath>
 #include "Spectrum.h"
 
-Spectrum::Spectrum(int w, int h, int x1, int x2,
+Spectrum::Spectrum(int w, int h, double x1, double x2,
                    double l1, double l2, SpectrumType type, SpectrumScale scale)
 : wavelength1(l1), wavelength2(l2), width(w), height(h)
 {
@@ -55,7 +55,7 @@ void Spectrum::SetSpectrumScale(const SpectrumScale &scale)
     emit spectrumChanged();
 }
 
-void Spectrum::SetSpectrumRange(const int &x1, const int &x2)
+void Spectrum::SetSpectrumRange(const double &x1, const double &x2)
 {
     if(settings.range_min == x1 && settings.range_max == x2)
         return;
@@ -65,7 +65,7 @@ void Spectrum::SetSpectrumRange(const int &x1, const int &x2)
     emit spectrumChanged();
 }
 
-void Spectrum::SetSpectrumRangeMin(int &min)
+void Spectrum::SetSpectrumRangeMin(double &min)
 {
     if(settings.range_min == min)
         return;
@@ -74,7 +74,7 @@ void Spectrum::SetSpectrumRangeMin(int &min)
     emit spectrumChanged();
 }
 
-void Spectrum::SetSpectrumRangeMax(int &max)
+void Spectrum::SetSpectrumRangeMax(double &max)
 {
     if(settings.range_max == max)
         return;
@@ -86,7 +86,7 @@ void Spectrum::SetSpectrumRangeMax(int &max)
 // get color in log scale
 QColor Spectrum::GetColor(const double &val)
 {
-    if(!val)
+    if(!val || (settings.range_min == settings.range_max))
         return Qt::white;
     else
         return scaleToColor(scaling(val));
@@ -96,8 +96,8 @@ double Spectrum::scaling(const double &val)
 {
     double scale, rmin, rmax;
     if(settings.scale == LogScale) {
-        rmin = log10(std::max(0.1,(double)settings.range_min));
-        rmax = log10(settings.range_max);
+        rmin = log10(std::max(0.1, settings.range_min));
+        rmax = log10(std::max(1.0, settings.range_max));
         scale = (log10(val) - rmin)/(rmax - rmin);
     } else {
         rmin = (double)settings.range_min;
@@ -210,7 +210,7 @@ void Spectrum::paintTicks(QPainter *painter)
     switch(settings.scale)
     {
     case LogScale:
-        ticks.push_back(std::max(0.1,(double)settings.range_min));
+        ticks.push_back(std::max(0.1, settings.range_min));
         for(int i = 0; ; ++i)
         {
             int tick = pow(10, i);
@@ -219,14 +219,37 @@ void Spectrum::paintTicks(QPainter *painter)
             if(tick > settings.range_min)
                 ticks.push_back(tick);
         }
-        ticks.push_back(settings.range_max);
+        ticks.push_back(std::max(1.0, settings.range_max));
+
+        // if ticks are too less
+        if(ticks.size() <= 3) {
+            int ori_size = ticks.size();
+            for(int i = 0; i < ori_size; ++i)
+            {
+                for(int j = 2; j < 10; ++j)
+                {
+                    if(j*ticks.at(i) >= settings.range_max)
+                        break;
+                    ticks.push_back(j*ticks.at(i));
+                }
+            }
+        }
+        else if(ticks.size() <= 5) {
+            int ori_size = ticks.size();
+            for(int i = 0; i < ori_size; ++i)
+            {
+               if(5*ticks.at(i) >= settings.range_max)
+                   break;
+               ticks.push_back(5*ticks.at(i));
+            }
+        }
         break;
     case LinearScale:
         ticks.push_back(settings.range_min);
         double step = (double)(settings.range_max - settings.range_min)/10.;
         for(int i = 0; i <= 10; ++i)
         {
-            int tick = (int)(settings.range_min + step * i);
+            double tick = settings.range_min + step * i;
             if(tick != ticks.last())
                 ticks.push_back(tick);
         }

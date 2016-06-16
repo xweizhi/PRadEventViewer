@@ -265,13 +265,13 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // get the channel
     PRadDAQUnit *channel = it->second;
 
-    // fill histograms by trigger type
-    channel->FillHist(adcData.val, newEvent.trigger);
-
     if(newEvent.isPhysicsEvent()) {
         unsigned short sparsify = channel->Sparsification(adcData.val);
 
         if(sparsify) {
+            // fill histograms by trigger type, only sparsified channel get through for physics events
+            channel->FillHist(adcData.val, newEvent.trigger);
+
 #ifdef MULTI_THREAD
             // unfortunately, we have some non-local variable to deal with
             // so lock the thread to prevent concurrent access
@@ -287,6 +287,9 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
         }
 
     } else if (newEvent.isMonitorEvent()) {
+        // fill histograms by trigger type
+        channel->FillHist(adcData.val, newEvent.trigger);
+
 #ifdef MULTI_THREAD
         myLock.lock();
 #endif

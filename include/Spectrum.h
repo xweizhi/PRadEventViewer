@@ -26,19 +26,21 @@ public:
     {
         SpectrumType type;
         SpectrumScale scale;
-        int range_min;
-        int range_max;
+        double range_min;
+        double range_max;
     };
 
-    Spectrum(int w, int h, int x1, int x2,
+    Spectrum(int w, int h, double x1, double x2,
              double l1 = 440, double l2 = 640,
              SpectrumType type = Rainbow1, SpectrumScale scale = LogScale);
-    void SetSpectrumRange(const int &x1, const int &x2);
-    void SetSpectrumRangeMin(int &min);
-    void SetSpectrumRangeMax(int &max);
+    void SetSpectrumRange(const double &x1, const double &x2);
+    void SetSpectrumRangeMin(double &min);
+    void SetSpectrumRangeMax(double &max);
     void SetSpectrumType(const SpectrumType &type);
     void SetSpectrumScale(const SpectrumScale &scale);
     SettingData &GetCurrentSetting() {return settings;};
+    double GetRangeMin() {return settings.range_min;};
+    double GetRangeMax() {return settings.range_max;};
     QColor GetColor(const double &val);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     void paintTicks(QPainter *painter);

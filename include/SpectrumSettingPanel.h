@@ -4,7 +4,7 @@
 #include <QDialog>
 
 
-class QSpinBox;
+class QDoubleSpinBox;
 class QSlider;
 class QGroupBox;
 class QRadioButton;
@@ -19,12 +19,15 @@ public:
     ~SpectrumSettingPanel() {};
     void ConnectSpectrum(Spectrum *s);
     void ChoosePreSetting(int val);
+    void SetSpectrumRange(double min, double max);
+    void SetLinearScale();
+    void SetLogScale();
 
-public slots:
+private slots:
     void changeScale();
     void changeType();
-    void changeRangeMax(int value);
-    void changeRangeMin(int value);
+    void changeRangeMax(double value);
+    void changeRangeMin(double value);
     void changePreSetting();
 
 private:
@@ -50,11 +53,8 @@ private:
     QRadioButton *sigmaView;
     QRadioButton *customView;
 
-    QSpinBox *minSpin;
-    QSlider *minSlider;
-
-    QSpinBox *maxSpin;
-    QSlider *maxSlider;
+    QDoubleSpinBox *minSpin;
+    QDoubleSpinBox *maxSpin;
 };
 
 #endif

@@ -13,7 +13,6 @@ class PRadEventViewer;
 class HyCalModule : public QGraphicsItem, public PRadDAQUnit
 {
 public:
-public:
     HyCalModule(PRadEventViewer* const p,
                 const QString &rid,
                 const ChannelAddress &daqAddr,
@@ -29,7 +28,10 @@ public:
     void ShowPedSigma() {SetColor(pedestal.sigma);};
     void ShowOccupancy() {SetColor(occupancy);};
     void ShowEnergy();
+    void ShowCustomValue() {SetColor(custom_value);};
     void UpdateHVSetup(ChannelAddress &set) {hv_addr = set;};
+    void UpdateCustomValue(double val) {custom_value = val;};
+    const double &GetCustomValue() {return custom_value;};
     QString GetReadID() {return name;};
     ChannelAddress GetHVInfo() {return hv_addr;};
 
@@ -54,6 +56,7 @@ private:
     QColor color;
     QFont font;
     QPainterPath shape;
+    double custom_value;
 };
 
 #endif

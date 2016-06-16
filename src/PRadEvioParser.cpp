@@ -198,11 +198,7 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
             switch(evtHeader->tag)
             {
             case EPICS_BANK: // epics information
-#ifdef MULTI_THREAD
-                bank_threads.push_back(thread(&PRadEvioParser::parseEPICS, this, &buffer[index]));
-#else
                 parseEPICS(&buffer[index]);
-#endif
                 break;
             case CONF_BANK: // configuration information
             default:

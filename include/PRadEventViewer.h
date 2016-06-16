@@ -57,6 +57,7 @@ enum ViewMode {
     SigmaView,
     HighVoltageView,
     VoltageSetView,
+    CustomView,
 };
 
 enum ViewerStatus {
@@ -96,6 +97,7 @@ private slots:
     void openPedFile();
     void openCalibrationFile();
     void openGainFactorFile();
+    void openCustomMap();
     void saveHistToFile();
     void savePedestalFile();
     void findPeak();
@@ -141,6 +143,7 @@ private:
     void setupInfoWindow();
     void updateEventRange();
     void readEventFromFile(const QString &filepath);
+    void readCustomValue(const QString &filepath);
     bool onlineSettings();
     void onlineUpdate(const size_t &max_events);
     QString getFileName(const QString &title,
@@ -186,7 +189,7 @@ private:
     QPushButton *spectrumSettingButton;
 
     QTreeWidget *statusInfoWidget;
-    QTreeWidgetItem *statusItem[5];
+    QTreeWidgetItem *statusItem[6];
 
     QLabel *lStatusLabel;
     QLabel *rStatusLabel;
