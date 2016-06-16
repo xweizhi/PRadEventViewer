@@ -822,7 +822,7 @@ void PRadEventViewer::findEvent()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         // If the user didn't dismiss the dialog, do something with the fields
-        int index = handler->FindEvent(lineEdit->text().toInt());
+        int index = handler->FindEventIndex(lineEdit->text().toInt());
         if(index >= 0)
             eventSpin->setValue(index + 1);
         else {

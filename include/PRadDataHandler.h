@@ -146,7 +146,7 @@ public:
     void CorrectGainFactor(const int &run = 0, const int &ref = 2);
     void RefillEnergyHist();
     void RefillChannelHists();
-    int FindEvent(const int &event_number);
+    int FindEventIndex(const int &event_number);
 
     // other functions
     int GetRunNumberFromFileName(const std::string &name, const size_t &pos = 0, const bool &verbose = true);

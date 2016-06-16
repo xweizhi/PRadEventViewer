@@ -1303,7 +1303,7 @@ int PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &
 // find event by its event number
 // it is assumed the files decoded are all from 1 single run and they are loaded in order
 // otherwise this function will not work properly
-int PRadDataHandler::FindEvent(const int &ev)
+int PRadDataHandler::FindEventIndex(const int &ev)
 {
     int result = -1;
 
