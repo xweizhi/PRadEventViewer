@@ -50,7 +50,6 @@
 
 #define cap_value(a, min, max) \
         (((a) >= (max)) ? (max) : ((a) <= (min)) ? (min) : (a))
-#define event_index currentEvent - 1
 
 //============================================================================//
 // constructor                                                                //
@@ -641,7 +640,7 @@ void PRadEventViewer::Refresh()
         break;
     }
     case EnergyView:
-        handler->ChooseEvent(event_index); // fetch data from handler
+        handler->ChooseEvent(currentEvent - 1); // fetch data from handler
         ModuleAction(&HyCalModule::ShowEnergy);
         break;
     case CustomView:
