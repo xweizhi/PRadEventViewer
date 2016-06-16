@@ -252,7 +252,9 @@ ConfigParser::~ConfigParser()
 
 void ConfigParser::AddCommentMark(const string &c)
 {
-    comment_marks.push_back(c);
+    auto it = find(comment_marks.begin(), comment_marks.end(), c);
+    if(it == comment_marks.end())
+        comment_marks.push_back(c);
 }
 
 void ConfigParser::RemoveCommentMark(const string &c)
