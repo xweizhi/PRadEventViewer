@@ -389,7 +389,7 @@ void PRadEventViewer::setupInfoWindow()
     // add new items to status info
     QStringList statusProperty;
     statusProperty << tr("  Module ID") << tr("  Module Type") << tr("  DAQ Address") << tr("  TDC Group") << tr("  HV Address") << tr("  Occupancy")
-                   << tr("  Pedestal") << tr("  Event No.") << tr("  Energy") << tr("  ADC Count") << tr("  High Voltage") << tr("  Custom Value");
+                   << tr("  Pedestal") << tr("  Event No.") << tr("  Energy") << tr("  ADC Count") << tr("  High Voltage") << tr("  Custom (Editable)");
 
     for(int i = 0; i < 6; ++i) // row iteration
     {
@@ -409,6 +409,9 @@ void PRadEventViewer::setupInfoWindow()
 
     // Spectial rule to enable html text support for subscript
     statusItem[1]->useHtmlDelegate(1);
+
+    // set the custom value editable
+    connect(statusInfoWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(editCustomValueLabel(QTreeWidgetItem*,int)));
 
     statusInfoWidget->resizeColumnToContents(0);
     statusInfoWidget->resizeColumnToContents(2);
@@ -1252,6 +1255,14 @@ void PRadEventViewer::takeSnapShot()
 
     // update info
     rStatusLabel->setText(tr("Snap shot saved to ") + filepath);
+}
+
+void PRadEventViewer::editCustomValueLabel(QTreeWidgetItem* item, int column)
+{
+    if(item == statusItem[5] && column == 2)
+        item->setFlags(item->flags() | Qt::ItemIsEditable);
+    else
+        item->setFlags(item->flags() & ~Qt::ItemIsEditable);
 }
 
 void PRadEventViewer::handleRootEvents()

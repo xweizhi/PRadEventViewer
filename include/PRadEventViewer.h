@@ -123,6 +123,7 @@ private slots:
     void handleRootEvents();
     void saveHVSetting();
     void restoreHVSetting();
+    void editCustomValueLabel(QTreeWidgetItem* item, int column);
 
 private:
     void initView();
