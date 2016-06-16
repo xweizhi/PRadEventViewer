@@ -342,7 +342,15 @@ bool ConfigParser::ParseLine()
 void ConfigParser::ParseLine(const string &line)
 {
     string trim_line = trim(comment_out(line), white_space);
-    elements = split(trim_line, splitters);
+    queue<string> eles = split(trim_line, splitters);
+
+    while(eles.size())
+    {
+        string ele = trim(eles.front(), white_space);
+        if(ele.size())
+            elements.push(ele);
+        eles.pop();
+    }
 }
 
 ConfigValue ConfigParser::TakeFirst()
