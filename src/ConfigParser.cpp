@@ -8,11 +8,12 @@
 #include "ConfigParser.h"
 #include <cstring>
 #include <climits>
+#include <algorithm>
 
 using namespace std;
 
 // Config Value
-std::ostream &operator << (std::ostream &os, ConfigValue &b)
+ostream &operator << (ostream &os, ConfigValue &b)
 {
     return  os << b._value;
 };
@@ -249,9 +250,21 @@ ConfigParser::~ConfigParser()
     CloseFile();
 }
 
-void ConfigParser::AddCommentMarks(const string &c)
+void ConfigParser::AddCommentMark(const string &c)
 {
     comment_marks.push_back(c);
+}
+
+void ConfigParser::RemoveCommentMark(const string &c)
+{
+    auto it = find(comment_marks.begin(), comment_marks.end(), c);
+    if(it != comment_marks.end())
+        comment_marks.erase(it);
+}
+
+void ConfigParser::EraseCommentMarks()
+{
+    comment_marks.clear();
 }
 
 bool ConfigParser::OpenFile(const string &path)
@@ -299,18 +312,27 @@ string ConfigParser::GetLine()
 
 bool ConfigParser::ParseLine()
 {
+    queue<string>().swap(elements);
+
     if(infile.is_open()) {
         string line;
-        bool not_end = getline(infile, line);
-        if(not_end) {
+        bool not_end;
+        while(elements.empty())
+        {
+            not_end = getline(infile, line);
+            if(!not_end)
+                break;
             ParseLine(line);
         }
         return not_end;
     } else {
-        if(!lines.size())
-            return false;
-        ParseLine(lines.front());
-        lines.pop();
+       while(elements.empty())
+        {
+            if(lines.empty())
+                return false;
+            ParseLine(lines.front());
+            lines.pop();
+        }
         return true;
     }
 }
@@ -323,8 +345,11 @@ void ConfigParser::ParseLine(const string &line)
 
 ConfigValue ConfigParser::TakeFirst()
 {
-    if(elements.empty())
+    if(elements.empty()) {
+        cout << "Config Parser: WARNING, trying to take elements while there is nothing, 0 value returned." << endl;
         return ConfigValue("0");
+    }
+
     string output = elements.front();
     elements.pop();
 
@@ -355,8 +380,7 @@ string ConfigParser::comment_out(const string &str, size_t index)
         
 }
 
-string ConfigParser::comment_out(const string &str,
-                   const string &c)
+string ConfigParser::comment_out(const string &str, const string &c)
 {
     if(c.empty()) {
         return str;
@@ -367,8 +391,7 @@ string ConfigParser::comment_out(const string &str,
 }
 
 
-string ConfigParser::trim(const string &str,
-            const string &w)
+string ConfigParser::trim(const string &str, const string &w)
 {
 
     const auto strBegin = str.find_first_not_of(w);

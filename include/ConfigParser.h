@@ -106,7 +106,12 @@ public:
                  const std::string &w = " \t",  // white_space
                  const std::vector<std::string> &c = {"#", "//"}); // comment_mark
     virtual ~ConfigParser();
-    void AddCommentMarks(const std::string &c);
+    void SetSplitters(const std::string &s) {splitters = s;};
+    void SetWhiteSpace(const std::string &w) {white_space = w;};
+    void SetCommentMarks(const std::vector<std::string> &c) {comment_marks = c;};
+    void AddCommentMark(const std::string &c);
+    void RemoveCommentMark(const std::string &c);
+    void EraseCommentMarks();
     bool OpenFile(const std::string &path);
     void CloseFile();
     void OpenBuffer(char *);

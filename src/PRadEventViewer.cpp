@@ -447,9 +447,6 @@ void PRadEventViewer::readModuleList()
 
     while (c_parser.ParseLine())
     {
-        if(!c_parser.NbofElements())
-            continue; // comment
-
         if(c_parser.NbofElements() == 13) {
             moduleName = QString::fromStdString(c_parser.TakeFirst());
             daqAddr.crate = c_parser.TakeFirst().ULong();
@@ -702,6 +699,7 @@ void PRadEventViewer::openDataFile()
          << endl;
 
     updateEventRange();
+
 }
 
 // open pedestal file

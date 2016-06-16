@@ -812,9 +812,6 @@ void PRadDataHandler::ReadTDCList(const string &path)
 
     while (c_parser.ParseLine())
     {
-        if(!c_parser.NbofElements())
-            continue; // comment
-
        if(c_parser.NbofElements() == 4) {
             name = c_parser.TakeFirst();
             addr.crate = c_parser.TakeFirst().ULong();
@@ -851,9 +848,6 @@ void PRadDataHandler::ReadChannelList(const string &path)
     // some info that is not read from list
     while (c_parser.ParseLine())
     {
-        if(!c_parser.NbofElements())
-            continue;
-
         if(c_parser.NbofElements() >= 10) {
             moduleName = c_parser.TakeFirst();
             daqAddr.crate = c_parser.TakeFirst().ULong();
@@ -895,9 +889,6 @@ void PRadDataHandler::ReadEPICSChannels(const string &path)
 
     while(c_parser.ParseLine())
     {
-        if(!c_parser.NbofElements())
-            continue;
-
         if(c_parser.NbofElements() == 1) {
             name = c_parser.TakeFirst();
             if(epics_map.find(name) == epics_map.end()) {
@@ -935,9 +926,6 @@ void PRadDataHandler::ReadPedestalFile(const string &path)
 
     while(c_parser.ParseLine())
     {
-        if(!c_parser.NbofElements())
-            continue;
-
         if(c_parser.NbofElements() == 5) {
             daqInfo.crate = c_parser.TakeFirst().ULong();
             daqInfo.slot = c_parser.TakeFirst().ULong();
@@ -974,9 +962,6 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
 
     while(c_parser.ParseLine())
     {
-        if(!c_parser.NbofElements())
-            continue;
-
         if(c_parser.NbofElements() == 5) {
             vector<double> ref_gain;
             name = c_parser.TakeFirst();
@@ -1024,9 +1009,6 @@ void PRadDataHandler::ReadGainFactor(const string &path, const int &ref)
 
     while(c_parser.ParseLine())
     {
-        if(!c_parser.NbofElements())
-            continue;
-
         if(c_parser.NbofElements() == 2) {
             name = c_parser.TakeFirst();
             ref_gain[0] = c_parser.TakeFirst().Double();

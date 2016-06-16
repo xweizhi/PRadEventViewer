@@ -201,9 +201,6 @@ void PRadHVSystem::RestoreSetting(const string &path)
 
     while(c_parser.ParseLine())
     {
-        if(c_parser.NbofElements() != 6)
-            continue;
-
         string crate_name, channel_name;
         int slot;
         unsigned short channel;
