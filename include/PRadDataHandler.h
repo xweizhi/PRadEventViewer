@@ -114,6 +114,7 @@ public:
     // show data
     int GetCurrentEventNb();
     void ChooseEvent(const int &idx = -1);
+    void ChooseEvent(const EventData &event);
     unsigned int GetEventCount() {return energyData.size();};
     unsigned int GetEPICSEventCount() {return epicsData.size();};
     unsigned int GetScalarCount(const unsigned int &group = 0, const bool &gated = false);
@@ -145,6 +146,7 @@ public:
     void CorrectGainFactor(const int &run = 0, const int &ref = 2);
     void RefillEnergyHist();
     void RefillChannelHists();
+    int FindEvent(const int &event_number);
 
     // other functions
     int GetRunNumberFromFileName(const std::string &name, const size_t &pos = 0, const bool &verbose = true);
@@ -156,6 +158,7 @@ private:
     double totalE;
     double charge;
     bool onlineMode;
+    int current_event;
 #ifdef MULTI_THREAD
     std::mutex myLock;
 #endif

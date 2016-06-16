@@ -271,11 +271,15 @@ void PRadEventViewer::createMainMenu()
     QAction *showCustomAction = toolMenu->addAction(tr("Show Custom Map"));
     showCustomAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_C));
 
+    QAction *findEventAction = toolMenu->addAction(tr("Find Event"));
+    findEventAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_E));
+
     connect(eraseAction, SIGNAL(triggered()), this, SLOT(eraseBufferAction()));
     connect(findPeakAction, SIGNAL(triggered()), this, SLOT(findPeak()));
     connect(fitHistAction, SIGNAL(triggered()), this, SLOT(fitHistogram()));
     connect(snapShotAction, SIGNAL(triggered()), this, SLOT(takeSnapShot()));
     connect(showCustomAction, SIGNAL(triggered()), this, SLOT(openCustomMap()));
+    connect(findEventAction, SIGNAL(triggered()), this, SLOT(findEvent()));
 
     menuBar()->addMenu(toolMenu);
 
@@ -389,7 +393,7 @@ void PRadEventViewer::setupInfoWindow()
     // add new items to status info
     QStringList statusProperty;
     statusProperty << tr("  Module ID") << tr("  Module Type") << tr("  DAQ Address") << tr("  TDC Group") << tr("  HV Address") << tr("  Occupancy")
-                   << tr("  Pedestal") << tr("  Event No.") << tr("  Energy") << tr("  ADC Count") << tr("  High Voltage") << tr("  Custom (Editable)");
+                   << tr("  Pedestal") << tr("  Event Number") << tr("  Energy") << tr("  ADC Count") << tr("  High Voltage") << tr("  Custom (Editable)");
 
     for(int i = 0; i < 6; ++i) // row iteration
     {
@@ -792,6 +796,42 @@ void PRadEventViewer::openCustomMap()
     }
 }
 
+void PRadEventViewer::findEvent()
+{
+    QDialog dialog(this);
+    // Use a layout allowing to have a label next to each field
+    QFormLayout form(&dialog);
+
+    // Add some text above the fields
+    form.addRow(new QLabel("Find event from data bank:"));
+
+    // Add the lineEdits with their respective labels
+    QVector<QLineEdit *> fields;
+    QString label = "Event Number: ";
+
+    QLineEdit *lineEdit = new QLineEdit(&dialog);
+    form.addRow(label, lineEdit);
+
+    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                               Qt::Horizontal, &dialog);
+    form.addRow(&buttonBox);
+    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+    QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+
+    // Show the dialog as modal
+    if (dialog.exec() == QDialog::Accepted) {
+        // If the user didn't dismiss the dialog, do something with the fields
+        int index = handler->FindEvent(lineEdit->text().toInt());
+        if(index >= 0)
+            eventSpin->setValue(index + 1);
+        else {
+            QMessageBox::critical(this, "Find Event", "Event " + lineEdit->text() + " is not found in bank.");
+        }
+    }
+
+}
+
 void PRadEventViewer::changeHistType(int index)
 {
     histType = (HistType)index;
@@ -963,7 +1003,7 @@ void PRadEventViewer::UpdateStatusInfo()
                  + tr(" \261 ")
 #endif
                  + QString::number(ped.sigma,'f',2)                       // pedestal sigma
-              << QString::number(currentEvent)                            // current event
+              << QString::number(handler->GetCurrentEventNb())            // current event
               << QString::number(selection->GetEnergy()) + tr(" MeV / ")  // energy
                  + QString::number(handler->GetEnergy()) + tr(" MeV")     // total energy
               << QString::number(selection->GetADC())                     // ADC value
@@ -1424,8 +1464,6 @@ void PRadEventViewer::onlineUpdate(const size_t &max_events)
         for(num = 0; etChannel->Read() && num < max_events; ++num)
         {
             handler->Decode(etChannel->GetBuffer());
-            // update current event information
-            currentEvent = handler->GetCurrentEventNb();
         }
 
         if(num) {

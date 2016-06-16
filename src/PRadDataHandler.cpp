@@ -26,7 +26,8 @@
 using namespace std;
 
 PRadDataHandler::PRadDataHandler()
-: parser(new PRadEvioParser(this)), totalE(0), charge(0), onlineMode(false)
+: parser(new PRadEvioParser(this)),
+   totalE(0), charge(0), onlineMode(false), current_event(0)
 {
     // total energy histogram
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
@@ -398,9 +399,20 @@ void PRadDataHandler::EndofThisEvent(const unsigned int &ev)
 // show the event to event viewer
 void PRadDataHandler::ChooseEvent(const int &idx)
 {
-    totalE = 0;
-    EventData event;
+    if (energyData.size()) { // offline mode, pick the event given by console
+        if((unsigned int) idx >= energyData.size())
+            ChooseEvent(energyData.back());
+        else
+            ChooseEvent(energyData.at(idx));
+    } else {
+        cout << "Data Handler: Data bank is empty, no event is chosen." << endl;
+        return;
+    }
+}
 
+void PRadDataHandler::ChooseEvent(const EventData &event)
+{
+    totalE = 0;
     // != avoids operator definition for non-standard map
     for(auto &channel : channelList)
     {
@@ -410,15 +422,6 @@ void PRadDataHandler::ChooseEvent(const int &idx)
     for(auto &tdc_ch : tdcList)
     {
         tdc_ch->ClearTimeMeasure();
-    }
-
-    if (energyData.size()) { // offline mode, pick the event given by console
-        if((unsigned int) idx >= energyData.size())
-            event = energyData.back();
-        else
-            event = energyData.at(idx);
-    } else {
-        return;
     }
 
     for(auto &adc : event.adc_data)
@@ -431,6 +434,8 @@ void PRadDataHandler::ChooseEvent(const int &idx)
     {
         tdcList[tdc.channel_id]->AddTimeMeasure(tdc.value);
     }
+
+    current_event = event.event_number;
 }
 
 // find channels
@@ -475,7 +480,7 @@ PRadTDCGroup *PRadDataHandler::GetTDCGroup(const ChannelAddress &addr)
 
 int PRadDataHandler::GetCurrentEventNb()
 {
-    return (int)parser->GetEventNumber();
+    return current_event;
 }
 
 vector<epics_ch> PRadDataHandler::GetSortedEPICSList()
@@ -1294,3 +1299,52 @@ int PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &
 
     return 0;
 }
+
+// find event by its event number
+// it is assumed the files decoded are all from 1 single run and they are loaded in order
+// otherwise this function will not work properly
+int PRadDataHandler::FindEvent(const int &ev)
+{
+    int result = -1;
+
+    if(ev < 0) {
+        cout << "Data Handler: Cannot find event with negative event number!" << endl;
+        return result;
+    }
+
+    if(!energyData.size()) {
+        cout << "Data Handler: No event found since data bank is empty." << endl;
+        return result;
+    }
+
+    int data_begin = 0;
+    int data_end = (int)energyData.size() - 1;
+
+    int first_event = energyData.at(0).event_number;
+
+    if(ev > first_event) {
+        int index = ev - first_event;
+        if(index >= data_end)
+            index = data_end;
+        int diff = energyData.at(index).event_number - ev;
+        while(diff > 0)
+        {
+            index -= diff;
+            if(index <= 0) {
+                index = 0;
+                break;
+            }
+            diff = energyData.at(index).event_number - ev;
+        }
+
+        data_begin = index;
+    }
+
+    for(int i = data_begin; i < data_end; ++i) {
+        if(energyData.at(i) == ev)
+            return i;
+    }
+
+    return result;
+}
+
