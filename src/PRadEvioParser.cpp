@@ -31,7 +31,7 @@ PRadEvioParser::~PRadEvioParser()
 }
 
 // Simple binary reading for evio format files
-void PRadEvioParser::ReadEvioFile(const char *filepath)
+void PRadEvioParser::ReadEvioFile(const char *filepath, const bool &verbose)
 {
     ifstream evio_in(filepath, ios::binary | ios::in);
 
@@ -45,6 +45,10 @@ void PRadEvioParser::ReadEvioFile(const char *filepath)
     evio_in.seekg(0, evio_in.beg);
 
     uint32_t *buffer = new uint32_t[MAX_BUFFER_SIZE];
+
+    if(verbose) {
+        cout << "Reading evio file " << filepath << endl;
+    }
 
     while(evio_in.tellg() < length && evio_in.tellg() != -1)
     {

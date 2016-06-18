@@ -18,6 +18,7 @@
 #include "datastruct.h"
 #include "PRadEventStruct.h"
 #include "PRadException.h"
+#include "ConfigParser.h"
 
 class PRadEvioParser;
 class PRadDAQUnit;
@@ -26,6 +27,17 @@ class PRadGEMSystem;
 class PRadGEMAPV;
 class TH1D;
 class TH2I;
+
+// helper struct
+struct epics_ch
+{
+    std::string name;
+    size_t id;
+
+    epics_ch(const std::string &n, const size_t &i)
+    : name(n), id(i)
+    {};
+};
 
 // a simple hash function for DAQ configuration
 namespace std
@@ -45,17 +57,6 @@ namespace std
         }
     };
 }
-
-// helper struct
-struct epics_ch
-{
-    std::string name;
-    size_t id;
-
-    epics_ch(const std::string &n, const size_t &i)
-    : name(n), id(i)
-    {};
-};
 
 class PRadDataHandler
 {
@@ -84,6 +85,8 @@ public:
  
     // read config files
     void ReadConfig(const std::string &path);
+    template<typename... Args>
+    void ExecuteConfigCommand(void (PRadDataHandler::*act)(Args...), Args&&... args);
     void ReadTDCList(const std::string &path);
     void ReadGEMConfiguration(const std::string &path);
     void ReadChannelList(const std::string &path);
@@ -103,7 +106,7 @@ public:
     void ReadEPICSMapFromDST(std::ifstream &dst_file) throw(PRadException);
 
     // evio data file
-    void ReadFromEvio(const std::string &path);
+    void ReadFromEvio(const std::string &path, const int &split = -1, const bool &verbose = false);
     void Decode(const void *buffer);
 
     // data handler

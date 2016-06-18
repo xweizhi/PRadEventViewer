@@ -88,6 +88,7 @@ public:
     double Double();
     long double LongDouble();
     const char *c_str();
+    std::string String() {return _value;};
 
     operator std::string() const
     {

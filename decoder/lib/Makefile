@@ -70,7 +70,7 @@ first: all
 $(TARGET):  $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
-all: Makefile $(TARGET) cleanobj
+all: Makefile $(TARGET)
 
 clean: cleanobj cleantgt
 

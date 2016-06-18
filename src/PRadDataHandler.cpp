@@ -71,7 +71,7 @@ PRadDataHandler::~PRadDataHandler()
 void PRadDataHandler::ReadConfig(const string &path)
 {
     ConfigParser c_parser;
-    c_parser.SetSplitters(":, \t");
+    c_parser.SetSplitters(":,");
 
     if(!c_parser.OpenFile(path)) {
         cerr << "Data Handler: Cannot open configuration file "
@@ -81,8 +81,51 @@ void PRadDataHandler::ReadConfig(const string &path)
 
     while(c_parser.ParseLine())
     {
-
+        string func_name = c_parser.TakeFirst();
+        if((func_name.find("TDC List") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::ReadTDCList, var1);
+        }
+        if((func_name.find("Channel List") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::ReadChannelList, var1);
+        }
+        if((func_name.find("EPICS Channel") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::ReadEPICSChannels, var1);
+        }
+        if((func_name.find("HyCal Pedestal") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::ReadPedestalFile, var1);
+        }
+        if((func_name.find("HyCal Calibration") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::ReadCalibrationFile, var1);
+        }
+        if((func_name.find("GEM Configuration") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::ReadGEMConfiguration, var1);
+        }
+        if((func_name.find("GEM Pedestal") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::ReadGEMPedestalFile, var1);
+        }
+        if((func_name.find("Run Number") != string::npos)) {
+            const int var1 = c_parser.TakeFirst().Int();
+            ExecuteConfigCommand(&PRadDataHandler::SetRunNumber, var1);
+        }
+        if((func_name.find("Initialize File") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::InitializeByData, var1, -1, 2);
+        }
     }
+}
+
+// execute command
+template<typename... Args>
+void PRadDataHandler::ExecuteConfigCommand(void (PRadDataHandler::*act)(Args...), Args&&... args)
+{
+    (this->*act)(std::forward<Args>(args)...);
 }
 
 // decode event buffer
@@ -1111,7 +1154,8 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
         input.open(path, mode);
 
         if(!input.is_open()) {
-            cerr << "Data Handler: Cannot open input dst file " << path
+            cerr << "Data Handler: Cannot open input dst file "
+                 << "\"" << path << "\""
                  << ", stop reading!" << endl;
             return;
         }
@@ -1139,6 +1183,9 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
                  << endl;
             return;
         }
+
+        cout << "Data Handler: Reading DST file "
+             << "\"" << path << "\"." << endl;
 
         while(input.tellg() < length && input.tellg() != -1)
         {
@@ -1337,9 +1384,17 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EPICSData &data) thro
         dst_file.write((char*) &value, sizeof(value));
 }
 
-void PRadDataHandler::ReadFromEvio(const string &path)
+void PRadDataHandler::ReadFromEvio(const string &path, const int &split, const bool &verbose)
 {
-    parser->ReadEvioFile(path.c_str());
+    if(split < 0) {// default input, no split
+        parser->ReadEvioFile(path.c_str(), verbose);
+    } else {
+        for(int i = 0; i < split; ++i)
+        {
+            string split_path = path + "." + to_string(i);
+            parser->ReadEvioFile(split_path.c_str(), verbose);
+        }
+    }
 }
 
 void PRadDataHandler::InitializeByData(const string &path, int run, int ref)

@@ -16,7 +16,7 @@ public:
     virtual ~PRadEvioParser();
     unsigned int GetEventNumber() {return event_number;};
     void SetEventNumber(const unsigned int &ev) {event_number = ev;};
-    void ReadEvioFile(const char *filepath);
+    void ReadEvioFile(const char *filepath, const bool &verbose = false);
     void ParseEventByHeader(PRadEventHeader *evtHeader);
 
     static PRadTriggerType bit_to_trigger(const unsigned int &bit);

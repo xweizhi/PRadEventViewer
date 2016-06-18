@@ -481,8 +481,10 @@ vector<GEM_Data> PRadGEMAPV::GetZeroSupHits()
            i += 10;
 
            if( i + TIME_SAMPLE_SIZE >= buffer_size) {
-               cerr << "GEM APV: Warning, get a time sample ends at index "
-                    << i << ", it exceeds the buffer size " << buffer_size
+               cerr << "GEM APV: FEC " << fec_id
+                    << ", ADC " << adc_ch << ". Warning, time sample "
+                    << time_sample << " ends at index "
+                    << i + TIME_SAMPLE_SIZE << ", it exceeds the buffer size " << buffer_size
                     << endl;
                break;
            }
@@ -581,8 +583,8 @@ void PRadGEMAPV::BuildStripMap()
 int PRadGEMAPV::GetStrip(const size_t &ch)
 {
    if(ch >= TIME_SAMPLE_SIZE) {
-       cerr << "GEM APV: APV " << adc_ch
-            << " in FEC " << fec_id
+       cerr << "GEM APV: FEC " << fec_id
+            << ", ADC " << adc_ch
             << " only has " << TIME_SAMPLE_SIZE
             << " channels." << endl;
    }

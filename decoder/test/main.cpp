@@ -5,13 +5,7 @@
 // 02/27/2016                                                                 //
 //============================================================================//
 
-#include "PRadDataHandler.h"
-#include "PRadEvioParser.h"
-#include "PRadBenchMark.h"
-#include "PRadDAQUnit.h"
-#include "PRadGEMSystem.h"
-#include "evioUtil.hxx"
-#include "evioFileChannel.hxx"
+#include "PRadDecoder.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -24,22 +18,7 @@ int main(int /*argc*/, char * /*argv*/ [])
     PRadDataHandler *handler = new PRadDataHandler();
 
     // read configuration files
-    handler->ReadEPICSChannels("config/epics_channels.txt");
-    handler->ReadTDCList("config/tdc_group_list.txt");
-    handler->ReadChannelList("config/module_list.txt");
-
-    // build map for channels
-    handler->BuildChannelMap();
-
-    // read basic pedestal, this step is not necessary
-    // you can get pedestal from the first data file
-    handler->ReadPedestalFile("config/pedestal.dat");
-
-    // read basic calibration constants, this step is required to get correct energy
-    handler->ReadCalibrationFile("config/calibration.txt");
-
-    handler->ReadGEMConfiguration("config/gem_map.cfg");
-    handler->ReadGEMPedestalFile("config/gem_ped.dat");
+    handler->ReadConfig("config.txt");
     //handler->GetSRS()->SetUnivTimeSample(5);
     //handler->GetSRS()->SetUnivZeroSupThresLevel(5);
 
