@@ -12,7 +12,7 @@
 #include "PRadReconstructor.h"
 #include "PRadDataHandler.h"
 #include "PRadDAQUnit.h"
-
+#include "PRadTDCGroup.h"
 using namespace std;
 
 //____________________________________________________________
@@ -23,8 +23,9 @@ PRadReconstructor::PRadReconstructor(){
     fBaseR = 60.;
     fCorrectFactor = 1.;
     fMaxNCluster = 10;
-    fMinClusterCenterE = 20.;
-    fMinClusterE = 100.;
+    fMinClusterCenterE = 10.;
+    fMinClusterE = 50.;
+    fHighestModuleID = 0;
 }
 //____________________________________________________________
 void PRadReconstructor::Clear()
@@ -69,27 +70,31 @@ ConfigValue PRadReconstructor::GetConfigValue(const string &name)
 //________________________________________________________________
 vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(const int &event_index)
 {
-    fHandler->ChooseEvent(event_index);
     Clear(); // clear all the saved buffer before analyzing the next event
 
+    fHandler->ChooseEvent(event_index);
     double weightX = 0.;
     double weightY = 0.;
     double totalWeight = 0.;
 
     for (unsigned short i = 0; i < fMaxNCluster; ++i)
     {
-        int theMaxModuleID = getMaxEChannel();
+        unsigned short theMaxModuleID = getMaxEChannel();
    
         if (theMaxModuleID == 0xffff)
             break;//this happens if no module has large enough energy
     
         double clusterEnergy = 0.;
+        PRadDAQUnit::ChannelType thisType = fModuleList.at(theMaxModuleID)->GetType();
         vector<unsigned short> collection = findCluster(theMaxModuleID, clusterEnergy);
-    
-        if (clusterEnergy <= fMinClusterE || collection.size() <= 1) {
+        
+        if (clusterEnergy <= fMinClusterE || (thisType == PRadDAQUnit::LeadTungstate && collection.size() <= 3) 
+            || (thisType == PRadDAQUnit::LeadGlass && collection.size() <= 1)) {
             --i;
             continue;
         }
+
+        vector<unsigned short> clusterTime = GetTimeForCluster(theMaxModuleID);
 
         weightX = 0.;
         weightY = 0.;
@@ -107,7 +112,7 @@ vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(const int &event_ind
 
             double weight = thisModule->GetEnergy()/clusterEnergy;
             if (useLogWeight(thisX, thisY))
-                weight = 10. + log(weight);
+                weight = 4.6 + log(weight);
 
             if (weight > 0.) {
                 weightX += weight*thisX;
@@ -119,7 +124,7 @@ vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(const int &event_ind
         double hitX = weightX/totalWeight;
         double hitY = weightY/totalWeight;
     
-        fHyCalHit.push_back(HyCalHit(hitX, hitY, clusterEnergy));
+        fHyCalHit.push_back(HyCalHit(hitX, hitY, clusterEnergy, clusterTime));
     }
  
     return fHyCalHit; 
@@ -127,56 +132,42 @@ vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(const int &event_ind
 //____________________________________________________________
 unsigned short PRadReconstructor::getMaxEChannel()
 {
-    double theMaxValue = 0;
-    unsigned short theMaxChannelID = 0xffff;
-    bool foundNewCenter = false; 
-    for (unsigned int i = 0; i < fModuleList.size(); ++i)
-    {
+  double theMaxValue = 0;
+  bool foundNewCenter = false;
+  unsigned short theMaxChannelID = 0xffff;
+  for (unsigned int i = 0; i < fModuleList.size(); ++i)
+  {
     // if have not found the module with maxmimum energy then find it
     // otherwise check if the next maximum is too close to the existing center
-        PRadDAQUnit* thisModule = fModuleList.at(i);
-        if (!thisModule->IsHyCalModule())
-            continue;
-        if (fClusterCenterID.empty()) { 
-            if ( thisModule->GetEnergy() > theMaxValue && 
-                 thisModule->GetEnergy() > fMinClusterCenterE)
-            {
-                foundNewCenter = true;
-                theMaxValue = thisModule->GetEnergy();
-                theMaxChannelID = i;
-            }
-        } else {
-            if ( thisModule->GetEnergy() > fMinClusterCenterE) {
-                double theClusterRadius = fBaseR;
-          
-                if ( thisModule->GetType() == PRadDAQUnit::LeadGlass )
-                    theClusterRadius = fMoliereRatio*fBaseR;
-        
-                double distance = 120.;
-                bool ok = true;
+    PRadDAQUnit* thisModule = fModuleList.at(i);
+    if (!thisModule->IsHyCalModule()) continue;
+    if (thisModule->GetEnergy() < fMinClusterCenterE) continue;
 
-                for (unsigned int j = 0; j < fClusterCenterID.size(); ++j)
-                {
-                    PRadDAQUnit* lastCenterModule = fModuleList.at( fClusterCenterID.at(j) );
-                    distance = fmin( distance, Distance( thisModule, lastCenterModule ) );
-                    if (distance < 2*theClusterRadius) {
-                        ok = false;
-                       //theMaxChannelID = i;
-                    }
-                }
+    double theClusterRadius = fBaseR;
+    if ( thisModule->GetType() == PRadDAQUnit::LeadGlass )
+    theClusterRadius = fMoliereRatio*fBaseR;
 
-                if (ok) {
-                    foundNewCenter = true;
-                    theMaxChannelID = i;
-                }
-            }         
+    double distance = 1e4;
+    bool ok = true;
+    for (unsigned int j = 0; j < fClusterCenterID.size(); ++j){
+        PRadDAQUnit* lastCenterModule = fModuleList.at( fClusterCenterID.at(j) );
+        distance = Distance( thisModule, lastCenterModule ) ;
+        if (distance < 2*theClusterRadius) {
+          ok = false;
+          continue;
         }
     }
+    if (!ok) continue;
+    if ( thisModule->GetEnergy() > theMaxValue) {
+       foundNewCenter = true;
+       theMaxValue = thisModule->GetEnergy();
+       theMaxChannelID = i;
+    }
+  }
 
-    if (foundNewCenter)
-        fClusterCenterID.push_back(theMaxChannelID);
-
-    return theMaxChannelID;
+  if (foundNewCenter)
+  fClusterCenterID.push_back(theMaxChannelID);
+  return theMaxChannelID;
 }
 //__________________________________________________________________________________________
 inline bool PRadReconstructor::useLogWeight(double /*x*/, double /*y*/)
@@ -253,3 +244,50 @@ double PRadReconstructor::Distance(const vector<double> &p1, const vector<double
 
     return sqrt(quadratic_sum);
 }
+//________________________________________________________________________________________________
+vector<unsigned short> & PRadReconstructor::GetTimeForCluster(unsigned short channelID)
+{
+  PRadTDCGroup* thisGroup = fHandler->GetTDCGroup(fHandler->GetChannel(channelID)
+                                                  ->GetTDCName());
+  return thisGroup->GetTimeMeasure();
+}
+//________________________________________________________________________________________________
+unsigned short PRadReconstructor::FindClusterCenterModule(double x, double y)
+{
+    for (unsigned short i=0; i<fModuleList.size(); i++){
+       PRadDAQUnit::Geometry thisGeometry = fModuleList.at(i)->GetGeometry();
+       if ( fabs(x - thisGeometry.x) < thisGeometry.size_x/2. &&
+            fabs(y - thisGeometry.y) < thisGeometry.size_y/2. ) { return i; }
+    }
+    return 0xffff;
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

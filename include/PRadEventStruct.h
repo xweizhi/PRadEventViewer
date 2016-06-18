@@ -52,17 +52,19 @@ struct EPICSData
 
 struct EventData
 {
-// members
+    // event info
     int event_number;
     unsigned char type;
     unsigned char trigger;
     uint64_t timestamp;
     int last_epics;
+
+    // data banks
     std::vector< ADC_Data > adc_data;
     std::vector< TDC_Data > tdc_data;
     std::vector< GEM_Data > gem_data;
 
-// constructors
+    // constructors
     EventData()
     : type(0), trigger(0), timestamp(0), last_epics(-1)
     {};
@@ -78,7 +80,7 @@ struct EventData
       adc_data(adc), tdc_data(tdc), gem_data(gem)
     {};
 
-// functions
+    // functions
     void initialize(const unsigned char &t = 0) // for data taking
     {
         type = t;
@@ -152,11 +154,12 @@ struct HyCalHit
     double x;
     double y;
     double E;
+    std::vector<unsigned short> time;
 
     HyCalHit() : x(0), y(0), E(0)
     {};
-    HyCalHit(const double &cx, const double &cy, const double &cE)
-    : x(cx), y(cy), E(cE)
+    HyCalHit(const double &cx, const double &cy, const double &cE, const std::vector<unsigned short> &t)
+    : x(cx), y(cy), E(cE), time(t)
     {};
 };
 

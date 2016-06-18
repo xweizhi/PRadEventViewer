@@ -21,14 +21,17 @@ public:
     ConfigValue GetConfigValue(const std::string &var_name);
     void Clear();
     void SetHandler(PRadDataHandler *theHandler);
-    std::vector<HyCalHit> &CoarseHyCalReconstruct(const int &idx = -1);
-  
+    std::vector<HyCalHit> &CoarseHyCalReconstruct(const int &event_index = -1);
+    unsigned short GetHighestModuleID() { return fHighestModuleID; }
+    unsigned short FindClusterCenterModule (double x, double y);
 protected:
+    
     unsigned short getMaxEChannel();
     //void GEMCoorToLab(float* x, float *y, int type);
     //void HyCalCoorToLab(float* x, float *y);
     bool useLogWeight(double x, double y);
     std::vector<unsigned short> findCluster(unsigned short cneterID, double &clusterEnergy);
+    std::vector<unsigned short> &GetTimeForCluster(unsigned short channelID);
 
     PRadDataHandler *fHandler;
     std::vector<PRadDAQUnit*> fModuleList;
@@ -38,6 +41,7 @@ protected:
     std::vector<float>* fGEM1YHit;
     std::vector<float>* fGEM2XHit;
     std::vector<float>* fGEM2YHit;
+    unsigned short fHighestModuleID;
 
     //for parameter from reconstruction data base
     int fMaxNCluster;

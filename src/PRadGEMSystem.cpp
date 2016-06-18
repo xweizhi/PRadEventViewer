@@ -1,3 +1,11 @@
+//============================================================================//
+// GEM DAQ System class                                                       //
+// Algorithm is based on the code from Kondo Gnanvo and Xinzhan Bai           //
+//                                                                            //
+// Chao Peng                                                                  //
+// 06/17/2016                                                                 //
+//============================================================================//
+
 #include "PRadGEMSystem.h"
 #include "ConfigParser.h"
 #include <iostream>
@@ -377,13 +385,21 @@ PRadGEMAPV::PRadGEMAPV(const std::string &p,
                        const int &idx,
                        const int &hl,
                        const std::string &s)
-: plane(p), fec_id(f), adc_ch(ch), orient(o), index(idx), header_level(hl), status(s)
+: plane(p), fec_id(f), adc_ch(ch), orient(o),
+  plane_index(idx), header_level(hl), status(s)
 {
 #define DEFAULT_MAX_CHANNEL 3096
     // should calculate this according to time_sample
     buffer_size = DEFAULT_MAX_CHANNEL;
 
     raw_data = new int[buffer_size];
+
+    if(status.find("split") != string::npos)
+        split = true;
+    else
+        split = false;
+
+    BuildStripMap();
 
     ClearData();
 }
@@ -403,6 +419,8 @@ void PRadGEMAPV::SetTimeSample(const size_t &t)
     delete[] raw_data;
 
     raw_data = new int[buffer_size];
+
+    ClearData();
 }
 
 void PRadGEMAPV::ClearData()
@@ -428,7 +446,7 @@ void PRadGEMAPV::UpdatePedestal(const Pedestal &ped, const size_t &index)
     pedestal[index] = ped;
 }
 
-void PRadGEMAPV::FeedData(const uint32_t *buf, const size_t &size)
+void PRadGEMAPV::FillRawData(const uint32_t *buf, const size_t &size)
 {
     if(2*size > buffer_size) {
         cerr << "Received " << size * 2 << " adc words, "
@@ -481,7 +499,10 @@ vector<GEM_Data> PRadGEMAPV::GetZeroSupHits()
 
 void PRadGEMAPV::ZeroSuppression(vector<GEM_Data> &hits, int *buf, const size_t &time_sample)
 {
-    CommonModeCorrection(buf, TIME_SAMPLE_SIZE);
+    if(split)
+        CommonModeCorrection_Split(buf, TIME_SAMPLE_SIZE);
+    else
+        CommonModeCorrection(buf, TIME_SAMPLE_SIZE);
 
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
@@ -493,7 +514,7 @@ void PRadGEMAPV::ZeroSuppression(vector<GEM_Data> &hits, int *buf, const size_t 
 
 void PRadGEMAPV::CommonModeCorrection(int *buf, const size_t &size)
 {
-    int effect_ch = 0;
+    int count = 0;
     float average = 0;
 
     for(size_t i = 0; i < size; ++i)
@@ -502,14 +523,121 @@ void PRadGEMAPV::CommonModeCorrection(int *buf, const size_t &size)
 
         if(buf[i] < pedestal[i].noise * common_thres) {
             average += buf[i];
-            effect_ch++;
+            count++;
         }
     }
 
-    if(effect_ch)
-        average /= effect_ch;
+    if(count)
+        average /= (float)count;
+
     for(size_t i = 0; i < size; ++i)
     {
         buf[i] -= average;
     }
 }
+
+void PRadGEMAPV::CommonModeCorrection_Split(int *buf, const size_t &size)
+{
+    int count1 = 0, count2 = 0;
+    float average1 = 0, average2 = 0;
+
+    for(size_t i = 0; i < size; ++i)
+    {
+        buf[i] -= pedestal[i].offset;
+
+        if(buf[i] < pedestal[i].noise * common_thres) {
+            if(strip_map[i] < 16) {
+                average1 += buf[i];
+                count1++;
+            } else {
+                average2 += buf[i];
+                count2++;
+            }
+        }
+    }
+
+    if(count1)
+        average1 /= (float)count1;
+    if(count2)
+        average2 /= (float)count2;
+
+    for(size_t i = 0; i < size; ++i)
+    {
+        if(strip_map[i] < 16)
+            buf[i] -= average1;
+        else
+            buf[i] -= average2;
+    }
+}
+
+void PRadGEMAPV::BuildStripMap()
+{
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        strip_map[i] = (unsigned char)MapStrip((int)i);
+    }
+}
+
+int PRadGEMAPV::GetStrip(const size_t &ch)
+{
+   if(ch >= TIME_SAMPLE_SIZE) {
+       cerr << "GEM APV: APV " << adc_ch
+            << " in FEC " << fec_id
+            << " only has " << TIME_SAMPLE_SIZE
+            << " channels." << endl;
+   }
+
+   return (int)strip_map[ch];
+}
+
+int PRadGEMAPV::MapStrip(const int &ch)
+{
+    // APV25 Internal Channel Mapping
+    int strip = 32*(ch%4) + 8*(ch/4) - 31*(ch/16);
+
+    // APV25 Channel to readout strip Mapping
+    if((plane.find("X") != string::npos) && (plane_index == 11)) {
+        if(strip & 1)
+            strip = 48 - (strip + 1)/2;
+        else 
+            strip = 48 + strip/2;
+    } else {
+        if(strip & 1)
+            strip = 32 - (strip + 1)/2;
+        else
+            strip = 32 + strip/2;
+    }
+
+    strip &= 0x7f;
+
+    return strip;
+}
+
+/* strip comparison
+  //------------ APV25 Internal Channel Mapping
+  int ref = (32 * (ch%4)) + (8 * (ch/4)) - (31 * (ch/16)) ;
+
+  //------------ APV25 Channel to readout strip Mapping
+  if((plane.find("X") != string::npos) && (plane_index == 11)) {
+    if (ref % 2 == 0)
+      ref = ( ref / 2) + 48 ;
+    else
+      if (ref < 96)
+        ref = (95 - ref) / 2 ;
+      else
+        ref = 127 + (97 - ref) / 2 ;
+  }
+  else { // NON (fDetectorType == "PRADGEM") && (fPlane.Contains("Y")) && (fAPVIndex == 11)
+    if (ref % 2 == 0)
+      ref = ( ref / 2) + 32 ;
+    else
+      if (ref < 64)
+        ref = (63 - ref) / 2 ;
+      else
+        ref = 127 + (65 - ref) / 2 ;
+  }
+  //   printf("PRDPedestal::PRadStripsFMapping ==>  APVID=%d, ref=%d, stripNo=%d, \n",fAPVID, chno, ref) ;
+
+    cout << fec_id << "  " << adc_ch << "  " << ch << "  " << strip << "  " << ref << endl;
+*/
+

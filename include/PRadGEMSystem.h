@@ -130,6 +130,7 @@ public:
 class PRadGEMAPV
 {
 #define TIME_SAMPLE_SIZE 128
+#define SPLIT_SIZE 16
 public:
     struct Pedestal
     {
@@ -147,7 +148,7 @@ public:
                const int &fec_id,
                const int &adc_ch,
                const int &orientation,
-               const int &index,
+               const int &plane_idx,
                const int &header_level,
                const std::string &status);
     virtual ~PRadGEMAPV();
@@ -157,26 +158,33 @@ public:
     void SetTimeSample(const size_t &t);
     void SetCommonModeThresLevel(const float &t) {common_thres = t;};
     void SetZeroSupThresLevel(const float &t) {zerosup_thres = t;};
-    void FeedData(const uint32_t *buf, const size_t &size);
+    void FillRawData(const uint32_t *buf, const size_t &size);
     void SplitData(const uint32_t &buf, int &word1, int &word2);
     void UpdatePedestalArray(Pedestal *ped, const size_t &size);
     void UpdatePedestal(const Pedestal &ped, const size_t &index);
     void ZeroSuppression(std::vector<GEM_Data> &hits, int *buf, const size_t &time_sample);
     void CommonModeCorrection(int *buf, const size_t &size);
+    void CommonModeCorrection_Split(int *buf, const size_t &size);
     std::vector<GEM_Data> GetZeroSupHits();
+    void BuildStripMap();
+    int MapStrip(const int &ch);
+    int GetStrip(const size_t &ch);
 
     std::string plane;
     int fec_id;
     int adc_ch;
     size_t time_samples;
     int orient;
-    int index;
+    int plane_index;
     int header_level;
+
+    bool split;
 
     float common_thres;
     float zerosup_thres;
     std::string status;
     Pedestal pedestal[TIME_SAMPLE_SIZE];
+    unsigned char strip_map[TIME_SAMPLE_SIZE];
     size_t buffer_size;
     int *raw_data;
 };

@@ -94,8 +94,12 @@ public:
     // dst data file
     void WriteToDST(const std::string &pat, std::ios::openmode mode = std::ios::out | std::ios::binary);
     void WriteToDST(std::ofstream &dst_file, const EventData &data) throw(PRadException);
+    void WriteToDST(std::ofstream &dst_file, const EPICSData &data) throw(PRadException);
+    void WriteEPICSMapToDST(std::ofstream &dst_file) throw(PRadException);
     void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
     void ReadFromDST(std::ifstream &dst_file, EventData &data) throw(PRadException);
+    void ReadFromDST(std::ifstream &dst_file, EPICSData &data) throw(PRadException);
+    void ReadEPICSMapFromDST(std::ifstream &dst_file) throw(PRadException);
 
     // evio data file
     void ReadFromEvio(const std::string &path);

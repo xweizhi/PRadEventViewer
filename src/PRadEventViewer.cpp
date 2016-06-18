@@ -671,7 +671,7 @@ void PRadEventViewer::openDataFile()
         codaData = QDir::currentPath();
 
     QStringList filters;
-    filters << "Data files (*.dat *.ev *.evio *.evio.*)"
+    filters << "Data files (*.dst *.ev *.evio *.evio.*)"
             << "All files (*)";
 
     QStringList fileList = getFileNames(tr("Choose a data file"), codaData, filters, "");
@@ -681,6 +681,8 @@ void PRadEventViewer::openDataFile()
 
     eraseModuleBuffer();
 
+    bool dst_reading = false;
+
     PRadBenchMark timer;
 
     for(QString &file : fileList)
@@ -688,8 +690,18 @@ void PRadEventViewer::openDataFile()
         //TODO, dialog to notice waiting
 //        QtConcurrent::run(this, &PRadEventViewer::readEventFromFile, fileName);
         fileName = file;
-        readEventFromFile(fileName);
+        if(fileName.contains(".dst")) {
+            handler->ReadFromDST(fileName.toStdString());
+            dst_reading = true;
+        } else {
+            readEventFromFile(fileName);
+        }
         UpdateStatusBar(DATA_FILE);
+    }
+
+    if(dst_reading) {
+        handler->RefillEnergyHist();
+        handler->RefillChannelHists();
     }
 
     cout << "Parsed " << handler->GetEventCount() << " events and "

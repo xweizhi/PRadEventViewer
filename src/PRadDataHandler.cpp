@@ -25,8 +25,7 @@
 
 #define EPICS_UNDEFINED_VALUE -9999.9
 
-#define PRAD_DST_FILE 0xc0c0c0
-#define DST_FILE_VERSION 0x18
+#define DST_FILE_VERSION 0x10  // 0xff
 
 using namespace std;
 
@@ -364,7 +363,7 @@ void PRadDataHandler::FeedData(GEMRawData &gemData)
     PRadGEMAPV *apv = gem_srs->GetAPV(gemData.fec, gemData.adc);
 
     if(apv) {
-        apv->FeedData(gemData.buf, gemData.size);
+        apv->FillRawData(gemData.buf, gemData.size);
     } else {
         cerr << "Data Handler: Did not find APV to accept GEM raw data, aborted data transfer!" << endl;
     }
@@ -1106,10 +1105,10 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
         int length = input.tellg();
         input.seekg(0, input.beg);
 
-        uint32_t version_info;
+        uint32_t version_info, event_info;
         input.read((char*) &version_info, sizeof(version_info));
 
-        if((version_info >> 8) != PRAD_DST_FILE) {
+        if((version_info >> 8) != PRad_DST_Header) {
             cerr << "Data Handler: Unrecognized PRad dst file, stop reading!" << endl;
             return;
         }
@@ -1128,18 +1127,45 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
 
         while(input.tellg() < length && input.tellg() != -1)
         {
-            EventData event;
-            ReadFromDST(input, event);
-            energyData.push_back(event);
+            input.read((char*) &event_info, sizeof(event_info));
+
+            if((event_info >> 8) != PRad_DST_EvHeader) {
+                cerr << "Data Handler: Unrecognized event header "
+                     << hex << setw(8) << setfill('0') << event_info
+                     <<" in PRad dst file, probably corrupted file!"
+                     << dec << endl;
+                return;
+            }
+
+            // read by event type
+            switch(event_info&0xff)
+            {
+            case PRad_DST_Event:
+              {
+                EventData event;
+                ReadFromDST(input, event);
+                energyData.push_back(event);
+              } break;
+            case PRad_DST_Epics:
+              {
+                EPICSData epics;
+                ReadFromDST(input, epics);
+                epicsData.push_back(epics);
+              } break;
+            case PRad_DST_Epics_Map:
+                ReadEPICSMapFromDST(input);
+            default:
+                break;
+            }
         }
 
     } catch(PRadException &e) {
         cerr << e.FailureType() << ": "
              << e.FailureDesc() << endl
-             << "Write to DST Aborted!" << endl;
+             << "Read from DST Aborted!" << endl;
     } catch(exception &e) {
         cerr << e.what() << endl
-             << "Write to DST Aborted!" << endl;
+             << "Read from DST Aborted!" << endl;
     }
 
     input.close();
@@ -1148,41 +1174,61 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
 
 void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRadException)
 {
-     if(!dst_file.is_open())
-         throw PRadException("READ DST", "input file is not opened!");
+    if(!dst_file.is_open())
+        throw PRadException("READ DST", "input file is not opened!");
 
-     // event information
-     dst_file.read((char*) &data.event_number, sizeof(data.event_number));
-     dst_file.read((char*) &data.type        , sizeof(data.type));
-     dst_file.read((char*) &data.trigger     , sizeof(data.trigger));
-     dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
+    // event information
+    dst_file.read((char*) &data.event_number, sizeof(data.event_number));
+    dst_file.read((char*) &data.type        , sizeof(data.type));
+    dst_file.read((char*) &data.trigger     , sizeof(data.trigger));
+    dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
+    dst_file.read((char*) &data.last_epics  , sizeof(data.last_epics));
 
-     size_t adc_size, tdc_size, gem_size;
-     ADC_Data adc;
-     TDC_Data tdc;
-     GEM_Data gemhit;
+    size_t adc_size, tdc_size, gem_size;
+    ADC_Data adc;
+    TDC_Data tdc;
+    GEM_Data gemhit;
 
-     dst_file.read((char*) &adc_size, sizeof(adc_size));
-     for(size_t i = 0; i < adc_size; ++i)
-     {
-         dst_file.read((char*) &adc, sizeof(adc));
-         data.add_adc(adc);
-     }
+    dst_file.read((char*) &adc_size, sizeof(adc_size));
+    for(size_t i = 0; i < adc_size; ++i)
+    {
+        dst_file.read((char*) &adc, sizeof(adc));
+        data.add_adc(adc);
+    }
     
-     dst_file.read((char*) &tdc_size, sizeof(tdc_size));
-     for(size_t i = 0; i < tdc_size; ++i)
-     {
-         dst_file.read((char*) &tdc, sizeof(tdc));
-         data.add_tdc(tdc);
-     }
+    dst_file.read((char*) &tdc_size, sizeof(tdc_size));
+    for(size_t i = 0; i < tdc_size; ++i)
+    {
+        dst_file.read((char*) &tdc, sizeof(tdc));
+        data.add_tdc(tdc);
+    }
 
-     dst_file.read((char*) &gem_size, sizeof(gem_size));
-     for(size_t i = 0; i < gem_size; ++i)
-     {
-         dst_file.read((char*) &gemhit, sizeof(gemhit));
-         data.add_gemhit(gemhit);
-     }
+    dst_file.read((char*) &gem_size, sizeof(gem_size));
+    for(size_t i = 0; i < gem_size; ++i)
+    {
+        dst_file.read((char*) &gemhit, sizeof(gemhit));
+        data.add_gemhit(gemhit);
+    }
 }
+
+void PRadDataHandler::ReadFromDST(ifstream &dst_file, EPICSData &data) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("READ DST", "input file is not opened!");
+
+    dst_file.read((char*) &data.event_number, sizeof(data.event_number));
+
+    size_t value_size;
+    dst_file.read((char*) &value_size, sizeof(value_size));
+
+    for(size_t i = 0; i < value_size; ++i)
+    {
+        float value;
+        dst_file.read((char*) &value, sizeof(value));
+        data.values.push_back(value);
+    }
+}
+
 
 void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
 {
@@ -1197,12 +1243,19 @@ void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
             return;
         }
 
-        uint32_t version_info = (PRAD_DST_FILE << 8) | DST_FILE_VERSION;
+        uint32_t version_info = (PRad_DST_Header << 8) | DST_FILE_VERSION;
         output.write((char*) &version_info, sizeof(version_info));
+
+        WriteEPICSMapToDST(output);
 
         for(auto &event : energyData)
         {
             WriteToDST(output, event);
+        }
+
+        for(auto &epics : epicsData)
+        {
+            WriteToDST(output, epics);
         }
 
     } catch(PRadException &e) {
@@ -1219,31 +1272,54 @@ void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
 
 void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) throw(PRadException)
 {
-     if(!dst_file.is_open())
-         throw PRadException("WRITE DST", "output file is not opened!");
+    if(!dst_file.is_open())
+        throw PRadException("WRITE DST", "output file is not opened!");
 
-     // event information
-     dst_file.write((char*) &data.event_number, sizeof(data.event_number));
-     dst_file.write((char*) &data.type        , sizeof(data.type));
-     dst_file.write((char*) &data.trigger     , sizeof(data.trigger));
-     dst_file.write((char*) &data.timestamp   , sizeof(data.timestamp));
+    // write header
+    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Event;
+    dst_file.write((char*) &event_info, sizeof(event_info));
 
-     // all data banks
-     size_t adc_size = data.adc_data.size();
-     size_t tdc_size = data.tdc_data.size();
-     size_t gem_size = data.gem_data.size();
+    // event information
+    dst_file.write((char*) &data.event_number, sizeof(data.event_number));
+    dst_file.write((char*) &data.type        , sizeof(data.type));
+    dst_file.write((char*) &data.trigger     , sizeof(data.trigger));
+    dst_file.write((char*) &data.timestamp   , sizeof(data.timestamp));
+    dst_file.write((char*) &data.last_epics  , sizeof(data.last_epics));
 
-     dst_file.write((char*) &adc_size, sizeof(adc_size));
-     for(auto &adc : data.adc_data)
-         dst_file.write((char*) &adc, sizeof(adc));
+    // all data banks
+    size_t adc_size = data.adc_data.size();
+    size_t tdc_size = data.tdc_data.size();
+    size_t gem_size = data.gem_data.size();
 
-     dst_file.write((char*) &tdc_size, sizeof(tdc_size));
-     for(auto &tdc : data.tdc_data)
-         dst_file.write((char*) &tdc, sizeof(tdc));
+    dst_file.write((char*) &adc_size, sizeof(adc_size));
+    for(auto &adc : data.adc_data)
+        dst_file.write((char*) &adc, sizeof(adc));
+
+    dst_file.write((char*) &tdc_size, sizeof(tdc_size));
+    for(auto &tdc : data.tdc_data)
+        dst_file.write((char*) &tdc, sizeof(tdc));
  
-     dst_file.write((char*) &gem_size, sizeof(gem_size));
-     for(auto &gem : data.gem_data)
-         dst_file.write((char*) &gem, sizeof(gem));
+    dst_file.write((char*) &gem_size, sizeof(gem_size));
+    for(auto &gem : data.gem_data)
+        dst_file.write((char*) &gem, sizeof(gem));
+}
+
+void PRadDataHandler::WriteToDST(ofstream &dst_file, const EPICSData &data) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("WRITE DST", "output file is not opened!");
+
+    // write header
+    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Epics;
+    dst_file.write((char*) &event_info, sizeof(event_info));
+
+    dst_file.write((char*) &data.event_number, sizeof(data.event_number));
+
+    size_t value_size = data.values.size();
+    dst_file.write((char*) &value_size, sizeof(value_size));
+
+    for(auto value : data.values)
+        dst_file.write((char*) &value, sizeof(value));
 }
 
 void PRadDataHandler::ReadFromEvio(const string &path)
@@ -1359,3 +1435,63 @@ int PRadDataHandler::FindEventIndex(const int &ev)
     return result;
 }
 
+void PRadDataHandler::WriteEPICSMapToDST(ofstream &dst_file) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("WRITE DST", "output file is not opened!");
+
+    // write header
+    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Epics_Map;
+    dst_file.write((char*) &event_info, sizeof(event_info));
+
+    event_info = PRad_DST_Epics_Channel;
+
+    vector<epics_ch> epics_channels = GetSortedEPICSList();
+
+    for(auto &ch : epics_channels)
+    {
+        dst_file.write((char*) &event_info, sizeof(event_info));
+        size_t str_size = ch.name.size();
+        dst_file.write((char*) &str_size, sizeof(str_size));
+        for(auto &c : ch.name)
+            dst_file.write((char*) &c, sizeof(c));
+        dst_file.write((char*) &ch.id, sizeof(ch.id));
+        dst_file.write((char*) &epics_values.at(ch.id), sizeof(epics_values.at(ch.id)));
+    }
+
+    event_info = PRad_DST_Epics_Map_End;
+    dst_file.write((char*) &event_info, sizeof(event_info));
+}
+
+void PRadDataHandler::ReadEPICSMapFromDST(ifstream &dst_file) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("READ DST", "input file is not opened!");
+
+    epics_map.clear();
+    epics_values.clear();
+
+    size_t str_size, id;
+    string str;
+    float value;
+
+    uint32_t event_info;
+    dst_file.read((char*) &event_info, sizeof(event_info));
+
+    while(event_info != PRad_DST_Epics_Map_End)
+    {
+        str = "";
+        dst_file.read((char*) &str_size, sizeof(str_size));
+        for(size_t i = 0; i < str_size; ++i)
+        {
+            char c;
+            dst_file.read(&c, sizeof(c));
+            str.push_back(c);
+        }
+        dst_file.read((char*) &id, sizeof(id));
+        dst_file.read((char*) &value, sizeof(value));
+        epics_map[str] = id;
+        epics_values.push_back(value);
+        dst_file.read((char*) &event_info, sizeof(event_info));
+    }
+}
