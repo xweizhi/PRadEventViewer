@@ -83,13 +83,14 @@ public:
     std::vector< PRadDAQUnit* > &GetChannelList() {return channelList;};
  
     // read config files
+    void ReadConfig(const std::string &path);
     void ReadTDCList(const std::string &path);
+    void ReadGEMConfiguration(const std::string &path);
     void ReadChannelList(const std::string &path);
     void ReadPedestalFile(const std::string &path);
     void ReadGEMPedestalFile(const std::string &path);
     void ReadCalibrationFile(const std::string &path);
     void ReadEPICSChannels(const std::string &path);
-    void ReadGEMConfiguration(const std::string &path);
 
     // dst data file
     void WriteToDST(const std::string &pat, std::ios::openmode mode = std::ios::out | std::ios::binary);
@@ -107,6 +108,7 @@ public:
 
     // data handler
     void Clear();
+    void SetRunNumber(const int &run) {run_number = run;};
     void StartofNewEvent(const unsigned char &tag);
     void EndofThisEvent(const unsigned int &ev = 0);
     void FeedData(JLabTIData &tiData);
@@ -152,19 +154,20 @@ public:
                       const double &range_max) throw(PRadException);
     void FitPedestal();
     void ReadGainFactor(const std::string &path, const int &ref = 2);
-    void CorrectGainFactor(const int &run = 0, const int &ref = 2);
+    void CorrectGainFactor(const int &ref = 2);
     void RefillEnergyHist();
     void RefillChannelHists();
     int FindEventIndex(const int &event_number);
 
     // other functions
-    int GetRunNumberFromFileName(const std::string &name, const size_t &pos = 0, const bool &verbose = true);
+    void GetRunNumberFromFileName(const std::string &name, const size_t &pos = 0, const bool &verbose = true);
     std::vector<epics_ch> GetSortedEPICSList();
     void SaveEPICSChannels(const std::string &path);
 
 private:
     PRadEvioParser *parser;
     PRadGEMSystem *gem_srs;
+    int run_number;
     double totalE;
     double charge;
     bool onlineMode;

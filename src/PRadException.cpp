@@ -75,3 +75,9 @@ string PRadException::FailureType(void) const throw()
 
     return(oss);
 }
+
+const char* PRadException::what() const throw()
+{
+    string failure = FailureType() + ": " + FailureDesc();
+    return failure.c_str();
+}

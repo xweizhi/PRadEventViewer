@@ -242,11 +242,11 @@ PRadGEMFEC *PRadGEMSystem::GetFEC(const int &id)
 PRadGEMAPV *PRadGEMSystem::GetAPV(const int &fec_id, const int &apv_id)
 {
     auto it = apv_map.find(GEMChannelAddress(fec_id, apv_id));
+
     if(it == apv_map.end()) {
-        cerr << "GEM System: Cannot find APV with id " << apv_id
-             << " in FEC " << fec_id << endl;
         return nullptr;
     }
+
     return it->second;
 }
 

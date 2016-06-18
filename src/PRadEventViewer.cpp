@@ -1264,11 +1264,10 @@ void PRadEventViewer::correctGainFactor()
     QRegExp reg("[0-9]{6}");
     if(reg.indexIn(fileName) != -1) {
         int run_number = reg.cap(0).toInt();
-        handler->CorrectGainFactor(run_number);
-    } else {
-        handler->CorrectGainFactor();
+        handler->SetRunNumber(run_number);
     }
 
+    handler->CorrectGainFactor();
     // Refill the histogram to show the changes
     handler->RefillEnergyHist();
     Refresh();

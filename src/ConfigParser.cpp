@@ -438,7 +438,21 @@ queue<string> ConfigParser::split(const string &str, const string &s)
     return eles;
 }
 
-vector<int> ConfigParser::find_integer(const string &str)
+int ConfigParser::find_integer(const string &str, const size_t &pos)
+{
+    vector<int> integers = find_integers(str);
+    if(pos >= integers.size())
+    {
+        cerr << "Config Parser: Cannot find " << pos + 1 << " integers from "
+             << "\"" << str << "\"."
+             << endl;
+        return 0;
+    }
+
+    return integers.at(pos);
+}
+
+vector<int> ConfigParser::find_integers(const string &str)
 {
     vector<int> result;
 

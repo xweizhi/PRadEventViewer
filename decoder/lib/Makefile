@@ -7,13 +7,13 @@
 #############################################################################
 
 MAKEFILE      = Makefile
-
+PRAD_PATH     = ../..
 ####### Compiler, tools and options
 
 CC            = gcc
 CXX           = g++
 CXXFLAGS      = -shared -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I. -I../include -I/u/apps/root/5.34.21/root/include
+INCPATH       = -I. -I$(PRAD_PATH)/include -I/u/apps/root/5.34.21/root/include
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
 MKDIR         = mkdir -p
@@ -39,15 +39,15 @@ STRIP         =
 
 ####### Files
 
-SOURCES       = ../src/PRadDAQUnit.cpp \
-		../src/PRadTDCGroup.cpp \
-		../src/PRadEvioParser.cpp \
-		../src/PRadDataHandler.cpp \
-                ../src/PRadException.cpp \
-                ../src/PRadBenchMark.cpp \
-                ../src/ConfigParser.cpp \
-                ../src/PRadReconstructor.cpp \
-                ../src/PRadGEMSystem.cpp
+SOURCES       = $(PRAD_PATH)/src/PRadDAQUnit.cpp \
+		$(PRAD_PATH)/src/PRadTDCGroup.cpp \
+		$(PRAD_PATH)/src/PRadEvioParser.cpp \
+		$(PRAD_PATH)/src/PRadDataHandler.cpp \
+                $(PRAD_PATH)/src/PRadException.cpp \
+                $(PRAD_PATH)/src/PRadBenchMark.cpp \
+                $(PRAD_PATH)/src/ConfigParser.cpp \
+                $(PRAD_PATH)/src/PRadReconstructor.cpp \
+                $(PRAD_PATH)/src/PRadGEMSystem.cpp
 
 OBJECTS       = PRadDAQUnit.o \
 		PRadTDCGroup.o \
@@ -80,32 +80,32 @@ cleanobj:
 cleantgt:
 	-$(DEL_FILE) $(TARGET)
 
-PRadDAQUnit.o: ../src/PRadDAQUnit.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadDAQUnit.o ../src/PRadDAQUnit.cpp
+PRadDAQUnit.o: $(PRAD_PATH)/src/PRadDAQUnit.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadDAQUnit.o $(PRAD_PATH)/src/PRadDAQUnit.cpp
 
-PRadTDCGroup.o: ../src/PRadTDCGroup.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadTDCGroup.o ../src/PRadTDCGroup.cpp
+PRadTDCGroup.o: $(PRAD_PATH)/src/PRadTDCGroup.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadTDCGroup.o $(PRAD_PATH)/src/PRadTDCGroup.cpp
 
-PRadEvioParser.o: ../src/PRadEvioParser.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadEvioParser.o ../src/PRadEvioParser.cpp
+PRadEvioParser.o: $(PRAD_PATH)/src/PRadEvioParser.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadEvioParser.o $(PRAD_PATH)/src/PRadEvioParser.cpp
 
-PRadDataHandler.o: ../src/PRadDataHandler.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadDataHandler.o ../src/PRadDataHandler.cpp
+PRadDataHandler.o: $(PRAD_PATH)/src/PRadDataHandler.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadDataHandler.o $(PRAD_PATH)/src/PRadDataHandler.cpp
 
-ConfigParser.o: ../src/ConfigParser.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ConfigParser.o ../src/ConfigParser.cpp
+ConfigParser.o: $(PRAD_PATH)/src/ConfigParser.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ConfigParser.o $(PRAD_PATH)/src/ConfigParser.cpp
 
-PRadException.o: ../src/PRadException.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadException.o ../src/PRadException.cpp
+PRadException.o: $(PRAD_PATH)/src/PRadException.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadException.o $(PRAD_PATH)/src/PRadException.cpp
 
-PRadBenchMark.o: ../src/PRadBenchMark.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadBenchMark.o ../src/PRadBenchMark.cpp
+PRadBenchMark.o: $(PRAD_PATH)/src/PRadBenchMark.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadBenchMark.o $(PRAD_PATH)/src/PRadBenchMark.cpp
 
-PRadReconstructor.o: ../src/PRadReconstructor.cpp
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadReconstructor.o ../src/PRadReconstructor.cpp
+PRadReconstructor.o: $(PRAD_PATH)/src/PRadReconstructor.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadReconstructor.o $(PRAD_PATH)/src/PRadReconstructor.cpp
 
-PRadGEMSystem.o: ../src/PRadGEMSystem.cpp
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadGEMSystem.o ../src/PRadGEMSystem.cpp
+PRadGEMSystem.o: $(PRAD_PATH)/src/PRadGEMSystem.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadGEMSystem.o $(PRAD_PATH)/src/PRadGEMSystem.cpp
 
 ####### Install
 

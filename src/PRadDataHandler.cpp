@@ -68,6 +68,23 @@ PRadDataHandler::~PRadDataHandler()
     delete gem_srs;
 }
 
+void PRadDataHandler::ReadConfig(const string &path)
+{
+    ConfigParser c_parser;
+    c_parser.SetSplitters(":, \t");
+
+    if(!c_parser.OpenFile(path)) {
+        cerr << "Data Handler: Cannot open configuration file "
+             << "\"" << path << "\"."
+             << endl;
+    }
+
+    while(c_parser.ParseLine())
+    {
+
+    }
+}
+
 // decode event buffer
 void PRadDataHandler::Decode(const void *buffer)
 {
@@ -364,8 +381,6 @@ void PRadDataHandler::FeedData(GEMRawData &gemData)
 
     if(apv) {
         apv->FillRawData(gemData.buf, gemData.size);
-    } else {
-        cerr << "Data Handler: Did not find APV to accept GEM raw data, aborted data transfer!" << endl;
     }
 }
 
@@ -693,7 +708,7 @@ void PRadDataHandler::FitPedestal()
     }
 }
 
-void PRadDataHandler::CorrectGainFactor(const int &run, const int &ref)
+void PRadDataHandler::CorrectGainFactor(const int &ref)
 {
 #define PED_LED_REF 1000  // separation value for led signal and pedestal signal of reference PMT
 #define PED_LED_HYC 30 // separation value for led signal and pedestal signal of all HyCal Modules
@@ -782,7 +797,7 @@ void PRadDataHandler::CorrectGainFactor(const int &run, const int &ref)
 
     double ref_factor = led_mean - ped_mean;
 
-    if(run >= ALPHA_CORR)
+    if(run_number >= ALPHA_CORR)
         ref_factor /= alpha_mean - ped_mean + correction[ref];
     else
         ref_factor /= alpha_mean - ped_mean;
@@ -1332,11 +1347,13 @@ void PRadDataHandler::InitializeByData(const string &path, int run, int ref)
     if(!path.empty()) {
         // auto update run number
         if(run < 0)
-            run = GetRunNumberFromFileName(path);
+            GetRunNumberFromFileName(path);
+        else
+            SetRunNumber(run);
 
         cout << "Data Handler: Initializing from data file "
              << "\"" << path << "\", "
-             << "run number: " << run
+             << "run number: " << run_number
              << " ." << endl;
 
         parser->ReadEvioFile(path.c_str());
@@ -1344,14 +1361,14 @@ void PRadDataHandler::InitializeByData(const string &path, int run, int ref)
 
     FitPedestal();
 
-    CorrectGainFactor(run, ref);
+    CorrectGainFactor(ref);
 
     Clear();
 
     cout << "Data Handler: Channel Pedestal and Gain Factors are adjusted according to data." << endl;
 }
 
-int PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &pos, const bool &verbose)
+void PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &pos, const bool &verbose)
 {
     // get rid of suffix
     auto nameEnd = name.find(".evio");
@@ -1368,23 +1385,21 @@ int PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &
     else
         nameBeg += 1;
 
-    vector<int> numbers = ConfigParser::find_integer(name.substr(nameBeg, nameEnd - nameBeg + 1));
+    int number = ConfigParser::find_integer(name.substr(nameBeg, nameEnd - nameBeg + 1), pos);
 
-    if(numbers.size() > pos) {
+    if(number > 0) {
 
         if(verbose) {
             cout << "Data Handler: Run number is automatcially determined from file name."
                  << endl
                  << "File name: " << name
                  << endl
-                 << "Run number: " << numbers.at(pos)
+                 << "Run number: " << number
                  << endl;
         }
 
-        return numbers.at(pos);
+        SetRunNumber(number);
     }
-
-    return 0;
 }
 
 // find event by its event number

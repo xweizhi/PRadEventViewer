@@ -29,7 +29,7 @@ public:
     virtual ~PRadException(void) throw() {};
     virtual std::string FailureDesc(void) const throw();
     virtual std::string FailureType(void) const throw();
-
+    const char *what() const throw();
 
 public:
     PRadExceptionType type;             // exception type

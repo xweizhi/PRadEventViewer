@@ -10,10 +10,12 @@ else
     setenv THIRD_LIB  ${PWD}/thirdparty/lib
 endif
 
+setenv PRAD_LIB ${PWD}/decoder/lib
+
 # comment this if you have your own root installed
 source /apps/root/5.34.21/setroot_CUE.csh
 if ! $?LD_LIBRARY_PATH then
-	setenv LD_LIBRARY_PATH ${THIRD_LIB}:${ET_LIB}
+	setenv LD_LIBRARY_PATH ${THIRD_LIB}:${ET_LIB}:${PRAD_LIB}
 else
-	setenv LD_LIBRARY_PATH ${THIRD_LIB}:${ET_LIB}:${LD_LIBRARY_PATH}
+	setenv LD_LIBRARY_PATH ${THIRD_LIB}:${ET_LIB}:${PRAD_LIB}:${LD_LIBRARY_PATH}
 endif
