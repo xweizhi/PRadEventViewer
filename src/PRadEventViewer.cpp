@@ -681,8 +681,6 @@ void PRadEventViewer::openDataFile()
 
     eraseModuleBuffer();
 
-    bool dst_reading = false;
-
     PRadBenchMark timer;
 
     for(QString &file : fileList)
@@ -692,16 +690,10 @@ void PRadEventViewer::openDataFile()
         fileName = file;
         if(fileName.contains(".dst")) {
             handler->ReadFromDST(fileName.toStdString());
-            dst_reading = true;
         } else {
             readEventFromFile(fileName);
         }
         UpdateStatusBar(DATA_FILE);
-    }
-
-    if(dst_reading) {
-        handler->RefillEnergyHist();
-        handler->RefillChannelHists();
     }
 
     cout << "Parsed " << handler->GetEventCount() << " events and "

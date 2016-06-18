@@ -25,13 +25,13 @@
 
 #define EPICS_UNDEFINED_VALUE -9999.9
 
-#define DST_FILE_VERSION 0x10  // 0xff
+#define DST_FILE_VERSION 0x11  // 0xff
 
 using namespace std;
 
 PRadDataHandler::PRadDataHandler()
 : parser(new PRadEvioParser(this)), gem_srs(new PRadGEMSystem()),
-  totalE(0), charge(0), onlineMode(false), current_event(0)
+  totalE(0), onlineMode(false), current_event(0)
 {
     // total energy histogram
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
@@ -203,12 +203,15 @@ void PRadDataHandler::Clear()
 {
     // used memory won't be released, but it can be used again for new data file
     energyData.clear();
-    totalE = 0;
-    charge = 0;
     newEvent.clear();
-    energyHist->Reset();
-    parser->SetEventNumber(0);
+    runInfo.clear();
 
+    parser->SetEventNumber(0);
+    totalE = 0;
+
+    energyHist->Reset();
+    TagEHist->Reset();
+    TagTHist->Reset();
     for(auto &channel : channelList)
     {
         channel->CleanBuffer();
@@ -278,7 +281,15 @@ void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
 void PRadDataHandler::AccumulateBeamCharge(const double &c)
 {
     if(newEvent.isPhysicsEvent())
-        charge += c;
+        runInfo.beam_charge += c;
+}
+
+void PRadDataHandler::UpdateLiveTimeScaler(const unsigned int &ungated, const unsigned int &gated)
+{
+    if(newEvent.isPhysicsEvent()) {
+        runInfo.ungated_count += (double) ungated;
+        runInfo.dead_count += (double) gated;
+    }
 }
 
 float PRadDataHandler::GetEPICSValue(const string &name)
@@ -741,7 +752,7 @@ void PRadDataHandler::FitPedestal()
         if(pedHist == nullptr || pedHist->Integral() < 1000)
             continue;
 
-        pedHist->Fit("gaus", "qw");
+        pedHist->Fit("gaus", "qww");
 
         TF1 *myfit = (TF1*) pedHist->GetFunction("gaus");
         double p0 = myfit->GetParameter(1);
@@ -840,7 +851,7 @@ void PRadDataHandler::CorrectGainFactor(const int &ref)
 
     double ref_factor = led_mean - ped_mean;
 
-    if(run_number >= ALPHA_CORR)
+    if(runInfo.run_number >= ALPHA_CORR)
         ref_factor /= alpha_mean - ped_mean + correction[ref];
     else
         ref_factor /= alpha_mean - ped_mean;
@@ -1125,27 +1136,6 @@ void PRadDataHandler::RefillEnergyHist()
     }
 }
 
-// Refill other histograms from energy data.
-// However, the adc values are all sparsified (pedestal subtracted)
-void PRadDataHandler::RefillChannelHists()
-{
-    ResetChannelHists();
-
-    for(auto &event : energyData)
-    {
-        for(auto &adc : event.adc_data)
-        {
-            channelList[adc.channel_id]->FillHist(adc.value, event.trigger);
-        }
-
-        for(auto &tdc : event.tdc_data)
-        {
-            tdcList[tdc.channel_id]->FillHist(tdc.value);
-        }
-    }
-}
-
-
 void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
 {
     ifstream input;
@@ -1216,6 +1206,13 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
               } break;
             case PRad_DST_Epics_Map:
                 ReadEPICSMapFromDST(input);
+                break;
+            case PRad_DST_Run_Info:
+                ReadRunInfoFromDST(input);
+                break;
+            case PRad_DST_HyCal_Info:
+                ReadHyCalInfoFromDST(input);
+                break;
             default:
                 break;
             }
@@ -1250,19 +1247,28 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
     ADC_Data adc;
     TDC_Data tdc;
     GEM_Data gemhit;
-
+ 
     dst_file.read((char*) &adc_size, sizeof(adc_size));
+    totalE = 0;
     for(size_t i = 0; i < adc_size; ++i)
     {
         dst_file.read((char*) &adc, sizeof(adc));
         data.add_adc(adc);
+        if(adc.channel_id < channelList.size()) {
+            channelList[adc.channel_id]->FillHist(adc.value, data.trigger);
+            totalE += channelList[adc.channel_id]->GetEnergy(adc.value);
+        }
     }
+    energyHist->Fill(totalE);
     
     dst_file.read((char*) &tdc_size, sizeof(tdc_size));
     for(size_t i = 0; i < tdc_size; ++i)
     {
         dst_file.read((char*) &tdc, sizeof(tdc));
         data.add_tdc(tdc);
+        if(tdc.channel_id < tdcList.size()) {
+            tdcList[tdc.channel_id]->FillHist(tdc.value);
+        }
     }
 
     dst_file.read((char*) &gem_size, sizeof(gem_size));
@@ -1308,6 +1314,8 @@ void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
         uint32_t version_info = (PRad_DST_Header << 8) | DST_FILE_VERSION;
         output.write((char*) &version_info, sizeof(version_info));
 
+        WriteRunInfoToDST(output);
+        WriteHyCalInfoToDST(output);
         WriteEPICSMapToDST(output);
 
         for(auto &event : energyData)
@@ -1408,7 +1416,7 @@ void PRadDataHandler::InitializeByData(const string &path, int run, int ref)
 
         cout << "Data Handler: Initializing from data file "
              << "\"" << path << "\", "
-             << "run number: " << run_number
+             << "run number: " << runInfo.run_number
              << " ." << endl;
 
         parser->ReadEvioFile(path.c_str());
@@ -1420,7 +1428,7 @@ void PRadDataHandler::InitializeByData(const string &path, int run, int ref)
 
     Clear();
 
-    cout << "Data Handler: Channel Pedestal and Gain Factors are adjusted according to data." << endl;
+    cout << "Data Handler: Done initialization." << endl;
 }
 
 void PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &pos, const bool &verbose)
@@ -1514,13 +1522,12 @@ void PRadDataHandler::WriteEPICSMapToDST(ofstream &dst_file) throw(PRadException
     uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Epics_Map;
     dst_file.write((char*) &event_info, sizeof(event_info));
 
-    event_info = PRad_DST_Epics_Channel;
-
     vector<epics_ch> epics_channels = GetSortedEPICSList();
 
+    uint32_t ch_size = epics_channels.size();
+    dst_file.write((char*) &ch_size, sizeof(ch_size));
     for(auto &ch : epics_channels)
     {
-        dst_file.write((char*) &event_info, sizeof(event_info));
         size_t str_size = ch.name.size();
         dst_file.write((char*) &str_size, sizeof(str_size));
         for(auto &c : ch.name)
@@ -1528,9 +1535,6 @@ void PRadDataHandler::WriteEPICSMapToDST(ofstream &dst_file) throw(PRadException
         dst_file.write((char*) &ch.id, sizeof(ch.id));
         dst_file.write((char*) &epics_values.at(ch.id), sizeof(epics_values.at(ch.id)));
     }
-
-    event_info = PRad_DST_Epics_Map_End;
-    dst_file.write((char*) &event_info, sizeof(event_info));
 }
 
 void PRadDataHandler::ReadEPICSMapFromDST(ifstream &dst_file) throw(PRadException)
@@ -1541,14 +1545,13 @@ void PRadDataHandler::ReadEPICSMapFromDST(ifstream &dst_file) throw(PRadExceptio
     epics_map.clear();
     epics_values.clear();
 
-    size_t str_size, id;
+    size_t ch_size, str_size, id;
     string str;
     float value;
 
-    uint32_t event_info;
-    dst_file.read((char*) &event_info, sizeof(event_info));
+    dst_file.read((char*) &ch_size, sizeof(ch_size));
 
-    while(event_info != PRad_DST_Epics_Map_End)
+    for(size_t i = 0; i < ch_size; ++i)
     {
         str = "";
         dst_file.read((char*) &str_size, sizeof(str_size));
@@ -1562,6 +1565,67 @@ void PRadDataHandler::ReadEPICSMapFromDST(ifstream &dst_file) throw(PRadExceptio
         dst_file.read((char*) &value, sizeof(value));
         epics_map[str] = id;
         epics_values.push_back(value);
-        dst_file.read((char*) &event_info, sizeof(event_info));
+    }
+}
+
+void PRadDataHandler::WriteRunInfoToDST(ofstream &dst_file) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("WRITE DST", "output file is not opened!");
+
+    // write header
+    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Run_Info;
+    dst_file.write((char*) &event_info, sizeof(event_info));
+    dst_file.write((char*) &runInfo, sizeof(runInfo));
+}
+
+void PRadDataHandler::ReadRunInfoFromDST(ifstream &dst_file) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("READ DST", "input file is not opened!");
+
+    dst_file.read((char*) &runInfo, sizeof(runInfo));
+}
+
+void PRadDataHandler::WriteHyCalInfoToDST(ofstream &dst_file) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("WRITE DST", "output file is not opened!");
+
+    // write header
+    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_HyCal_Info;
+    dst_file.write((char*) &event_info, sizeof(event_info));
+
+    size_t ch_size = channelList.size();
+    dst_file.write((char*) &ch_size, sizeof(ch_size));
+
+    for(auto channel : channelList)
+    {
+        PRadDAQUnit::Pedestal ped = channel->GetPedestal();
+        PRadDAQUnit::CalibrationConstant cal = channel->GetCalibrationConstant();
+        dst_file.write((char*) &ped, sizeof(ped));
+        dst_file.write((char*) &cal, sizeof(cal)); 
+    }
+}
+
+void PRadDataHandler::ReadHyCalInfoFromDST(ifstream &dst_file) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("READ DST", "input file is not opened!");
+
+    size_t ch_size;
+    dst_file.read((char*) &ch_size, sizeof(ch_size));
+
+    for(size_t i = 0; i < ch_size; ++i)
+    {
+        PRadDAQUnit::Pedestal ped;
+        PRadDAQUnit::CalibrationConstant cal;
+        dst_file.read((char*) &ped, sizeof(ped));
+        dst_file.read((char*) &cal, sizeof(cal));
+
+        if(i < channelList.size()) {
+            channelList.at(i)->UpdatePedestal(ped);
+            channelList.at(i)->UpdateCalibrationConstant(cal);
+        }
     }
 }

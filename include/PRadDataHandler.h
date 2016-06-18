@@ -100,10 +100,14 @@ public:
     void WriteToDST(std::ofstream &dst_file, const EventData &data) throw(PRadException);
     void WriteToDST(std::ofstream &dst_file, const EPICSData &data) throw(PRadException);
     void WriteEPICSMapToDST(std::ofstream &dst_file) throw(PRadException);
+    void WriteRunInfoToDST(std::ofstream &dst_file) throw(PRadException);
+    void WriteHyCalInfoToDST(std::ofstream &dst_file) throw(PRadException);
     void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
     void ReadFromDST(std::ifstream &dst_file, EventData &data) throw(PRadException);
     void ReadFromDST(std::ifstream &dst_file, EPICSData &data) throw(PRadException);
     void ReadEPICSMapFromDST(std::ifstream &dst_file) throw(PRadException);
+    void ReadRunInfoFromDST(std::ifstream &dst_file) throw(PRadException);
+    void ReadHyCalInfoFromDST(std::ifstream &dst_file) throw(PRadException);
 
     // evio data file
     void ReadFromEvio(const std::string &path, const int &split = -1, const bool &verbose = false);
@@ -111,7 +115,7 @@ public:
 
     // data handler
     void Clear();
-    void SetRunNumber(const int &run) {run_number = run;};
+    void SetRunNumber(const int &run) {runInfo.run_number = run;};
     void StartofNewEvent(const unsigned char &tag);
     void EndofThisEvent(const unsigned int &ev = 0);
     void FeedData(JLabTIData &tiData);
@@ -124,6 +128,7 @@ public:
     void UpdateTrgType(const unsigned char &trg);
     void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
     void AccumulateBeamCharge(const double &c);
+    void UpdateLiveTimeScaler(const unsigned int &ungated, const unsigned int &gated);
  
     // show data
     int GetCurrentEventNb();
@@ -132,7 +137,9 @@ public:
     unsigned int GetEventCount() {return energyData.size();};
     unsigned int GetEPICSEventCount() {return epicsData.size();};
     unsigned int GetScalarCount(const unsigned int &group = 0, const bool &gated = false);
-    double GetBeamCharge() {return charge;};
+    int GetRunNumber() {return runInfo.run_number;};
+    double GetBeamCharge() {return runInfo.beam_charge;};
+    double GetLiveTime() {return (1. - runInfo.dead_count/runInfo.ungated_count);};
     std::vector<unsigned int> GetScalarsCount(const bool &gated = false);
     TH1D *GetEnergyHist() {return energyHist;};
     TH2I *GetTagEHist() {return TagEHist;};
@@ -159,7 +166,6 @@ public:
     void ReadGainFactor(const std::string &path, const int &ref = 2);
     void CorrectGainFactor(const int &ref = 2);
     void RefillEnergyHist();
-    void RefillChannelHists();
     int FindEventIndex(const int &event_number);
 
     // other functions
@@ -170,9 +176,8 @@ public:
 private:
     PRadEvioParser *parser;
     PRadGEMSystem *gem_srs;
-    int run_number;
+    RunInfo runInfo;
     double totalE;
-    double charge;
     bool onlineMode;
     int current_event;
 #ifdef MULTI_THREAD
@@ -182,8 +187,11 @@ private:
     std::unordered_map< std::string, PRadDAQUnit* > map_name;
     std::unordered_map< std::string, PRadTDCGroup* > map_name_tdc;
     std::unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
+
+    // to save space, separate epics channels to map (string to vector index) and values (vector)
     std::unordered_map< std::string, size_t > epics_map;
     std::vector< float > epics_values;
+
     std::vector< PRadDAQUnit* > channelList;
     std::vector< PRadDAQUnit* > freeList; // channels that should be freed by handler
     std::vector< PRadTDCGroup* > tdcList;

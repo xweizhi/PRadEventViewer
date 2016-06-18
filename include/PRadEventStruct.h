@@ -4,6 +4,30 @@
 #include <string>
 #include <vector>
 
+struct RunInfo
+{
+    int run_number;
+    double beam_charge;
+    double dead_count;
+    double ungated_count;
+
+    RunInfo()
+    : run_number(0), beam_charge(0.), dead_count(0.), ungated_count(0.)
+    {};
+
+    RunInfo(const int &run, const double &c, const double &d, const double &ug)
+    : run_number(run), beam_charge(c), dead_count(d), ungated_count(ug)
+    {};
+
+    void clear()
+    {
+        run_number = 0;
+        beam_charge = 0.;
+        dead_count = 0.;
+        ungated_count = 0.;
+    }
+};
+
 typedef struct ChannelData
 {
     unsigned short channel_id;

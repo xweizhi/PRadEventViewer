@@ -404,6 +404,9 @@ void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
     unsigned int gated_counts[8];
     unsigned int ungated_counts[8];
     unsigned int pulser_read = data[7 + UNGATED_TRG_GROUP];
+    unsigned int pulser_dead = data[7 + GATED_TRG_GROUP];
+
+    myHandler->UpdateLiveTimeScaler(pulser_read, pulser_dead);
 
     auto scale_to_ref = [](const unsigned int &num, const unsigned int &ref_read, const unsigned int &ref_freq = REF_PULSER_FREQ)
                         {

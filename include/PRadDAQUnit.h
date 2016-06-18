@@ -95,7 +95,9 @@ public:
     virtual ~PRadDAQUnit();
     ChannelAddress GetDAQInfo() {return address;};
     Pedestal GetPedestal() {return pedestal;};
+    CalibrationConstant GetCalibrationConstant() {return cal_const;};
     std::string GetTDCName() {return tdcGroup;};
+    void UpdatePedestal(const Pedestal &ped) {pedestal = ped;};
     void UpdatePedestal(const double &m, const double &s);
     void UpdateCalibrationConstant(const CalibrationConstant &c) {cal_const = c;};
     void GainCorrection(const double &g, const int &ref) {cal_const.GainCorrection(g, ref);};

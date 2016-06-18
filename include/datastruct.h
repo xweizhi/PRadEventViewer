@@ -220,14 +220,12 @@ enum PRadDST
     PRad_DST_Event = 0,
     PRad_DST_Epics = 1,
     PRad_DST_Epics_Map = 2,
+    PRad_DST_Run_Info = 3,
+    PRad_DST_HyCal_Info = 4,
 
     // headers
     PRad_DST_Header = 0xc0c0c0,
     PRad_DST_EvHeader = 0xe0e0e0,
-
-    // map check
-    PRad_DST_Epics_Channel = 0xd0d0d0d1,
-    PRad_DST_Epics_Map_End = 0xd0d0d0d0,
 };
 
 #endif
