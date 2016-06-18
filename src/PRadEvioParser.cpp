@@ -170,8 +170,6 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
                 parseDSCData(&buffer[index], dataSize);
                 break;
             case FASTBUS_BANK: // Bank 0x7, Fastbus data
-                // Self defined crate data header
-                if((buffer[index]&0xff0fff00) == ADC1881M_DATABEG) {
 #ifdef MULTI_THREAD
                     // for LMS event, since every module is fired, each thread needs to modify the non-local
                     // variable E_total and the container for current event. Which means very frequent actions
@@ -182,11 +180,6 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
 #else
                     parseADC1881M(&buffer[index]);
 #endif
-                } else {
-                    cerr << "Incorrect Fastbus bank header!"
-                         << "0x" << hex << setw(8) << setfill('0')
-                         <<  buffer[index] << endl;
-                }
                 break;
             case GEM_BANK: // Bank 0x8, gem data, single FEC right now
 //                parseGEMData(&buffer[index], dataSize, evtHeader->num);
@@ -226,6 +219,14 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
 
 void PRadEvioParser::parseADC1881M(const uint32_t *data)
 {
+    // Self defined crate data header
+    if((data[0]&0xff0fff00) != ADC1881M_DATABEG) {
+        cerr << "Incorrect Fastbus bank header!"
+             << "0x" << hex << setw(8) << setfill('0')
+             <<  data[0] << endl;
+        return;
+    }
+
     // number of boards given by the self defined info word in CODA readout list
     const unsigned char boardNum = data[0]&0xFF;
     unsigned int index = 2, wordCount;
@@ -267,38 +268,46 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
 }
 
 // temporary decoder for gem data, not finished
-void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id)
+void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size,  const int &fec_id)
 {
-#define GEMDATA_APVBEG 0x00434441 //&0x00ffffff
-#define GEMDATA_FECEND 0xfafafafa
-// gem data structure
-// single FEC
-// 3 words header
-// 0xff|ffffff
-// apv |  frame counter, same in one event
-// 0xff|434441
-// apv |  fix number
-// 0xffffffff
-// unknown
-// 0xffff|ffff
-// data  |  data
+#define ZERO_SUPPRESSION_BANKNUM 99
 
-    GEMAPVData gemData;
-    gemData.FEC = fec_id;
+    if(fec_id == 99) //TODO, zero suppression bank parser
+        return;
 
-    for(size_t i = 0; i < size; ++i)
+    GEMRawData gemData;
+    size_t i = 0;
+
+    while(i < size)
     {
-        if((data[i]&0xffffff) == GEMDATA_APVBEG) {
-            gemData.APV = (data[i]>>24)&0xff;
-            i += 2;
-            for(; (data[i]&0xffffff) != data[0] && data[i] != GEMDATA_FECEND; ++i) {
-                gemData.val.first = data[i]&0xffff;
-                gemData.val.second = (data[i]>>16)&0xffff;
-                myHandler->FeedData(gemData); // two adc values are sent in one package to reduce the number of function calls
-            }
-            // APV ends
+        if((data[i]&0xffffff00) == GEMDATA_APVBEG) {
+            gemData.adc = data[i]&0xff;
+            gemData.fec = (data[i+1] >> 16)&0xff;
+            gemData.buf = &data[i+2];
+            gemData.size = getAPVDataSize(gemData.buf);
+
+            myHandler->FeedData(gemData);
+
+            i += gemData.size;
+        } else {
+            ++i;
         }
     }
+}
+
+size_t PRadEvioParser::getAPVDataSize(const uint32_t *data)
+{
+    size_t idx = 0;
+
+    while((data[idx]&0xffffff00) != GEMDATA_APVBEG)
+    {
+        if(data[idx] == GEMDATA_FECEND) {
+            return idx - 1;
+        }
+        ++idx;
+    }
+
+    return idx - 2;
 }
 
 // parse CAEN V767 Data
@@ -481,5 +490,4 @@ unsigned int PRadEvioParser::trigger_to_bit(const PRadTriggerType &trg)
     else
         return 1 << (int) trg;
 }
-
 

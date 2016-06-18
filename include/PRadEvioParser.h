@@ -24,6 +24,7 @@ public:
 
 private:
     size_t getEvioBlock(std::ifstream &s, uint32_t *buf) throw(PRadException);
+    size_t getAPVDataSize(const uint32_t *data);
     void parseADC1881M(const uint32_t *data);
     void parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id);
     void parseTDCV767(const uint32_t *data, const size_t &size, const int &roc_id);

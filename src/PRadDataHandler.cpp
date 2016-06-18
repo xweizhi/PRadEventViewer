@@ -9,9 +9,11 @@
 //============================================================================//
 
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
+#include "PRadGEMSystem.h"
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
 #include "ConfigParser.h"
@@ -23,11 +25,14 @@
 
 #define EPICS_UNDEFINED_VALUE -9999.9
 
+#define PRAD_DST_FILE 0xc0c0c0
+#define DST_FILE_VERSION 0x18
+
 using namespace std;
 
 PRadDataHandler::PRadDataHandler()
-: parser(new PRadEvioParser(this)),
-   totalE(0), charge(0), onlineMode(false), current_event(0)
+: parser(new PRadEvioParser(this)), gem_srs(new PRadGEMSystem()),
+  totalE(0), charge(0), onlineMode(false), current_event(0)
 {
     // total energy histogram
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
@@ -61,6 +66,7 @@ PRadDataHandler::~PRadDataHandler()
     }
 
     delete parser;
+    delete gem_srs;
 }
 
 // decode event buffer
@@ -302,12 +308,6 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     
 }
 
-// feed GEM data
-void PRadDataHandler::FeedData(GEMAPVData & /*gemData*/)
-{
-    // implement later
-}
-
 void PRadDataHandler::FeedData(TDCV767Data &tdcData)
 {
     auto it = map_daq_tdc.find(tdcData.config);
@@ -358,6 +358,17 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
     }
 }
 
+// feed GEM data
+void PRadDataHandler::FeedData(GEMRawData &gemData)
+{
+    PRadGEMAPV *apv = gem_srs->GetAPV(gemData.fec, gemData.adc);
+
+    if(apv) {
+        apv->FeedData(gemData.buf, gemData.size);
+    } else {
+        cerr << "Data Handler: Did not find APV to accept GEM raw data, aborted data transfer!" << endl;
+    }
+}
 
 // signal of new event
 void PRadDataHandler::StartofNewEvent(const unsigned char &tag)
@@ -373,7 +384,7 @@ void PRadDataHandler::EndofThisEvent(const unsigned int &ev)
     if(newEvent.type == CODA_Event) {
 
         newEvent.event_number = ev;
-
+        newEvent.gem_data = gem_srs->GetZeroSupData();
         if(onlineMode && energyData.size()) { // online mode only saves the last event, to reduce usage of memory
             energyData.pop_front();
         }
@@ -404,7 +415,7 @@ void PRadDataHandler::ChooseEvent(const int &idx)
             ChooseEvent(energyData.back());
         else
             ChooseEvent(energyData.at(idx));
-    } else {
+    } else if(!onlineMode) {
         cout << "Data Handler: Data bank is empty, no event is chosen." << endl;
         return;
     }
@@ -796,6 +807,11 @@ void PRadDataHandler::CorrectGainFactor(const int &run, const int &ref)
     }
 }
 
+void PRadDataHandler::ReadGEMConfiguration(const string &path)
+{
+    gem_srs->LoadConfiguration(path);
+}
+
 void PRadDataHandler::ReadTDCList(const string &path)
 {
     ConfigParser c_parser;
@@ -944,6 +960,11 @@ void PRadDataHandler::ReadPedestalFile(const string &path)
     c_parser.CloseFile();
 };
 
+void PRadDataHandler::ReadGEMPedestalFile(const string &path)
+{
+    gem_srs->LoadPedestal(path);
+}
+
 void PRadDataHandler::ReadCalibrationFile(const string &path)
 {
     ConfigParser c_parser;
@@ -1076,7 +1097,7 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
         input.open(path, mode);
 
         if(!input.is_open()) {
-            cerr << "Cannot open input file " << path
+            cerr << "Data Handler: Cannot open input dst file " << path
                  << ", stop reading!" << endl;
             return;
         }
@@ -1084,6 +1105,26 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
         input.seekg(0, input.end);
         int length = input.tellg();
         input.seekg(0, input.beg);
+
+        uint32_t version_info;
+        input.read((char*) &version_info, sizeof(version_info));
+
+        if((version_info >> 8) != PRAD_DST_FILE) {
+            cerr << "Data Handler: Unrecognized PRad dst file, stop reading!" << endl;
+            return;
+        }
+        if((version_info & 0xff) != DST_FILE_VERSION) {
+            cerr << "Data Handler: Version mismatch between the file and library. "
+                 << endl
+                 << "Expected version " << (DST_FILE_VERSION >> 4)
+                 << "." << (DST_FILE_VERSION & 0xf)
+                 << ", but the file version is "
+                 << ((version_info >> 4) & 0xf)
+                 << "." << (version_info & 0xf)
+                 << ", please use correct library to open this file."
+                 << endl;
+            return;
+        }
 
         while(input.tellg() < length && input.tellg() != -1)
         {
@@ -1117,35 +1158,31 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
      dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
 
      size_t adc_size, tdc_size, gem_size;
-     unsigned short channel_id, value;
-     unsigned char fec, adc, strip;
+     ADC_Data adc;
+     TDC_Data tdc;
+     GEM_Data gemhit;
 
      dst_file.read((char*) &adc_size, sizeof(adc_size));
      for(size_t i = 0; i < adc_size; ++i)
      {
-         dst_file.read((char*) &channel_id, sizeof(channel_id));
-         dst_file.read((char*) &value     , sizeof(value));
-         data.add_adc(ADC_Data(channel_id, value));
+         dst_file.read((char*) &adc, sizeof(adc));
+         data.add_adc(adc);
      }
     
      dst_file.read((char*) &tdc_size, sizeof(tdc_size));
      for(size_t i = 0; i < tdc_size; ++i)
      {
-         dst_file.read((char*) &channel_id, sizeof(channel_id));
-         dst_file.read((char*) &value     , sizeof(value));
-         data.add_tdc(TDC_Data(channel_id, value));
+         dst_file.read((char*) &tdc, sizeof(tdc));
+         data.add_tdc(tdc);
      }
 
      dst_file.read((char*) &gem_size, sizeof(gem_size));
      for(size_t i = 0; i < gem_size; ++i)
      {
-         dst_file.read((char*) &fec  , sizeof(fec));
-         dst_file.read((char*) &adc  , sizeof(adc));
-         dst_file.read((char*) &strip, sizeof(strip));
-         dst_file.read((char*) &value, sizeof(value));
-         data.add_gem(GEM_Data(fec, adc, strip, value));
+         dst_file.read((char*) &gemhit, sizeof(gemhit));
+         data.add_gemhit(gemhit);
      }
- }
+}
 
 void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
 {
@@ -1155,10 +1192,13 @@ void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
         output.open(path, mode);
 
         if(!output.is_open()) {
-            cerr << "Cannot open output file " << path
+            cerr << "Data Handler: Cannot open output file " << path
                  << ", stop writing!" << endl;
             return;
         }
+
+        uint32_t version_info = (PRAD_DST_FILE << 8) | DST_FILE_VERSION;
+        output.write((char*) &version_info, sizeof(version_info));
 
         for(auto &event : energyData)
         {
@@ -1188,33 +1228,22 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
      dst_file.write((char*) &data.trigger     , sizeof(data.trigger));
      dst_file.write((char*) &data.timestamp   , sizeof(data.timestamp));
 
-     // adc data bank
+     // all data banks
      size_t adc_size = data.adc_data.size();
      size_t tdc_size = data.tdc_data.size();
      size_t gem_size = data.gem_data.size();
 
      dst_file.write((char*) &adc_size, sizeof(adc_size));
      for(auto &adc : data.adc_data)
-     {
-         dst_file.write((char*) &adc.channel_id, sizeof(adc.channel_id));
-         dst_file.write((char*) &adc.value     , sizeof(adc.value));
-     }
+         dst_file.write((char*) &adc, sizeof(adc));
 
      dst_file.write((char*) &tdc_size, sizeof(tdc_size));
      for(auto &tdc : data.tdc_data)
-     {
-         dst_file.write((char*) &tdc.channel_id, sizeof(tdc.channel_id));
-         dst_file.write((char*) &tdc.value     , sizeof(tdc.value));
-     }
+         dst_file.write((char*) &tdc, sizeof(tdc));
  
      dst_file.write((char*) &gem_size, sizeof(gem_size));
      for(auto &gem : data.gem_data)
-     {
-         dst_file.write((char*) &gem.fec  , sizeof(gem.fec));
-         dst_file.write((char*) &gem.adc  , sizeof(gem.adc));
-         dst_file.write((char*) &gem.strip, sizeof(gem.strip));
-         dst_file.write((char*) &gem.value, sizeof(gem.value));
-     }
+         dst_file.write((char*) &gem, sizeof(gem));
 }
 
 void PRadDataHandler::ReadFromEvio(const string &path)
@@ -1222,7 +1251,7 @@ void PRadDataHandler::ReadFromEvio(const string &path)
     parser->ReadEvioFile(path.c_str());
 }
 
-void PRadDataHandler::InitializeByData(const string &path, int run)
+void PRadDataHandler::InitializeByData(const string &path, int run, int ref)
 {
     if(!path.empty()) {
         // auto update run number
@@ -1239,7 +1268,7 @@ void PRadDataHandler::InitializeByData(const string &path, int run)
 
     FitPedestal();
 
-    CorrectGainFactor(run);
+    CorrectGainFactor(run, ref);
 
     Clear();
 

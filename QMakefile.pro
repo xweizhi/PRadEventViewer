@@ -43,7 +43,8 @@ HEADERS += include/PRadEventViewer.h \
            include/QRootCanvas.h \
            include/ConfigParser.h \
            include/PRadBenchMark.h \
-           include/PRadReconstructor.h
+           include/PRadReconstructor.h \
+           include/PRadGEMSystem.h
 
 SOURCES += src/main.cpp \
            src/PRadEventViewer.cpp \
@@ -68,7 +69,8 @@ SOURCES += src/main.cpp \
            src/QRootCanvas.cpp \
            src/ConfigParser.cpp \
            src/PRadBenchMark.cpp \
-           src/PRadReconstructor.cpp
+           src/PRadReconstructor.cpp \
+           src/PRadGEMSystem.cpp
 
 LIBS += -lexpat \
         -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx \

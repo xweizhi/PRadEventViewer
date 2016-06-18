@@ -46,7 +46,8 @@ SOURCES       = ../src/PRadDAQUnit.cpp \
                 ../src/PRadException.cpp \
                 ../src/PRadBenchMark.cpp \
                 ../src/ConfigParser.cpp \
-                ../src/PRadReconstructor.cpp
+                ../src/PRadReconstructor.cpp \
+                ../src/PRadGEMSystem.cpp
 
 OBJECTS       = PRadDAQUnit.o \
 		PRadTDCGroup.o \
@@ -55,7 +56,8 @@ OBJECTS       = PRadDAQUnit.o \
                 PRadException.o \
                 PRadBenchMark.o \
                 ConfigParser.o \
-                PRadReconstructor.o
+                PRadReconstructor.o \
+                PRadGEMSystem.o
 
 TARGET        = libPRadDecoder.so
 
@@ -102,6 +104,8 @@ PRadBenchMark.o: ../src/PRadBenchMark.cpp
 PRadReconstructor.o: ../src/PRadReconstructor.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadReconstructor.o ../src/PRadReconstructor.cpp
 
+PRadGEMSystem.o: ../src/PRadGEMSystem.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadGEMSystem.o ../src/PRadGEMSystem.cpp
 
 ####### Install
 

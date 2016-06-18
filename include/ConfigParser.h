@@ -93,6 +93,11 @@ public:
     {
         return _value;
     };
+
+    bool operator ==(const std::string &rhs) const
+    {
+        return _value == rhs;
+    }
 };
 
 // show string content of the config value to ostream

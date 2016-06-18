@@ -22,6 +22,8 @@
 class PRadEvioParser;
 class PRadDAQUnit;
 class PRadTDCGroup;
+class PRadGEMSystem;
+class PRadGEMAPV;
 class TH1D;
 class TH2I;
 
@@ -71,6 +73,7 @@ public:
     void BuildChannelMap();
 
     // get channels/lists
+    PRadGEMSystem *GetSRS() {return gem_srs;};
     PRadDAQUnit *GetChannel(const ChannelAddress &daqInfo);
     PRadDAQUnit *GetChannel(const std::string &name);
     PRadDAQUnit *GetChannel(const unsigned short &id);
@@ -83,11 +86,13 @@ public:
     void ReadTDCList(const std::string &path);
     void ReadChannelList(const std::string &path);
     void ReadPedestalFile(const std::string &path);
+    void ReadGEMPedestalFile(const std::string &path);
     void ReadCalibrationFile(const std::string &path);
     void ReadEPICSChannels(const std::string &path);
+    void ReadGEMConfiguration(const std::string &path);
 
     // dst data file
-    void WriteToDST(const std::string &pat, std::ios::openmode mode = std::ios::out | std::ios::binary | std::ios::app);
+    void WriteToDST(const std::string &pat, std::ios::openmode mode = std::ios::out | std::ios::binary);
     void WriteToDST(std::ofstream &dst_file, const EventData &data) throw(PRadException);
     void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
     void ReadFromDST(std::ifstream &dst_file, EventData &data) throw(PRadException);
@@ -102,9 +107,9 @@ public:
     void EndofThisEvent(const unsigned int &ev = 0);
     void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);
-    void FeedData(GEMAPVData &gemData);
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
+    void FeedData(GEMRawData &gemData);
     void FillTaggerHist(TDCV1190Data &tdcData);
     void UpdateEPICS(const std::string &name, const float &value);
     void UpdateTrgType(const unsigned char &trg);
@@ -133,7 +138,7 @@ public:
     void PrintOutEPICS(const std::string &name);
 
     // analysis tools
-    void InitializeByData(const std::string &path = "", int run = -1);
+    void InitializeByData(const std::string &path = "", int run = -1, int ref = 2);
     void ResetChannelHists();
     void SaveHistograms(const std::string &path);
     void FitHistogram(const std::string &channel,
@@ -155,6 +160,7 @@ public:
 
 private:
     PRadEvioParser *parser;
+    PRadGEMSystem *gem_srs;
     double totalE;
     double charge;
     bool onlineMode;

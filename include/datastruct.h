@@ -88,7 +88,8 @@ struct ChannelAddress
     : crate(c), slot(s), channel(ch)
     {};
 
-    bool operator < (const ChannelAddress &rhs) const {
+    bool operator < (const ChannelAddress &rhs) const
+    {
         if( crate != rhs.crate )
             return crate < rhs.crate ;
         else if( slot != rhs.slot )
@@ -99,7 +100,8 @@ struct ChannelAddress
         return false ;
     }
 
-    bool operator == (const ChannelAddress &rhs) const {
+    bool operator == (const ChannelAddress &rhs) const
+    {
         if( (crate != rhs.crate) ||
             (slot != rhs.slot)   ||
             (channel != rhs.channel) )
@@ -110,10 +112,43 @@ struct ChannelAddress
 
 };
 
+struct GEMChannelAddress
+{
+    int fec_id;
+    int adc_ch;
+
+    GEMChannelAddress() {};
+    GEMChannelAddress(const int &f, const int &a)
+    : fec_id(f), adc_ch(a)
+    {};
+
+    bool operator < (const GEMChannelAddress &rhs) const
+    {
+        if( fec_id != rhs.fec_id)
+            return fec_id < rhs.fec_id;
+        else if( adc_ch != rhs.adc_ch)
+            return adc_ch < adc_ch;
+        else
+            return false;
+    }
+
+    bool operator == (const GEMChannelAddress &rhs) const
+    {
+        if( (fec_id != rhs.fec_id) ||
+            (adc_ch != rhs.adc_ch) )
+            return false;
+        else
+            return true;
+    }
+};
+
 
 // some words defined in readout list
 #define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
 #define ADC1881M_DATAEND 0xfabc0005
+
+#define GEMDATA_APVBEG 0x41444300 //&0xffffff00
+#define GEMDATA_FECEND 0xfafafafa
 
 #define V767_HEADER_BIT  (1 << 22)
 #define V767_END_BIT     (1 << 21)
@@ -172,14 +207,12 @@ struct TDCV1190Data
     unsigned int val;
 };
 
-struct GEMAPVData
+struct GEMRawData
 {
-    unsigned char FEC;
-    unsigned char APV;
-    struct {
-        unsigned short first;
-        unsigned short second;
-    } val;
+    int fec;
+    int adc;
+    const uint32_t *buf;
+    size_t size;
 };
 
 #endif
