@@ -515,11 +515,12 @@ void PRadGEMAPV::CollectZeroSupHits(vector<GEM_Data> &hits)
        {
            ts_index = i + 10;
            if(ts_index + data_size >= buffer_size) {
-                  cerr << "GEM APV: FEC " << fec_id
-                       << ", APV " << adc_ch << " Warning, get time samples ends at index "
-                       << ts_index + data_size
-                       << ", it exceeds the buffer size " << buffer_size
-                       << endl;
+               cerr << "GEM APV: FEC " << fec_id
+                    << ", APV " << adc_ch << " Warning, get time samples ends at index "
+                    << ts_index + data_size
+                    << ", it exceeds the buffer size " << buffer_size
+                    << endl;
+                    return;
            }
            break;
         }
