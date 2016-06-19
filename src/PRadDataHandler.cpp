@@ -25,7 +25,7 @@
 
 #define EPICS_UNDEFINED_VALUE -9999.9
 
-#define DST_FILE_VERSION 0x11  // 0xff
+#define DST_FILE_VERSION 0x12  // 0xff
 
 using namespace std;
 
@@ -1257,10 +1257,9 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
     dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
     dst_file.read((char*) &data.last_epics  , sizeof(data.last_epics));
 
-    size_t adc_size, tdc_size, gem_size;
+    size_t adc_size, tdc_size, gem_size, value_size;
     ADC_Data adc;
     TDC_Data tdc;
-    GEM_Data gemhit;
  
     dst_file.read((char*) &adc_size, sizeof(adc_size));
     totalE = 0;
@@ -1287,12 +1286,21 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
         }
     }
 
+    float value;
     dst_file.read((char*) &gem_size, sizeof(gem_size));
     for(size_t i = 0; i < gem_size; ++i)
     {
-        dst_file.read((char*) &gemhit, sizeof(gemhit));
+        GEM_Data gemhit;
+        dst_file.read((char*) &gemhit.addr, sizeof(gemhit.addr));
+        dst_file.read((char*) &value_size, sizeof(value_size));
+        for(size_t i = 0; i < value_size; ++i)
+        {
+            dst_file.read((char*) &value, sizeof(value));
+            gemhit.add_value(value);
+        }
         data.add_gemhit(gemhit);
     }
+
 }
 
 void PRadDataHandler::ReadFromDST(ifstream &dst_file, EPICSData &data) throw(PRadException)
@@ -1384,10 +1392,17 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
     dst_file.write((char*) &tdc_size, sizeof(tdc_size));
     for(auto &tdc : data.tdc_data)
         dst_file.write((char*) &tdc, sizeof(tdc));
- 
+
     dst_file.write((char*) &gem_size, sizeof(gem_size));
     for(auto &gem : data.gem_data)
-        dst_file.write((char*) &gem, sizeof(gem));
+    {
+        dst_file.write((char*) &gem.addr, sizeof(gem.addr));
+        size_t hit_size = gem.values.size();
+        dst_file.write((char*) &hit_size, sizeof(hit_size));
+        for(auto &value : gem.values)
+            dst_file.write((char*) &value, sizeof(value));
+    }
+
 }
 
 void PRadDataHandler::WriteToDST(ofstream &dst_file, const EPICSData &data) throw(PRadException)

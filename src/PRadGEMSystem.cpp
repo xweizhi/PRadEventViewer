@@ -9,7 +9,9 @@
 #include "PRadGEMSystem.h"
 #include "ConfigParser.h"
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
+#include <thread>
 
 using namespace std;
 
@@ -100,7 +102,7 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
             // default levels
             new_apv->SetTimeSample(3);
             new_apv->SetCommonModeThresLevel(20.);
-            new_apv->SetZeroSupThresLevel(3.);
+            new_apv->SetZeroSupThresLevel(5.);
 
             RegisterAPV(new_apv);
         }
@@ -242,11 +244,11 @@ PRadGEMFEC *PRadGEMSystem::GetFEC(const int &id)
 PRadGEMAPV *PRadGEMSystem::GetAPV(const int &fec_id, const int &apv_id)
 {
     auto it = apv_map.find(GEMChannelAddress(fec_id, apv_id));
-
     if(it == apv_map.end()) {
+        cerr << "GEM System: Cannot find APV with id " << apv_id
+             << " in FEC " << fec_id << endl;
         return nullptr;
     }
-
     return it->second;
 }
 
@@ -261,15 +263,31 @@ void PRadGEMSystem::ClearAPVData()
 vector<GEM_Data> PRadGEMSystem::GetZeroSupData()
 {
     vector<GEM_Data> gem_data;
-
     for(auto &apv_it : apv_map)
     {
-        vector<GEM_Data> apv_hits = apv_it.second->GetZeroSupHits();
-        if(apv_hits.size()) {
-            gem_data.insert(gem_data.end(), apv_hits.begin(), apv_hits.end());
-        }
+        apv_it.second->CollectZeroSupHits(gem_data);
+    }
+/*
+    vector<thread> bank_threads;
+
+    for(auto &fec_it : fec_map)
+    {
+        bank_threads.push_back(thread(&PRadGEMFEC::ZeroSuppression, fec_it.second));
     }
 
+    for(auto &thread : bank_threads)
+    {
+        if(thread.joinable()) thread.join();
+    }
+
+    for(auto &fec_it : fec_map)
+    {
+        vector<GEM_Data> fec_hits = fec_it.second->GetZeroSupHits();
+        if(fec_hits.size()) {
+            gem_data.insert(gem_data.end(), fec_hits.begin(), fec_hits.end());
+        }
+    }
+*/
     return gem_data;
 }
 
@@ -374,6 +392,21 @@ void PRadGEMFEC::ClearAPVData()
     }
 }
 
+void PRadGEMFEC::ZeroSuppression()
+{
+    hits_collection.clear();
+
+    for(auto &adc : adc_list)
+    {
+        adc->CollectZeroSupHits(hits_collection);
+    }
+}
+
+vector<GEM_Data> &PRadGEMFEC::GetZeroSupHits()
+{
+    return hits_collection;
+}
+
 //===========================================================================//
 //   GEM APV                                                                 //
 //===========================================================================//
@@ -388,11 +421,11 @@ PRadGEMAPV::PRadGEMAPV(const std::string &p,
 : plane(p), fec_id(f), adc_ch(ch), orient(o),
   plane_index(idx), header_level(hl), status(s)
 {
-#define DEFAULT_MAX_CHANNEL 3096
+#define DEFAULT_MAX_CHANNEL 550
     // should calculate this according to time_sample
     buffer_size = DEFAULT_MAX_CHANNEL;
-
-    raw_data = new int[buffer_size];
+    time_samples = 3;
+    raw_data = new float[buffer_size];
 
     if(status.find("split") != string::npos)
         split = true;
@@ -411,14 +444,14 @@ PRadGEMAPV::~PRadGEMAPV()
 
 void PRadGEMAPV::SetTimeSample(const size_t &t)
 {
-#define APV_HEADER_SIZE 166 //TODO, arbitrary number, safe value to save additional wrods from apv
-
-    buffer_size = t*TIME_SAMPLE_SIZE + APV_HEADER_SIZE;
+#define APV_EXTEND_SIZE 166 //TODO, arbitrary number, need to know exact buffer size the apv need
+    time_samples = t;
+    buffer_size = t*TIME_SAMPLE_SIZE + APV_EXTEND_SIZE;
 
     // reallocate the memory for proper size
     delete[] raw_data;
 
-    raw_data = new int[buffer_size];
+    raw_data = new float[buffer_size];
 
     ClearData();
 }
@@ -461,67 +494,80 @@ void PRadGEMAPV::FillRawData(const uint32_t *buf, const size_t &size)
     }
 }
 
-void PRadGEMAPV::SplitData(const uint32_t &data, int &word1, int &word2)
+void PRadGEMAPV::SplitData(const uint32_t &data, float &word1, float &word2)
 {
-    word1 = (((data>>16)&0xff)<<8) | (data>>24);
-    word2 = ((data&0xff)<<8) | ((data>>8)&0xff);
+    int data1 = (((data>>16)&0xff)<<8) | (data>>24);
+    int data2 = ((data&0xff)<<8) | ((data>>8)&0xff);
+    word1 = (float)data1;
+    word2 = (float)data2;
 }
 
-vector<GEM_Data> PRadGEMAPV::GetZeroSupHits()
+void PRadGEMAPV::CollectZeroSupHits(vector<GEM_Data> &hits)
 {
-    vector<GEM_Data> result;
-    size_t time_sample = 0;
+    size_t sample_diff = TIME_SAMPLE_SIZE + APV_HEADER_SIZE;
+    size_t data_size = time_samples * sample_diff  - APV_HEADER_SIZE;
 
-    for(size_t i = 2; (i < buffer_size) && (time_sample < time_samples); ++i)
-    {
+    for(size_t i = 2; i < buffer_size; ++i)
+    { 
        if( (raw_data[i]   < header_level) &&
            (raw_data[i-1] < header_level) &&
            (raw_data[i-2] < header_level) )
        {
-           i += 10;
-
-           if( i + TIME_SAMPLE_SIZE >= buffer_size) {
-               cerr << "GEM APV: FEC " << fec_id
-                    << ", ADC " << adc_ch << ". Warning, time sample "
-                    << time_sample << " ends at index "
-                    << i + TIME_SAMPLE_SIZE << ", it exceeds the buffer size " << buffer_size
-                    << endl;
-               break;
+           ts_index = i + 10;
+           if(ts_index + data_size >= buffer_size) {
+                  cerr << "GEM APV: FEC " << fec_id
+                       << ", APV " << adc_ch << " Warning, get time samples ends at index "
+                       << ts_index + data_size
+                       << ", it exceeds the buffer size " << buffer_size
+                       << endl;
            }
-
-           ZeroSuppression(result, &raw_data[i], time_sample);
-
-           i += TIME_SAMPLE_SIZE;
-           ++time_sample;
-       } 
+           break;
+        }
     }
 
-    return result;
+    for(size_t ts = 0; ts < time_samples; ++ts)
+    {
+        if(split)
+            CommonModeCorrection_Split(&raw_data[ts_index + sample_diff*ts], TIME_SAMPLE_SIZE);
+        else
+            CommonModeCorrection(&raw_data[ts_index + sample_diff*ts], TIME_SAMPLE_SIZE);
+    }
+
+    ZeroSuppression(hits, &raw_data[ts_index], sample_diff); 
 }
 
-void PRadGEMAPV::ZeroSuppression(vector<GEM_Data> &hits, int *buf, const size_t &time_sample)
+void PRadGEMAPV::ZeroSuppression(vector<GEM_Data> &hits, float *buf, const size_t &ts_diff)
 {
-    if(split)
-        CommonModeCorrection_Split(buf, TIME_SAMPLE_SIZE);
-    else
-        CommonModeCorrection(buf, TIME_SAMPLE_SIZE);
-
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
-        if(buf[i] > pedestal[i].noise * zerosup_thres) {
-            hits.push_back(GEM_Data(fec_id, adc_ch, time_sample, i, (unsigned short)buf[i]));
+        float average = 0.;
+        for(size_t j = 0; j < time_samples; ++j)
+        {
+            average += buf[i + j*ts_diff];
+        }
+        average /= time_samples;
+
+        if(average > pedestal[i].noise * zerosup_thres) {
+            GEM_Data hit(fec_id, adc_ch, i);
+
+            for(size_t j = 0; j < time_samples; ++j)
+            {
+                hit.add_value(buf[i + j*ts_diff]);
+            }
+
+            hits.push_back(hit);
         }
     }
 }
 
-void PRadGEMAPV::CommonModeCorrection(int *buf, const size_t &size)
+void PRadGEMAPV::CommonModeCorrection(float *buf, const size_t &size)
 {
     int count = 0;
     float average = 0;
 
     for(size_t i = 0; i < size; ++i)
     {
-        buf[i] -= pedestal[i].offset;
+        buf[i] = pedestal[i].offset - buf[i];
 
         if(buf[i] < pedestal[i].noise * common_thres) {
             average += buf[i];
@@ -538,20 +584,21 @@ void PRadGEMAPV::CommonModeCorrection(int *buf, const size_t &size)
     }
 }
 
-void PRadGEMAPV::CommonModeCorrection_Split(int *buf, const size_t &size)
+void PRadGEMAPV::CommonModeCorrection_Split(float *buf, const size_t &size)
 {
     int count1 = 0, count2 = 0;
     float average1 = 0, average2 = 0;
 
     for(size_t i = 0; i < size; ++i)
     {
-        buf[i] -= pedestal[i].offset;
-
-        if(buf[i] < pedestal[i].noise * common_thres) {
-            if(strip_map[i] < 16) {
+        buf[i] = pedestal[i].offset - buf[i];
+        if(strip_map[i] < 16) {
+            if(buf[i] < pedestal[i].noise * common_thres * 10.) {
                 average1 += buf[i];
                 count1++;
-            } else {
+            }
+        } else {
+            if(buf[i] < pedestal[i].noise * common_thres) {
                 average2 += buf[i];
                 count2++;
             }
@@ -583,8 +630,8 @@ void PRadGEMAPV::BuildStripMap()
 int PRadGEMAPV::GetStrip(const size_t &ch)
 {
    if(ch >= TIME_SAMPLE_SIZE) {
-       cerr << "GEM APV: FEC " << fec_id
-            << ", ADC " << adc_ch
+       cerr << "GEM APV: APV " << adc_ch
+            << " in FEC " << fec_id
             << " only has " << TIME_SAMPLE_SIZE
             << " channels." << endl;
    }

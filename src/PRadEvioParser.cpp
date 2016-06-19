@@ -186,7 +186,7 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
 #endif
                 break;
             case GEM_BANK: // Bank 0x8, gem data, single FEC right now
-//                parseGEMData(&buffer[index], dataSize, evtHeader->num);
+                parseGEMData(&buffer[index], dataSize, evtHeader->num);
                 break;
             }
             break;

@@ -118,6 +118,8 @@ public:
     void SortAPVList();
     PRadGEMAPV *GetAPV(const int &id);
     std::vector<PRadGEMAPV *> &GetAPVList() {return adc_list;};
+    std::vector<GEM_Data> &GetZeroSupHits();
+    void ZeroSuppression();
     void Clear();
     void ClearAPVData();
 
@@ -125,11 +127,13 @@ public:
     std::string ip;
     std::unordered_map<int, PRadGEMAPV*> adc_map;
     std::vector<PRadGEMAPV *> adc_list;
+    std::vector<GEM_Data> hits_collection;
 };
 
 class PRadGEMAPV
 {
 #define TIME_SAMPLE_SIZE 128
+#define APV_HEADER_SIZE 12
 #define SPLIT_SIZE 16
 public:
     struct Pedestal
@@ -159,13 +163,13 @@ public:
     void SetCommonModeThresLevel(const float &t) {common_thres = t;};
     void SetZeroSupThresLevel(const float &t) {zerosup_thres = t;};
     void FillRawData(const uint32_t *buf, const size_t &size);
-    void SplitData(const uint32_t &buf, int &word1, int &word2);
+    void SplitData(const uint32_t &buf, float &word1, float &word2);
     void UpdatePedestalArray(Pedestal *ped, const size_t &size);
     void UpdatePedestal(const Pedestal &ped, const size_t &index);
-    void ZeroSuppression(std::vector<GEM_Data> &hits, int *buf, const size_t &time_sample);
-    void CommonModeCorrection(int *buf, const size_t &size);
-    void CommonModeCorrection_Split(int *buf, const size_t &size);
-    std::vector<GEM_Data> GetZeroSupHits();
+    void ZeroSuppression(std::vector<GEM_Data> &hits, float *buf, const size_t &ts_diff);
+    void CommonModeCorrection(float *buf, const size_t &size);
+    void CommonModeCorrection_Split(float *buf, const size_t &size);
+    void CollectZeroSupHits(std::vector<GEM_Data> &hits);
     void BuildStripMap();
     int MapStrip(const int &ch);
     int GetStrip(const size_t &ch);
@@ -186,7 +190,8 @@ public:
     Pedestal pedestal[TIME_SAMPLE_SIZE];
     unsigned char strip_map[TIME_SAMPLE_SIZE];
     size_t buffer_size;
-    int *raw_data;
+    size_t ts_index;
+    float *raw_data;
 };
 
 #endif

@@ -42,24 +42,45 @@ typedef struct ChannelData
 
 } TDC_Data, ADC_Data;
 
-struct GEM_Data
+struct APVAddress
 {
     unsigned char fec;
     unsigned char adc;
-    unsigned char time_sample;
     unsigned char strip;
-    unsigned short value;
 
-    GEM_Data()
-    : fec(0), adc(0), time_sample(0), strip(0), value(0)
+    APVAddress() {};
+    APVAddress(const unsigned char &f,
+               const unsigned char &a,
+               const unsigned char &s)
+    : fec(f), adc(a), strip(s)
     {};
+};
+
+struct GEM_Data
+{
+    APVAddress addr;
+    std::vector<float> values;
+
+    GEM_Data() {};
     GEM_Data(const unsigned char &f,
              const unsigned char &a,
-             const unsigned char &ts,
-             const unsigned char &s,
-             const unsigned short &v)
-    : fec(f), adc(a), time_sample(ts), strip(s), value(v)
+             const unsigned char &s)
+    : addr(f, a, s)
     {};
+
+    void set_address (const unsigned char &f,
+                      const unsigned char &a,
+                      const unsigned char &s)
+    {
+        addr.fec = f;
+        addr.adc = a;
+        addr.strip = s;
+    }
+
+    void add_value(const float &v)
+    {
+        values.push_back(v);
+    }
 };
 
 struct EPICSData
