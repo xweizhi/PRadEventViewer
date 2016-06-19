@@ -203,6 +203,7 @@ void PRadDataHandler::Clear()
 {
     // used memory won't be released, but it can be used again for new data file
     energyData.clear();
+    epicsData.clear();
     newEvent.clear();
     runInfo.clear();
 
@@ -385,7 +386,9 @@ void PRadDataHandler::FeedData(TDCV767Data &tdcData)
         return;
 
     PRadTDCGroup *tdc = it->second;
-    tdc->FillHist(tdcData.val);
+    if(newEvent.isPhysicsEvent())
+        tdc->FillHist(tdcData.val);
+
 
     newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
 }
@@ -399,7 +402,8 @@ void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
         }
 
         PRadTDCGroup *tdc = it->second;
-        tdc->FillHist(tdcData.val);
+        if(newEvent.isPhysicsEvent())
+            tdc->FillHist(tdcData.val);
 
         newEvent.add_tdc(TDC_Data(tdc->GetID(), tdcData.val));
     } else {
@@ -505,12 +509,18 @@ void PRadDataHandler::ChooseEvent(const EventData &event)
 
     for(auto &adc : event.adc_data)
     {
+        if(adc.channel_id >= channelList.size())
+            continue;
+
         channelList[adc.channel_id]->UpdateADC(adc.value);
         totalE += channelList[adc.channel_id]->GetEnergy();
     }
 
     for(auto &tdc : event.tdc_data)
     {
+        if(tdc.channel_id >= tdcList.size())
+            continue;
+
         tdcList[tdc.channel_id]->AddTimeMeasure(tdc.value);
     }
 
@@ -954,6 +964,8 @@ void PRadDataHandler::ReadChannelList(const string &path)
     }
 
     c_parser.CloseFile();
+
+    BuildChannelMap();
 }
 
 void PRadDataHandler::ReadEPICSChannels(const string &path)
@@ -1129,6 +1141,9 @@ void PRadDataHandler::RefillEnergyHist()
         double ene = 0.;
         for(auto &adc : event.adc_data)
         {
+            if(adc.channel_id >= channelList.size())
+                continue;
+
             if(channelList[adc.channel_id]->IsHyCalModule())
                 ene += channelList[adc.channel_id]->GetEnergy(adc.value);
         }
@@ -1188,7 +1203,6 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
                      << dec << endl;
                 return;
             }
-
             // read by event type
             switch(event_info&0xff)
             {
@@ -1259,14 +1273,16 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
             totalE += channelList[adc.channel_id]->GetEnergy(adc.value);
         }
     }
-    energyHist->Fill(totalE);
+
+    if(data.isPhysicsEvent())
+        energyHist->Fill(totalE);
     
     dst_file.read((char*) &tdc_size, sizeof(tdc_size));
     for(size_t i = 0; i < tdc_size; ++i)
     {
         dst_file.read((char*) &tdc, sizeof(tdc));
         data.add_tdc(tdc);
-        if(tdc.channel_id < tdcList.size()) {
+        if(data.isPhysicsEvent() && (tdc.channel_id < tdcList.size())) {
             tdcList[tdc.channel_id]->FillHist(tdc.value);
         }
     }
@@ -1397,7 +1413,7 @@ void PRadDataHandler::ReadFromEvio(const string &path, const int &split, const b
     if(split < 0) {// default input, no split
         parser->ReadEvioFile(path.c_str(), verbose);
     } else {
-        for(int i = 0; i < split; ++i)
+        for(int i = 0; i <= split; ++i)
         {
             string split_path = path + "." + to_string(i);
             parser->ReadEvioFile(split_path.c_str(), verbose);
@@ -1417,7 +1433,7 @@ void PRadDataHandler::InitializeByData(const string &path, int run, int ref)
         cout << "Data Handler: Initializing from data file "
              << "\"" << path << "\", "
              << "run number: " << runInfo.run_number
-             << " ." << endl;
+             << "." << endl;
 
         parser->ReadEvioFile(path.c_str());
     }
@@ -1524,8 +1540,9 @@ void PRadDataHandler::WriteEPICSMapToDST(ofstream &dst_file) throw(PRadException
 
     vector<epics_ch> epics_channels = GetSortedEPICSList();
 
-    uint32_t ch_size = epics_channels.size();
+    size_t ch_size = epics_channels.size();
     dst_file.write((char*) &ch_size, sizeof(ch_size));
+
     for(auto &ch : epics_channels)
     {
         size_t str_size = ch.name.size();
@@ -1550,7 +1567,6 @@ void PRadDataHandler::ReadEPICSMapFromDST(ifstream &dst_file) throw(PRadExceptio
     float value;
 
     dst_file.read((char*) &ch_size, sizeof(ch_size));
-
     for(size_t i = 0; i < ch_size; ++i)
     {
         str = "";
@@ -1602,9 +1618,15 @@ void PRadDataHandler::WriteHyCalInfoToDST(ofstream &dst_file) throw(PRadExceptio
     for(auto channel : channelList)
     {
         PRadDAQUnit::Pedestal ped = channel->GetPedestal();
-        PRadDAQUnit::CalibrationConstant cal = channel->GetCalibrationConstant();
         dst_file.write((char*) &ped, sizeof(ped));
-        dst_file.write((char*) &cal, sizeof(cal)); 
+
+        PRadDAQUnit::CalibrationConstant cal = channel->GetCalibrationConstant();
+        size_t gain_size = cal.base_gain.size();
+        dst_file.write((char*) &cal.factor, sizeof(cal.factor)); 
+        dst_file.write((char*) &cal.base_factor, sizeof(cal.base_factor));
+        dst_file.write((char*) &gain_size, sizeof(gain_size));
+        for(auto &gain : cal.base_gain)
+            dst_file.write((char*) &gain, sizeof(gain));
     }
 }
 
@@ -1619,9 +1641,21 @@ void PRadDataHandler::ReadHyCalInfoFromDST(ifstream &dst_file) throw(PRadExcepti
     for(size_t i = 0; i < ch_size; ++i)
     {
         PRadDAQUnit::Pedestal ped;
-        PRadDAQUnit::CalibrationConstant cal;
         dst_file.read((char*) &ped, sizeof(ped));
-        dst_file.read((char*) &cal, sizeof(cal));
+
+        PRadDAQUnit::CalibrationConstant cal;
+        dst_file.read((char*) &cal.factor, sizeof(cal.factor));
+        dst_file.read((char*) &cal.base_factor, sizeof(cal.base_factor));
+
+        double gain;
+        size_t gain_size;
+        dst_file.read((char*) &gain_size, sizeof(gain_size));
+
+        for(size_t i = 0; i < gain_size; ++i)
+        {
+            dst_file.read((char*) &gain, sizeof(gain));
+            cal.base_gain.push_back(gain);
+        }
 
         if(i < channelList.size()) {
             channelList.at(i)->UpdatePedestal(ped);

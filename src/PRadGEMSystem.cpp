@@ -411,7 +411,7 @@ PRadGEMAPV::~PRadGEMAPV()
 
 void PRadGEMAPV::SetTimeSample(const size_t &t)
 {
-#define APV_HEADER_SIZE 164 //TODO, arbitrary number, need to know exact buffer size the apv need
+#define APV_HEADER_SIZE 166 //TODO, arbitrary number, safe value to save additional wrods from apv
 
     buffer_size = t*TIME_SAMPLE_SIZE + APV_HEADER_SIZE;
 

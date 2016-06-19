@@ -306,12 +306,12 @@ size_t PRadEvioParser::getAPVDataSize(const uint32_t *data)
     while((data[idx]&0xffffff00) != GEMDATA_APVBEG)
     {
         if(data[idx] == GEMDATA_FECEND) {
-            return idx - 1;
+            return idx;
         }
         ++idx;
     }
 
-    return idx - 2;
+    return idx - 1;
 }
 
 // parse CAEN V767 Data
