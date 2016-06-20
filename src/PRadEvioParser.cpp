@@ -10,10 +10,13 @@
 #include "PRadEvioParser.h"
 #include "PRadDataHandler.h"
 #include "ConfigParser.h"
-#include <thread>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+
+#ifdef MULTI_THREAD
+#include <thread>
+#endif
 
 #define HEADER_SIZE 2
 #define MAX_BUFFER_SIZE 100000
@@ -31,7 +34,7 @@ PRadEvioParser::~PRadEvioParser()
 }
 
 // Simple binary reading for evio format files
-void PRadEvioParser::ReadEvioFile(const char *filepath, const bool &verbose)
+void PRadEvioParser::ReadEvioFile(const char *filepath, const int &evt, const bool &verbose)
 {
     ifstream evio_in(filepath, ios::binary | ios::in);
 
@@ -50,16 +53,21 @@ void PRadEvioParser::ReadEvioFile(const char *filepath, const bool &verbose)
         cout << "Reading evio file " << filepath << endl;
     }
 
+    int count = 0;
+
     while(evio_in.tellg() < length && evio_in.tellg() != -1)
     {
         try {
-            getEvioBlock(evio_in, buffer);
+            count += getEvioBlock(evio_in, buffer);
         } catch (PRadException &e) {
             cerr << e.FailureType() << ": " 
                  << e.FailureDesc() << endl;
             cerr << "Abort reading from file " << filepath << endl;
             break;
         }
+
+        if(evt > 0 && count >= evt)
+            break;
     }
 
     delete [] buffer;
@@ -67,11 +75,12 @@ void PRadEvioParser::ReadEvioFile(const char *filepath, const bool &verbose)
     evio_in.close();
 }
 
-size_t PRadEvioParser::getEvioBlock(ifstream &in, uint32_t *buf) throw(PRadException)
+int PRadEvioParser::getEvioBlock(ifstream &in, uint32_t *buf) throw(PRadException)
 {
 #define CODA_BLOCK_SIZE 8
 
     streamsize buf_size = sizeof(uint32_t);
+    int buffer_cnt = 0;
 
     // read the block size
     in.read((char*) &buf[0], buf_size);
@@ -90,9 +99,10 @@ size_t PRadEvioParser::getEvioBlock(ifstream &in, uint32_t *buf) throw(PRadExcep
     {
         ParseEventByHeader((PRadEventHeader *) &buf[index]);
         index += buf[index] + 1;
+        buffer_cnt++;
     }
 
-    return buf[0];
+    return  buffer_cnt;
 }
 
 void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
@@ -188,7 +198,12 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
 #endif
                 break;
             case GEM_BANK: // Bank 0x8, gem data, single FEC right now
+#ifdef MULTI_THREAD
+                bank_threads.push_back(thread(&PRadEvioParser::parseGEMData, this, &buffer[index], dataSize, evtHeader->num));
+//                parseGEMData(&buffer[index], dataSize, evtHeader->num);
+#else
                 parseGEMData(&buffer[index], dataSize, evtHeader->num);
+#endif
                 break;
             }
             break;
@@ -287,8 +302,8 @@ void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size,  con
     while(i < size)
     {
         if((data[i]&0xffffff00) == GEMDATA_APVBEG) {
-            gemData.adc = data[i]&0xff;
-            gemData.fec = (data[i+1] >> 16)&0xff;
+            gemData.addr.adc_ch = data[i]&0xff;
+            gemData.addr.fec_id = (data[i+1] >> 16)&0xff;
             gemData.buf = &data[i+2];
             gemData.size = getAPVDataSize(gemData.buf);
 

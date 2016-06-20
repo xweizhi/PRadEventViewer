@@ -1,16 +1,6 @@
 #ifndef PRAD_DATA_HANDLER_H
 #define PRAD_DATA_HANDLER_H
 
-// Multi threads to deal with several banks in an event simultaneously.
-// Depends on the running evironment, you may have greatly improved
-// performance to read large evio file.
-#define MULTI_THREAD
-
-#ifdef MULTI_THREAD
-#include <thread>
-#include <mutex>
-#endif
-
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -19,6 +9,11 @@
 #include "PRadEventStruct.h"
 #include "PRadException.h"
 #include "ConfigParser.h"
+
+#ifdef MULTI_THREAD
+#include <thread>
+#include <mutex>
+#endif
 
 class PRadEvioParser;
 class PRadDAQUnit;
@@ -102,15 +97,18 @@ public:
     void WriteEPICSMapToDST(std::ofstream &dst_file) throw(PRadException);
     void WriteRunInfoToDST(std::ofstream &dst_file) throw(PRadException);
     void WriteHyCalInfoToDST(std::ofstream &dst_file) throw(PRadException);
+    void WriteGEMInfoToDST(std::ofstream &dst_file) throw(PRadException);
     void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
     void ReadFromDST(std::ifstream &dst_file, EventData &data) throw(PRadException);
     void ReadFromDST(std::ifstream &dst_file, EPICSData &data) throw(PRadException);
     void ReadEPICSMapFromDST(std::ifstream &dst_file) throw(PRadException);
     void ReadRunInfoFromDST(std::ifstream &dst_file) throw(PRadException);
     void ReadHyCalInfoFromDST(std::ifstream &dst_file) throw(PRadException);
+    void ReadGEMInfoFromDST(std::ifstream &dst_file) throw(PRadException);
 
     // evio data file
-    void ReadFromEvio(const std::string &path, const int &split = -1, const bool &verbose = false);
+    void ReadFromEvio(const std::string &path, const int &evt = -1, const bool &verbose = false);
+    void ReadFromSplitEvio(const std::string &path, const int &split = -1, const bool &verbose = true);
     void Decode(const void *buffer);
 
     // data handler

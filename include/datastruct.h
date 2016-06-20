@@ -2,6 +2,7 @@
 #define PRAD_DATA_STRUCT_H
 
 #include "stddef.h"
+#define MULTI_THREAD
 
 enum PRadEventType
 {
@@ -209,8 +210,7 @@ struct TDCV1190Data
 
 struct GEMRawData
 {
-    int fec;
-    int adc;
+    GEMChannelAddress addr;
     const uint32_t *buf;
     size_t size;
 };
@@ -222,6 +222,7 @@ enum PRadDST
     PRad_DST_Epics_Map = 2,
     PRad_DST_Run_Info = 3,
     PRad_DST_HyCal_Info = 4,
+    PRad_DST_GEM_Info = 5,
 
     // headers
     PRad_DST_Header = 0xc0c0c0,

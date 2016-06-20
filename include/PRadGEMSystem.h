@@ -4,9 +4,15 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <fstream>
 #include "datastruct.h"
 #include "PRadEventStruct.h"
 #include "PRadException.h"
+
+#ifdef MULTI_THREAD
+#include <thread>
+#include <mutex>
+#endif
 
 class TH1I;
 
@@ -41,13 +47,15 @@ public:
     void RegisterFEC(PRadGEMFEC *fec);
     void RegisterAPV(PRadGEMAPV *apv);
     void BuildAPVMap();
-    void FillRawData(GEMRawData &raw);
+    void FillRawData(GEMRawData &raw, std::vector<GEM_Data> &container, const bool &fill_hist = false);
 
     void SetUnivCommonModeThresLevel(const float &thres);
     void SetUnivZeroSupThresLevel(const float &thres);
     void SetUnivTimeSample(const size_t &thres);
     void SetPedestalMode(const bool &m);
     void FitPedestal();
+    void SavePedestal(const std::string &path);
+    void SaveHistograms(const std::string &path);
     void ClearAPVData();
 
     PRadGEMDET *GetDetector(const int &id);
@@ -55,11 +63,13 @@ public:
     PRadGEMDET *GetDetectorByPlaneX(const std::string &plane_x);
     PRadGEMDET *GetDetectorByPlaneY(const std::string &plane_y);
     PRadGEMFEC *GetFEC(const int &id);
+    PRadGEMAPV *GetAPV(const GEMChannelAddress &addr);
     PRadGEMAPV *GetAPV(const int &fec, const int &adc);
 
     std::vector<GEM_Data> GetZeroSupData();
     std::vector<PRadGEMDET*> &GetDETList() {return det_list;};
     std::vector<PRadGEMFEC*> &GetFECList() {return fec_list;};
+    std::vector<PRadGEMAPV*> GetAPVList();
 
 private:
     std::vector<PRadGEMDET*> det_list;
@@ -70,6 +80,10 @@ private:
     std::unordered_map<int, PRadGEMFEC*> fec_map;
     std::unordered_map<GEMChannelAddress, PRadGEMAPV*> apv_map;
     bool PedestalMode;
+
+#ifdef MULTI_THREAD
+    std::mutex locker;
+#endif
 };
 
 class PRadGEMDET
@@ -127,8 +141,9 @@ public:
     void SortAPVList();
     PRadGEMAPV *GetAPV(const int &id);
     std::vector<PRadGEMAPV *> &GetAPVList() {return adc_list;};
-    void Clear();
+    void FitPedestal();
     void ClearAPVData();
+    void Clear();
 
     int id;
     std::string ip;
@@ -139,7 +154,7 @@ public:
 class PRadGEMAPV
 {
 #define TIME_SAMPLE_SIZE 128
-#define APV_HEADER_SIZE 12
+#define TIME_SAMPLE_DIFF 140
 #define SPLIT_SIZE 16
 public:
     struct Pedestal
@@ -172,18 +187,23 @@ public:
     void SetTimeSample(const size_t &t);
     void SetCommonModeThresLevel(const float &t) {common_thres = t;};
     void SetZeroSupThresLevel(const float &t) {zerosup_thres = t;};
-    void FillRawData(const uint32_t *buf, const size_t &size);
+    void FillRawData(const uint32_t *buf, const size_t &siz);
     void SplitData(const uint32_t &buf, float &word1, float &word2);
-    void UpdatePedestalArray(Pedestal *ped, const size_t &size);
+    void UpdatePedestal(std::vector<Pedestal> &ped);
     void UpdatePedestal(const Pedestal &ped, const size_t &index);
     void UpdatePedestal(const float &offset, const float &noise, const size_t &index);
-    void ZeroSuppression(std::vector<GEM_Data> &hits, float *buf, const size_t &ts_diff);
+    void ZeroSuppression();
     void CommonModeCorrection(float *buf, const size_t &size);
     void CommonModeCorrection_Split(float *buf, const size_t &size);
     void CollectZeroSupHits(std::vector<GEM_Data> &hits);
     void BuildStripMap();
+    void PrintOutPedestal(std::ofstream &out);
+    std::vector<TH1I *> GetHistList();
+    std::vector<Pedestal> GetPedestalList();
     int MapStrip(const int &ch);
     int GetStrip(const size_t &ch);
+    void GetAverage(float &ave, const float *buf, const size_t &set = 0);
+    size_t GetTimeSampleStart();
 
     std::string plane;
     int fec_id;
@@ -200,10 +220,12 @@ public:
     std::string status;
     Pedestal pedestal[TIME_SAMPLE_SIZE];
     unsigned char strip_map[TIME_SAMPLE_SIZE];
+    bool hit_pos[TIME_SAMPLE_SIZE];
     size_t buffer_size;
     size_t ts_index;
     float *raw_data;
-    TH1I *ped_hist[TIME_SAMPLE_SIZE];
+    TH1I *offset_hist[TIME_SAMPLE_SIZE];
+    TH1I *noise_hist[TIME_SAMPLE_SIZE];
 };
 
 #endif

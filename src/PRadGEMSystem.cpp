@@ -10,11 +10,11 @@
 #include "ConfigParser.h"
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 #include <algorithm>
-#include <thread>
 #include "TH1.h"
 #include "TF1.h"
+#include "TList.h"
+#include "TFile.h"
 
 using namespace std;
 
@@ -106,7 +106,7 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
             // default levels
             new_apv->SetTimeSample(3);
             new_apv->SetCommonModeThresLevel(20.);
-            new_apv->SetZeroSupThresLevel(5.);
+            new_apv->SetZeroSupThresLevel(6.);
 
             RegisterAPV(new_apv);
         }
@@ -260,10 +260,15 @@ PRadGEMFEC *PRadGEMSystem::GetFEC(const int &id)
 
 PRadGEMAPV *PRadGEMSystem::GetAPV(const int &fec_id, const int &apv_id)
 {
-    auto it = apv_map.find(GEMChannelAddress(fec_id, apv_id));
+    return GetAPV(GEMChannelAddress(fec_id, apv_id));
+}
+
+PRadGEMAPV *PRadGEMSystem::GetAPV(const GEMChannelAddress &addr)
+{
+    auto it = apv_map.find(addr);
     if(it == apv_map.end()) {
-        cerr << "GEM System: Cannot find APV with id " << apv_id
-             << " in FEC " << fec_id << endl;
+        cerr << "GEM System: Cannot find APV with id " << addr.adc_ch
+             << " in FEC " << addr.fec_id << endl;
         return nullptr;
     }
     return it->second;
@@ -277,28 +282,41 @@ void PRadGEMSystem::ClearAPVData()
     }
 }
 
-void PRadGEMSystem::FillRawData(GEMRawData &raw)
+void PRadGEMSystem::FillRawData(GEMRawData &raw, vector<GEM_Data> &container, const bool &fill_hist)
 {
-    auto it = apv_map.find(GEMChannelAddress(raw.fec, raw.adc));
+    auto it = apv_map.find(raw.addr);
     if(it != apv_map.end())
     {
-        it->second->FillRawData(raw.buf, raw.size);
-        if(PedestalMode)
-            it->second->FillPedHist();
+        PRadGEMAPV *apv = it->second;
+        apv->FillRawData(raw.buf, raw.size);
+
+        if(fill_hist) {
+            if(PedestalMode)
+                apv->FillPedHist();
+        } else {
+            apv->ZeroSuppression();
+#ifdef MULTI_THREAD
+            locker.lock();
+#endif
+            apv->CollectZeroSupHits(container);
+#ifdef MULTI_THREAD
+            locker.unlock();
+#endif
+        }
     }
 }
 
 void PRadGEMSystem::FitPedestal()
 {
-    for(auto &apv_it : apv_map)
+    for(auto &fec : fec_list)
     {
-        apv_it.second->FitPedestal();
+        fec->FitPedestal();
     }
 }
 
 void PRadGEMSystem::SavePedestal(const std::string &name)
 {
-    ifstream in_file(name);
+    ofstream in_file(name);
 
     if(!in_file.is_open()) {
         cerr << "GEM System: Failed to save pedestal, file "
@@ -308,7 +326,7 @@ void PRadGEMSystem::SavePedestal(const std::string &name)
 
     for(auto &fec : fec_list)
     {
-        for(auto &apv : fec->GetAPVList)
+        for(auto &apv : fec->GetAPVList())
         {
             apv->PrintOutPedestal(in_file);
         }
@@ -361,6 +379,43 @@ void PRadGEMSystem::SetUnivTimeSample(const size_t &ts)
     {
         apv_it.second->SetTimeSample(ts);
     }
+}
+
+void PRadGEMSystem::SaveHistograms(const string &path)
+{
+    TFile *f = new TFile(path.c_str(), "recreate");
+
+    for(auto fec : fec_list)
+    {
+        string fec_name = "FEC " + to_string(fec->id);
+        TDirectory *cdtof = f->mkdir(fec_name.c_str());
+        cdtof->cd();
+
+        for(auto apv : fec->GetAPVList())
+        {
+            string adc_name = "ADC " + to_string(apv->adc_ch);
+            TDirectory *cur_dir = cdtof->mkdir(adc_name.c_str());
+            cur_dir->cd();
+
+            for(auto hist : apv->GetHistList())
+                hist->Write();
+        }
+    }
+
+    f->Close();
+    delete f;
+}
+
+vector<PRadGEMAPV *> PRadGEMSystem::GetAPVList()
+{
+    vector<PRadGEMAPV *> list;
+    for(auto &fec : fec_list)
+    {
+        vector<PRadGEMAPV *> sub_list = fec->GetAPVList();
+        list.insert(list.end(), sub_list.begin(), sub_list.end());
+    }
+
+    return list;
 }
 
 //===========================================================================//
@@ -440,6 +495,14 @@ void PRadGEMFEC::ClearAPVData()
     }
 }
 
+void PRadGEMFEC::FitPedestal()
+{
+    for(auto &adc : adc_list)
+    {
+        adc->FitPedestal();
+    }
+}
+
 //===========================================================================//
 //   GEM APV                                                                 //
 //===========================================================================//
@@ -461,7 +524,10 @@ PRadGEMAPV::PRadGEMAPV(const std::string &p,
     raw_data = new float[buffer_size];
 
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-        ped_hist[i] = nullptr;
+    {
+        offset_hist[i] = nullptr;
+        noise_hist[i] = nullptr;
+    }
 
     if(status.find("split") != string::npos)
         split = true;
@@ -482,10 +548,14 @@ void PRadGEMAPV::CreatePedHist()
 {
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
-        if(ped_hist[i] != nullptr)
-            continue;
-        string name = "FEC_" + to_string(fec_id) + "_ADC_" + to_string(adc_ch) + "CH_" + to_string(i);
-        ped_hist[i] = new TH1I(name.c_str(), "Pedestal", 500, header_level, 5000);
+        if(offset_hist[i] == nullptr) {
+            string name = "CH_" + to_string(i) + "_OFFSET_" + to_string(fec_id) + "_" + to_string(adc_ch);
+            offset_hist[i] = new TH1I(name.c_str(), "Pedestal", 500, 2000, 3500);
+        }
+        if(noise_hist[i] == nullptr) {
+            string name = "CH_" + to_string(i) + "_NOISE_" + to_string(fec_id) + "_" + to_string(adc_ch);
+            noise_hist[i] = new TH1I(name.c_str(), "Noise", 400, -200, 200); 
+        }
     }
 }
 
@@ -493,9 +563,12 @@ void PRadGEMAPV::ReleasePedHist()
 {
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
-        if(ped_hist == nullptr)
-            continue;
-        delete ped_hist[i], ped_hist[i] = nullptr;
+        if(offset_hist != nullptr) {
+            delete offset_hist[i], offset_hist[i] = nullptr;
+        }
+        if(noise_hist != nullptr) {
+            delete noise_hist[i], noise_hist[i] = nullptr;
+        }
     }
 }
 
@@ -516,7 +589,10 @@ void PRadGEMAPV::SetTimeSample(const size_t &t)
 void PRadGEMAPV::ClearData()
 {
     for(size_t i = 0; i < buffer_size; ++i)
-        raw_data[i] = 0;
+        raw_data[i] = 5000.;
+
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+        hit_pos[i] = false;
 }
 
 void PRadGEMAPV::ClearPedestal()
@@ -525,19 +601,25 @@ void PRadGEMAPV::ClearPedestal()
         pedestal[i] = Pedestal(0, 0);
 }
 
-void PRadGEMAPV::UpdatePedestalArray(Pedestal *ped, const size_t &size)
+void PRadGEMAPV::UpdatePedestal(vector<Pedestal> &ped)
 {
-    for(size_t i = 0; i < size; ++i)
+    for(size_t i = 0; (i < ped.size()) && (i < TIME_SAMPLE_SIZE); ++i)
         pedestal[i] = ped[i];
 }
 
 void PRadGEMAPV::UpdatePedestal(const Pedestal &ped, const size_t &index)
 {
+    if(index >= TIME_SAMPLE_SIZE)
+        return;
+
     pedestal[index] = ped;
 }
 
 void PRadGEMAPV::UpdatePedestal(const float &offset, const float &noise, const size_t &index)
 {
+    if(index >= TIME_SAMPLE_SIZE)
+        return;
+
     pedestal[index].offset = offset;
     pedestal[index].noise = noise;
 }
@@ -555,6 +637,8 @@ void PRadGEMAPV::FillRawData(const uint32_t *buf, const size_t &size)
     {
         SplitData(buf[i], raw_data[2*i], raw_data[2*i+1]);
     }
+
+    ts_index = GetTimeSampleStart();
 }
 
 void PRadGEMAPV::SplitData(const uint32_t &data, float &word1, float &word2)
@@ -567,53 +651,82 @@ void PRadGEMAPV::SplitData(const uint32_t &data, float &word1, float &word2)
 
 void PRadGEMAPV::FillPedHist()
 {
-    size_t ts_index = GetTimeSampleStart();
-    size_t sample_diff = TIME_SAMPLE_SIZE + APV_HEADER_SIZE;
+    float average[2][3];
+
+    for(size_t i = 0; i < time_samples; ++i)
+    {
+        if(split) {
+            GetAverage(average[0][i], &raw_data[ts_index + i*TIME_SAMPLE_DIFF], 1);
+            GetAverage(average[1][i], &raw_data[ts_index + i*TIME_SAMPLE_DIFF], 2);
+        } else {
+            GetAverage(average[0][i], &raw_data[ts_index + i*TIME_SAMPLE_DIFF]);
+        }
+    }
 
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
         float ch_average = 0.;
+        float noise_average = 0.;
         for(size_t j = 0; j < time_samples; ++j)
-            ch_average += data[ts_index + j*sample_diff];
+        {
+            ch_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF];
+            if(split) {
+                if(strip_map[i] < 16)
+                    noise_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF] - average[0][j];
+                else
+                    noise_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF] - average[1][j];
+            } else {
+                noise_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF] - average[0][j];
+            }
+        }
 
-        if(ped_hist[i])
-            ped_hist[i]->Fill(ch_average/time_samples);
+        if(offset_hist[i])
+            offset_hist[i]->Fill(ch_average/time_samples);
+
+        if(noise_hist[i])
+            noise_hist[i]->Fill(noise_average/time_samples);
     }
+}
+
+void PRadGEMAPV::GetAverage(float &average, const float *buf, const size_t &set)
+{
+    average = 0.;
+    int count = 0;
+
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        if((set == 0) ||
+           (set == 1 && strip_map[i] < 16) ||
+           (set == 2 && strip_map[i] >= 16))
+        {
+            average += buf[i];
+            count++;
+        }
+    }
+
+    average /= (float)count;
 }
 
 void PRadGEMAPV::FitPedestal()
 {
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
-        if(ped_hist[i] == nullptr || ped_hist[i]->Integral() < 1000)
+        if( (offset_hist[i] == nullptr) ||
+            (noise_hist[i] == nullptr) ||
+            (offset_hist[i]->Integral() < 1000) ||
+            (noise_hist[i]->Integral() < 1000) )
             continue;
 
-        ped_hist[i]->Fit("gaus", "qww");
-        TF1 *myfit = (TF1*) ped_hist[i]>GetFunction("gaus");
+        offset_hist[i]->Fit("gaus", "qww");
+        noise_hist[i]->Fit("gaus", "qww");
+        TF1 *myfit = (TF1*) offset_hist[i]->GetFunction("gaus");
         double p0 = myfit->GetParameter(1);
+        myfit = (TF1*) noise_hist[i]->GetFunction("gaus");
         double p1 = myfit->GetParameter(2);
+//        double p0 = ped_hist[i]->GetMean();
+//        double p1 = ped_hist[i]->GetRMS();
         UpdatePedestal((float)p0, (float)p1, i);
     }
-}
-
-void PRadGEMAPV::CollectZeroSupHits(vector<GEM_Data> &hits)
-{
-    size_t sample_diff = TIME_SAMPLE_SIZE + APV_HEADER_SIZE;
-    size_t ts_index = GetTimeSampleStart();
-
-    if(
-
-    for(size_t ts = 0; ts < time_samples; ++ts)
-    {
-        if(split)
-            CommonModeCorrection_Split(&raw_data[ts_index + sample_diff*ts], TIME_SAMPLE_SIZE);
-        else
-            CommonModeCorrection(&raw_data[ts_index + sample_diff*ts], TIME_SAMPLE_SIZE);
-
-        ts_index += sample_size
-    }
-
-    ZeroSuppression(hits, &raw_data[ts_index], sample_diff); 
 }
 
 size_t PRadGEMAPV::GetTimeSampleStart()
@@ -629,27 +742,46 @@ size_t PRadGEMAPV::GetTimeSampleStart()
     return buffer_size;
 }
 
-void PRadGEMAPV::ZeroSuppression(vector<GEM_Data> &hits, float *buf, const size_t &ts_diff)
+void PRadGEMAPV::ZeroSuppression()
 {
+    // common mode correction
+    for(size_t ts = 0; ts < time_samples; ++ts)
+    {
+        if(split)
+            CommonModeCorrection_Split(&raw_data[ts_index + ts*TIME_SAMPLE_DIFF], TIME_SAMPLE_SIZE);
+        else
+            CommonModeCorrection(&raw_data[ts_index + ts*TIME_SAMPLE_DIFF], TIME_SAMPLE_SIZE);
+    }
+
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
         float average = 0.;
         for(size_t j = 0; j < time_samples; ++j)
         {
-            average += buf[i + j*ts_diff];
+            average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF];
         }
         average /= time_samples;
 
-        if(average > pedestal[i].noise * zerosup_thres) {
-            GEM_Data hit(fec_id, adc_ch, i);
+        if(average > pedestal[i].noise * zerosup_thres)
+            hit_pos[i] = true;
+        else
+            hit_pos[i] = false;
+    }
+}
 
-            for(size_t j = 0; j < time_samples; ++j)
-            {
-                hit.add_value(buf[i + j*ts_diff]);
-            }
+void PRadGEMAPV::CollectZeroSupHits(vector<GEM_Data> &hits)
+{
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        if(hit_pos[i] == false)
+            continue;
 
-            hits.push_back(hit);
+        GEM_Data hit(fec_id, adc_ch, i);
+        for(size_t j = 0; j < time_samples; ++j)
+        {
+            hit.add_value(raw_data[i + ts_index + j*TIME_SAMPLE_DIFF]);
         }
+        hits.push_back(hit);
     }
 }
 
@@ -755,18 +887,44 @@ int PRadGEMAPV::MapStrip(const int &ch)
     return strip;
 }
 
-void PRadGEMAPV::PrintOutPedestal(ifstream &in)
+void PRadGEMAPV::PrintOutPedestal(ofstream &out)
 {
-    in << "APV address: "
-       << setw(12) << fec_id
-       << setw(12) << adc_ch
-       << endl;
+    out << "APV address: "
+        << setw(12) << fec_id
+        << setw(12) << adc_ch
+        << endl;
 
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
-        in << setw(12) << i
-           << setw(12) << pedestal[i].offset
-           << setw(12) << pedestal[i].noise
-           << endl;
+        out << setw(12) << i
+            << setw(12) << pedestal[i].offset
+            << setw(12) << pedestal[i].noise
+            << endl;
     }
+}
+
+vector<TH1I *> PRadGEMAPV::GetHistList()
+{
+    vector<TH1I *> hist_list;
+
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        if(offset_hist[i])
+            hist_list.push_back(offset_hist[i]);
+        if(noise_hist[i])
+            hist_list.push_back(noise_hist[i]);
+    }
+
+    return hist_list;
+}
+
+vector<PRadGEMAPV::Pedestal> PRadGEMAPV::GetPedestalList()
+{
+    vector<Pedestal> ped_list;
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        ped_list.push_back(pedestal[i]);
+    }
+
+    return ped_list;
 }

@@ -1,8 +1,6 @@
 //============================================================================//
 // The data handler and container class                                       //
 // Dealing with the data from all the channels                                //
-// Provided multi-thread support, can be disabled by comment the definition   //
-// in PRadDataHandler.h                                                       //
 //                                                                            //
 // Chao Peng                                                                  //
 // 02/07/2016                                                                 //
@@ -17,6 +15,7 @@
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
 #include "ConfigParser.h"
+#include "PRadBenchMark.h"
 #include "TFile.h"
 #include "TList.h"
 #include "TF1.h"
@@ -435,7 +434,7 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
 // feed GEM data
 void PRadDataHandler::FeedData(GEMRawData &gemData)
 {
-    gem_srs->FillRawData(gemData);
+    gem_srs->FillRawData(gemData, newEvent.gem_data, newEvent.isMonitorEvent());
 }
 
 // signal of new event
@@ -452,16 +451,15 @@ void PRadDataHandler::EndofThisEvent(const unsigned int &ev)
     if(newEvent.type == CODA_Event) {
 
         newEvent.event_number = ev;
-        newEvent.gem_data = gem_srs->GetZeroSupData();
         if(onlineMode && energyData.size()) { // online mode only saves the last event, to reduce usage of memory
             energyData.pop_front();
         }
 
-        energyData.push_back(newEvent); // save event
-
         if(newEvent.isPhysicsEvent()) {
             energyHist->Fill(totalE); // fill energy histogram
         }
+
+        energyData.push_back(newEvent); // save event
 
     } else if(newEvent.type == EPICS_Info) {
 
@@ -664,6 +662,7 @@ void PRadDataHandler::SaveHistograms(const string &path)
     }
 
     f->Close();
+    delete f;
 }
 
 EventData &PRadDataHandler::GetEventData(const unsigned int &index)
@@ -1223,6 +1222,9 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
             case PRad_DST_HyCal_Info:
                 ReadHyCalInfoFromDST(input);
                 break;
+            case PRad_DST_GEM_Info:
+                ReadGEMInfoFromDST(input);
+                break;
             default:
                 break;
             }
@@ -1289,7 +1291,7 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
         GEM_Data gemhit;
         dst_file.read((char*) &gemhit.addr, sizeof(gemhit.addr));
         dst_file.read((char*) &value_size, sizeof(value_size));
-        for(size_t i = 0; i < value_size; ++i)
+        for(size_t j = 0; j < value_size; ++j)
         {
             dst_file.read((char*) &value, sizeof(value));
             gemhit.add_value(value);
@@ -1336,6 +1338,7 @@ void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
 
         WriteRunInfoToDST(output);
         WriteHyCalInfoToDST(output);
+        WriteGEMInfoToDST(output);
         WriteEPICSMapToDST(output);
 
         for(auto &event : energyData)
@@ -1419,21 +1422,32 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EPICSData &data) thro
         dst_file.write((char*) &value, sizeof(value));
 }
 
-void PRadDataHandler::ReadFromEvio(const string &path, const int &split, const bool &verbose)
+void PRadDataHandler::ReadFromEvio(const string &path, const int &evt, const bool &verbose)
+{
+    parser->ReadEvioFile(path.c_str(), evt, verbose);
+}
+
+void PRadDataHandler::ReadFromSplitEvio(const string &path, const int &split, const bool &verbose)
 {
     if(split < 0) {// default input, no split
-        parser->ReadEvioFile(path.c_str(), verbose);
+        parser->ReadEvioFile(path.c_str(), -1, verbose);
     } else {
         for(int i = 0; i <= split; ++i)
         {
             string split_path = path + "." + to_string(i);
-            parser->ReadEvioFile(split_path.c_str(), verbose);
+            parser->ReadEvioFile(split_path.c_str(), -1, verbose);
         }
     }
 }
 
 void PRadDataHandler::InitializeByData(const string &path, int run, int ref)
 {
+    PRadBenchMark timer;
+
+    cout << "Data Handler: Initializing from Data File "
+         << "\"" << path << "\"."
+         << endl;
+
     if(!path.empty()) {
         // auto update run number
         if(run < 0)
@@ -1441,21 +1455,28 @@ void PRadDataHandler::InitializeByData(const string &path, int run, int ref)
         else
             SetRunNumber(run);
 
-        cout << "Data Handler: Initializing from data file "
-             << "\"" << path << "\", "
-             << "run number: " << runInfo.run_number
-             << "." << endl;
+        gem_srs->SetPedestalMode(true);
 
-        parser->ReadEvioFile(path.c_str());
+        parser->ReadEvioFile(path.c_str(), 20000);
     }
 
+    cout << "Data Handler: Fitting Pedestal for HyCal." << endl;
     FitPedestal();
 
+    cout << "Data Handler: Correct HyCal Gain Factor, Run Number: " << runInfo.run_number << "." << endl;
     CorrectGainFactor(ref);
+
+    cout << "Data Handler: Fitting Pedestal for GEM." << endl;
+    gem_srs->FitPedestal();
+    gem_srs->SavePedestal("gem_ped_" + to_string(runInfo.run_number) + ".dat");
+    gem_srs->SaveHistograms("gem_ped_" + to_string(runInfo.run_number) + ".root");
+
+    cout << "Data Handler: Releasing Memeory." << endl;
+    gem_srs->SetPedestalMode(false);
 
     Clear();
 
-    cout << "Data Handler: Done initialization." << endl;
+    cout << "Data Handler: Done initialization, took " << timer.GetElapsedTime() << " ms" << endl;
 }
 
 void PRadDataHandler::GetRunNumberFromFileName(const string &name, const size_t &pos, const bool &verbose)
@@ -1582,7 +1603,7 @@ void PRadDataHandler::ReadEPICSMapFromDST(ifstream &dst_file) throw(PRadExceptio
     {
         str = "";
         dst_file.read((char*) &str_size, sizeof(str_size));
-        for(size_t i = 0; i < str_size; ++i)
+        for(size_t j = 0; j < str_size; ++j)
         {
             char c;
             dst_file.read(&c, sizeof(c));
@@ -1662,7 +1683,7 @@ void PRadDataHandler::ReadHyCalInfoFromDST(ifstream &dst_file) throw(PRadExcepti
         size_t gain_size;
         dst_file.read((char*) &gain_size, sizeof(gain_size));
 
-        for(size_t i = 0; i < gain_size; ++i)
+        for(size_t j = 0; j < gain_size; ++j)
         {
             dst_file.read((char*) &gain, sizeof(gain));
             cal.base_gain.push_back(gain);
@@ -1671,6 +1692,62 @@ void PRadDataHandler::ReadHyCalInfoFromDST(ifstream &dst_file) throw(PRadExcepti
         if(i < channelList.size()) {
             channelList.at(i)->UpdatePedestal(ped);
             channelList.at(i)->UpdateCalibrationConstant(cal);
+        }
+    }
+}
+
+
+void PRadDataHandler::WriteGEMInfoToDST(ofstream &dst_file) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("WRITE DST", "output file is not opened!");
+
+    // write header
+    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_GEM_Info;
+    dst_file.write((char*) &event_info, sizeof(event_info));
+
+    vector<PRadGEMAPV *> apv_list = gem_srs->GetAPVList();
+
+    size_t apv_size = apv_list.size();
+    dst_file.write((char*) &apv_size, sizeof(apv_size));
+
+    for(auto apv : apv_list)
+    {
+        GEMChannelAddress addr(apv->fec_id, apv->adc_ch);
+        dst_file.write((char*) &addr, sizeof(addr));
+
+        vector<PRadGEMAPV::Pedestal> ped_list = apv->GetPedestalList();
+        size_t ped_size = ped_list.size();
+        dst_file.write((char*) &ped_size, sizeof(ped_size));
+
+        for(auto &ped : ped_list)
+            dst_file.write((char*) &ped, sizeof(ped));
+    }
+}
+
+void PRadDataHandler::ReadGEMInfoFromDST(ifstream &dst_file) throw(PRadException)
+{
+    if(!dst_file.is_open())
+        throw PRadException("READ DST", "input file is not opened!");
+
+    size_t apv_size, ped_size;
+    dst_file.read((char*) &apv_size, sizeof(apv_size));
+
+    for(size_t i = 0; i < apv_size; ++i)
+    {
+        GEMChannelAddress addr;
+        dst_file.read((char*) &addr, sizeof(addr));
+
+        PRadGEMAPV *apv = gem_srs->GetAPV(addr);
+
+        dst_file.read((char*) &ped_size, sizeof(ped_size));
+
+        for(size_t j = 0; j < ped_size; ++j)
+        {
+            PRadGEMAPV::Pedestal ped;
+            dst_file.read((char*) &ped, sizeof(ped));
+            if(apv)
+                apv->UpdatePedestal(ped, j);
         }
     }
 }

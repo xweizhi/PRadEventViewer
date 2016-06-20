@@ -16,14 +16,14 @@ public:
     virtual ~PRadEvioParser();
     unsigned int GetEventNumber() {return event_number;};
     void SetEventNumber(const unsigned int &ev) {event_number = ev;};
-    void ReadEvioFile(const char *filepath, const bool &verbose = false);
+    void ReadEvioFile(const char *filepath, const int &evt = -1, const bool &verbose = false);
     void ParseEventByHeader(PRadEventHeader *evtHeader);
 
     static PRadTriggerType bit_to_trigger(const unsigned int &bit);
     static unsigned int trigger_to_bit(const PRadTriggerType &trg);
 
 private:
-    size_t getEvioBlock(std::ifstream &s, uint32_t *buf) throw(PRadException);
+    int getEvioBlock(std::ifstream &s, uint32_t *buf) throw(PRadException);
     size_t getAPVDataSize(const uint32_t *data);
     void parseADC1881M(const uint32_t *data);
     void parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id);
