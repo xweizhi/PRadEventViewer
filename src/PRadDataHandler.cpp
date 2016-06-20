@@ -435,11 +435,7 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
 // feed GEM data
 void PRadDataHandler::FeedData(GEMRawData &gemData)
 {
-    PRadGEMAPV *apv = gem_srs->GetAPV(gemData.fec, gemData.adc);
-
-    if(apv) {
-        apv->FillRawData(gemData.buf, gemData.size);
-    }
+    gem_srs->FillRawData(gemData);
 }
 
 // signal of new event

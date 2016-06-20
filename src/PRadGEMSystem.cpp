@@ -10,8 +10,11 @@
 #include "ConfigParser.h"
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <algorithm>
 #include <thread>
+#include "TH1.h"
+#include "TF1.h"
 
 using namespace std;
 
@@ -29,18 +32,19 @@ void PRadGEMSystem::Clear()
 {
     for(auto &det : det_list)
     {
-        delete det, det = nullptr;
+        delete det;
     }
 
-    for(auto &fec_it : fec_map)
+    for(auto &fec : fec_list)
     {
-        delete fec_it.second, fec_it.second = nullptr;
+        delete fec;
     }
 
     det_list.clear();
     det_map_name.clear();
     det_map_plane_x.clear();
     det_map_plane_y.clear();
+    fec_list.clear();
     fec_map.clear();
     apv_map.clear();
 }
@@ -107,6 +111,18 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
             RegisterAPV(new_apv);
         }
     }
+
+    SortFECList();
+}
+
+void PRadGEMSystem::SortFECList()
+{
+    sort(fec_list.begin(), fec_list.end(), [this](PRadGEMFEC *fec1, PRadGEMFEC *fec2){return fec1->id < fec2->id;});
+
+    for(auto &fec : fec_list)
+    {
+        fec->SortAPVList();
+    }
 }
 
 void PRadGEMSystem::LoadPedestal(const string &path)
@@ -155,6 +171,7 @@ void PRadGEMSystem::RegisterFEC(PRadGEMFEC *fec)
     if(fec == nullptr)
         return;
 
+    fec_list.push_back(fec);
     fec_map[fec->id] = fec;
 }
 
@@ -181,9 +198,9 @@ void PRadGEMSystem::BuildAPVMap()
 {
     apv_map.clear();
 
-    for(auto &fec_it : fec_map)
+    for(auto &fec : fec_list)
     {
-        vector<PRadGEMAPV *> apv_list = fec_it.second->GetAPVList();
+        vector<PRadGEMAPV *> apv_list = fec->GetAPVList();
         for(auto &apv : apv_list)
         {
             GEMChannelAddress addr(apv->fec_id, apv->adc_ch);
@@ -254,9 +271,60 @@ PRadGEMAPV *PRadGEMSystem::GetAPV(const int &fec_id, const int &apv_id)
 
 void PRadGEMSystem::ClearAPVData()
 {
-    for(auto &fec_it : fec_map)
+    for(auto &fec : fec_list)
     {
-        fec_it.second->ClearAPVData();
+        fec->ClearAPVData();
+    }
+}
+
+void PRadGEMSystem::FillRawData(GEMRawData &raw)
+{
+    auto it = apv_map.find(GEMChannelAddress(raw.fec, raw.adc));
+    if(it != apv_map.end())
+    {
+        it->second->FillRawData(raw.buf, raw.size);
+        if(PedestalMode)
+            it->second->FillPedHist();
+    }
+}
+
+void PRadGEMSystem::FitPedestal()
+{
+    for(auto &apv_it : apv_map)
+    {
+        apv_it.second->FitPedestal();
+    }
+}
+
+void PRadGEMSystem::SavePedestal(const std::string &name)
+{
+    ifstream in_file(name);
+
+    if(!in_file.is_open()) {
+        cerr << "GEM System: Failed to save pedestal, file "
+             << name << " cannot be opened."
+             << endl;
+    }
+
+    for(auto &fec : fec_list)
+    {
+        for(auto &apv : fec->GetAPVList)
+        {
+            apv->PrintOutPedestal(in_file);
+        }
+    }
+}
+
+void PRadGEMSystem::SetPedestalMode(const bool &m)
+{
+    PedestalMode = m;
+
+    for(auto &apv_it : apv_map)
+    {
+        if(m)
+            apv_it.second->CreatePedHist();
+        else
+            apv_it.second->ReleasePedHist();
     }
 }
 
@@ -267,27 +335,7 @@ vector<GEM_Data> PRadGEMSystem::GetZeroSupData()
     {
         apv_it.second->CollectZeroSupHits(gem_data);
     }
-/*
-    vector<thread> bank_threads;
 
-    for(auto &fec_it : fec_map)
-    {
-        bank_threads.push_back(thread(&PRadGEMFEC::ZeroSuppression, fec_it.second));
-    }
-
-    for(auto &thread : bank_threads)
-    {
-        if(thread.joinable()) thread.join();
-    }
-
-    for(auto &fec_it : fec_map)
-    {
-        vector<GEM_Data> fec_hits = fec_it.second->GetZeroSupHits();
-        if(fec_hits.size()) {
-            gem_data.insert(gem_data.end(), fec_hits.begin(), fec_hits.end());
-        }
-    }
-*/
     return gem_data;
 }
 
@@ -392,21 +440,6 @@ void PRadGEMFEC::ClearAPVData()
     }
 }
 
-void PRadGEMFEC::ZeroSuppression()
-{
-    hits_collection.clear();
-
-    for(auto &adc : adc_list)
-    {
-        adc->CollectZeroSupHits(hits_collection);
-    }
-}
-
-vector<GEM_Data> &PRadGEMFEC::GetZeroSupHits()
-{
-    return hits_collection;
-}
-
 //===========================================================================//
 //   GEM APV                                                                 //
 //===========================================================================//
@@ -422,10 +455,13 @@ PRadGEMAPV::PRadGEMAPV(const std::string &p,
   plane_index(idx), header_level(hl), status(s)
 {
 #define DEFAULT_MAX_CHANNEL 550
-    // should calculate this according to time_sample
+    // initialize
     buffer_size = DEFAULT_MAX_CHANNEL;
     time_samples = 3;
     raw_data = new float[buffer_size];
+
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+        ped_hist[i] = nullptr;
 
     if(status.find("split") != string::npos)
         split = true;
@@ -440,6 +476,27 @@ PRadGEMAPV::PRadGEMAPV(const std::string &p,
 PRadGEMAPV::~PRadGEMAPV()
 {
     delete[] raw_data;
+}
+
+void PRadGEMAPV::CreatePedHist()
+{
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        if(ped_hist[i] != nullptr)
+            continue;
+        string name = "FEC_" + to_string(fec_id) + "_ADC_" + to_string(adc_ch) + "CH_" + to_string(i);
+        ped_hist[i] = new TH1I(name.c_str(), "Pedestal", 500, header_level, 5000);
+    }
+}
+
+void PRadGEMAPV::ReleasePedHist()
+{
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        if(ped_hist == nullptr)
+            continue;
+        delete ped_hist[i], ped_hist[i] = nullptr;
+    }
 }
 
 void PRadGEMAPV::SetTimeSample(const size_t &t)
@@ -479,6 +536,12 @@ void PRadGEMAPV::UpdatePedestal(const Pedestal &ped, const size_t &index)
     pedestal[index] = ped;
 }
 
+void PRadGEMAPV::UpdatePedestal(const float &offset, const float &noise, const size_t &index)
+{
+    pedestal[index].offset = offset;
+    pedestal[index].noise = noise;
+}
+
 void PRadGEMAPV::FillRawData(const uint32_t *buf, const size_t &size)
 {
     if(2*size > buffer_size) {
@@ -502,29 +565,43 @@ void PRadGEMAPV::SplitData(const uint32_t &data, float &word1, float &word2)
     word2 = (float)data2;
 }
 
+void PRadGEMAPV::FillPedHist()
+{
+    size_t ts_index = GetTimeSampleStart();
+    size_t sample_diff = TIME_SAMPLE_SIZE + APV_HEADER_SIZE;
+
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        float ch_average = 0.;
+        for(size_t j = 0; j < time_samples; ++j)
+            ch_average += data[ts_index + j*sample_diff];
+
+        if(ped_hist[i])
+            ped_hist[i]->Fill(ch_average/time_samples);
+    }
+}
+
+void PRadGEMAPV::FitPedestal()
+{
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        if(ped_hist[i] == nullptr || ped_hist[i]->Integral() < 1000)
+            continue;
+
+        ped_hist[i]->Fit("gaus", "qww");
+        TF1 *myfit = (TF1*) ped_hist[i]>GetFunction("gaus");
+        double p0 = myfit->GetParameter(1);
+        double p1 = myfit->GetParameter(2);
+        UpdatePedestal((float)p0, (float)p1, i);
+    }
+}
+
 void PRadGEMAPV::CollectZeroSupHits(vector<GEM_Data> &hits)
 {
     size_t sample_diff = TIME_SAMPLE_SIZE + APV_HEADER_SIZE;
-    size_t data_size = time_samples * sample_diff  - APV_HEADER_SIZE;
+    size_t ts_index = GetTimeSampleStart();
 
-    for(size_t i = 2; i < buffer_size; ++i)
-    { 
-       if( (raw_data[i]   < header_level) &&
-           (raw_data[i-1] < header_level) &&
-           (raw_data[i-2] < header_level) )
-       {
-           ts_index = i + 10;
-           if(ts_index + data_size >= buffer_size) {
-               cerr << "GEM APV: FEC " << fec_id
-                    << ", APV " << adc_ch << " Warning, get time samples ends at index "
-                    << ts_index + data_size
-                    << ", it exceeds the buffer size " << buffer_size
-                    << endl;
-                    return;
-           }
-           break;
-        }
-    }
+    if(
 
     for(size_t ts = 0; ts < time_samples; ++ts)
     {
@@ -532,9 +609,24 @@ void PRadGEMAPV::CollectZeroSupHits(vector<GEM_Data> &hits)
             CommonModeCorrection_Split(&raw_data[ts_index + sample_diff*ts], TIME_SAMPLE_SIZE);
         else
             CommonModeCorrection(&raw_data[ts_index + sample_diff*ts], TIME_SAMPLE_SIZE);
+
+        ts_index += sample_size
     }
 
     ZeroSuppression(hits, &raw_data[ts_index], sample_diff); 
+}
+
+size_t PRadGEMAPV::GetTimeSampleStart()
+{
+    for(size_t i = 2; i < buffer_size; ++i)
+    { 
+        if( (raw_data[i]   < header_level) &&
+            (raw_data[i-1] < header_level) &&
+            (raw_data[i-2] < header_level) )
+            return i + 10;
+    }
+
+    return buffer_size;
 }
 
 void PRadGEMAPV::ZeroSuppression(vector<GEM_Data> &hits, float *buf, const size_t &ts_diff)
@@ -663,31 +755,18 @@ int PRadGEMAPV::MapStrip(const int &ch)
     return strip;
 }
 
-/* strip comparison
-  //------------ APV25 Internal Channel Mapping
-  int ref = (32 * (ch%4)) + (8 * (ch/4)) - (31 * (ch/16)) ;
+void PRadGEMAPV::PrintOutPedestal(ifstream &in)
+{
+    in << "APV address: "
+       << setw(12) << fec_id
+       << setw(12) << adc_ch
+       << endl;
 
-  //------------ APV25 Channel to readout strip Mapping
-  if((plane.find("X") != string::npos) && (plane_index == 11)) {
-    if (ref % 2 == 0)
-      ref = ( ref / 2) + 48 ;
-    else
-      if (ref < 96)
-        ref = (95 - ref) / 2 ;
-      else
-        ref = 127 + (97 - ref) / 2 ;
-  }
-  else { // NON (fDetectorType == "PRADGEM") && (fPlane.Contains("Y")) && (fAPVIndex == 11)
-    if (ref % 2 == 0)
-      ref = ( ref / 2) + 32 ;
-    else
-      if (ref < 64)
-        ref = (63 - ref) / 2 ;
-      else
-        ref = 127 + (65 - ref) / 2 ;
-  }
-  //   printf("PRDPedestal::PRadStripsFMapping ==>  APVID=%d, ref=%d, stripNo=%d, \n",fAPVID, chno, ref) ;
-
-    cout << fec_id << "  " << adc_ch << "  " << ch << "  " << strip << "  " << ref << endl;
-*/
-
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        in << setw(12) << i
+           << setw(12) << pedestal[i].offset
+           << setw(12) << pedestal[i].noise
+           << endl;
+    }
+}

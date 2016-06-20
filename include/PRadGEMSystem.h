@@ -8,6 +8,7 @@
 #include "PRadEventStruct.h"
 #include "PRadException.h"
 
+class TH1I;
 
 // a simple hash function for GEM DAQ configuration
 namespace std
@@ -33,16 +34,20 @@ public:
     virtual ~PRadGEMSystem();
 
     void Clear();
+    void SortFECList();
     void LoadConfiguration(const std::string &path) throw(PRadException);
     void LoadPedestal(const std::string &path);
     void RegisterDET(PRadGEMDET *det);
     void RegisterFEC(PRadGEMFEC *fec);
     void RegisterAPV(PRadGEMAPV *apv);
     void BuildAPVMap();
+    void FillRawData(GEMRawData &raw);
 
     void SetUnivCommonModeThresLevel(const float &thres);
     void SetUnivZeroSupThresLevel(const float &thres);
     void SetUnivTimeSample(const size_t &thres);
+    void SetPedestalMode(const bool &m);
+    void FitPedestal();
     void ClearAPVData();
 
     PRadGEMDET *GetDetector(const int &id);
@@ -53,14 +58,18 @@ public:
     PRadGEMAPV *GetAPV(const int &fec, const int &adc);
 
     std::vector<GEM_Data> GetZeroSupData();
+    std::vector<PRadGEMDET*> &GetDETList() {return det_list;};
+    std::vector<PRadGEMFEC*> &GetFECList() {return fec_list;};
 
 private:
     std::vector<PRadGEMDET*> det_list;
     std::unordered_map<std::string, PRadGEMDET*> det_map_name;
     std::unordered_map<std::string, PRadGEMDET*> det_map_plane_x;
     std::unordered_map<std::string, PRadGEMDET*> det_map_plane_y;
+    std::vector<PRadGEMFEC*> fec_list;
     std::unordered_map<int, PRadGEMFEC*> fec_map;
     std::unordered_map<GEMChannelAddress, PRadGEMAPV*> apv_map;
+    bool PedestalMode;
 };
 
 class PRadGEMDET
@@ -118,8 +127,6 @@ public:
     void SortAPVList();
     PRadGEMAPV *GetAPV(const int &id);
     std::vector<PRadGEMAPV *> &GetAPVList() {return adc_list;};
-    std::vector<GEM_Data> &GetZeroSupHits();
-    void ZeroSuppression();
     void Clear();
     void ClearAPVData();
 
@@ -127,7 +134,6 @@ public:
     std::string ip;
     std::unordered_map<int, PRadGEMAPV*> adc_map;
     std::vector<PRadGEMAPV *> adc_list;
-    std::vector<GEM_Data> hits_collection;
 };
 
 class PRadGEMAPV
@@ -159,6 +165,10 @@ public:
 
     void ClearData();
     void ClearPedestal();
+    void CreatePedHist();
+    void ReleasePedHist();
+    void FillPedHist();
+    void FitPedestal();
     void SetTimeSample(const size_t &t);
     void SetCommonModeThresLevel(const float &t) {common_thres = t;};
     void SetZeroSupThresLevel(const float &t) {zerosup_thres = t;};
@@ -166,6 +176,7 @@ public:
     void SplitData(const uint32_t &buf, float &word1, float &word2);
     void UpdatePedestalArray(Pedestal *ped, const size_t &size);
     void UpdatePedestal(const Pedestal &ped, const size_t &index);
+    void UpdatePedestal(const float &offset, const float &noise, const size_t &index);
     void ZeroSuppression(std::vector<GEM_Data> &hits, float *buf, const size_t &ts_diff);
     void CommonModeCorrection(float *buf, const size_t &size);
     void CommonModeCorrection_Split(float *buf, const size_t &size);
@@ -192,6 +203,7 @@ public:
     size_t buffer_size;
     size_t ts_index;
     float *raw_data;
+    TH1I *ped_hist[TIME_SAMPLE_SIZE];
 };
 
 #endif

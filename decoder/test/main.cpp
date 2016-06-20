@@ -28,6 +28,7 @@ int main(int /*argc*/, char * /*argv*/ [])
     handler->ReadFromDST("gem.dst");
 
     size_t size = handler->GetEventCount();
+    cout << size << endl;
     for(size_t i = 0; i < size; ++i)
     {
         cout << handler->GetEventData(i).gem_data.size() << endl;

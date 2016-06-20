@@ -63,6 +63,8 @@ void PRadEvioParser::ReadEvioFile(const char *filepath, const bool &verbose)
     }
 
     delete [] buffer;
+
+    evio_in.close();
 }
 
 size_t PRadEvioParser::getEvioBlock(ifstream &in, uint32_t *buf) throw(PRadException)
