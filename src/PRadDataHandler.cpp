@@ -1527,9 +1527,9 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
     dst_file.write((char*) &data.last_epics  , sizeof(data.last_epics));
 
     // all data banks
-    size_t adc_size = data.adc_data.size();
-    size_t tdc_size = data.tdc_data.size();
-    size_t gem_size = data.gem_data.size();
+    uint32_t adc_size = data.adc_data.size();
+    uint32_t tdc_size = data.tdc_data.size();
+    uint32_t gem_size = data.gem_data.size();
 
     dst_file.write((char*) &adc_size, sizeof(adc_size));
     for(auto &adc : data.adc_data)
@@ -1543,7 +1543,7 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
     for(auto &gem : data.gem_data)
     {
         dst_file.write((char*) &gem.addr, sizeof(gem.addr));
-        size_t hit_size = gem.values.size();
+        uint32_t hit_size = gem.values.size();
         dst_file.write((char*) &hit_size, sizeof(hit_size));
         for(auto &value : gem.values)
             dst_file.write((char*) &value, sizeof(value));
@@ -1563,19 +1563,19 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
     dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
     dst_file.read((char*) &data.last_epics  , sizeof(data.last_epics));
 
-    size_t adc_size, tdc_size, gem_size, value_size;
+    uint32_t adc_size, tdc_size, gem_size, value_size;
     ADC_Data adc;
     TDC_Data tdc;
  
     dst_file.read((char*) &adc_size, sizeof(adc_size));
-    for(size_t i = 0; i < adc_size; ++i)
+    for(uint32_t i = 0; i < adc_size; ++i)
     {
         dst_file.read((char*) &adc, sizeof(adc));
         data.add_adc(adc);
     }
 
     dst_file.read((char*) &tdc_size, sizeof(tdc_size));
-    for(size_t i = 0; i < tdc_size; ++i)
+    for(uint32_t i = 0; i < tdc_size; ++i)
     {
         dst_file.read((char*) &tdc, sizeof(tdc));
         data.add_tdc(tdc);
@@ -1583,17 +1583,17 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
 
     float value;
     dst_file.read((char*) &gem_size, sizeof(gem_size));
-    for(size_t i = 0; i < gem_size; ++i)
+    for(uint32_t i = 0; i < gem_size; ++i)
     {
         GEM_Data gemhit;
         dst_file.read((char*) &gemhit.addr, sizeof(gemhit.addr));
         dst_file.read((char*) &value_size, sizeof(value_size));
-        for(size_t j = 0; j < value_size; ++j)
+        for(uint32_t j = 0; j < value_size; ++j)
         {
             dst_file.read((char*) &value, sizeof(value));
             gemhit.add_value(value);
         }
-//        data.add_gemhit(gemhit);
+        data.add_gemhit(gemhit);
     }
 }
 
@@ -1604,10 +1604,10 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EPICSData &data) throw(PRa
 
     dst_file.read((char*) &data.event_number, sizeof(data.event_number));
 
-    size_t value_size;
+    uint32_t value_size;
     dst_file.read((char*) &value_size, sizeof(value_size));
 
-    for(size_t i = 0; i < value_size; ++i)
+    for(uint32_t i = 0; i < value_size; ++i)
     {
         float value;
         dst_file.read((char*) &value, sizeof(value));
@@ -1626,7 +1626,7 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EPICSData &data) thro
 
     dst_file.write((char*) &data.event_number, sizeof(data.event_number));
 
-    size_t value_size = data.values.size();
+    uint32_t value_size = data.values.size();
     dst_file.write((char*) &value_size, sizeof(value_size));
 
     for(auto value : data.values)
@@ -1645,12 +1645,12 @@ void PRadDataHandler::WriteEPICSMapToDST(ofstream &dst_file) throw(PRadException
 
     vector<epics_ch> epics_channels = GetSortedEPICSList();
 
-    size_t ch_size = epics_channels.size();
+    uint32_t ch_size = epics_channels.size();
     dst_file.write((char*) &ch_size, sizeof(ch_size));
 
     for(auto &ch : epics_channels)
     {
-        size_t str_size = ch.name.size();
+        uint32_t str_size = ch.name.size();
         dst_file.write((char*) &str_size, sizeof(str_size));
         for(auto &c : ch.name)
             dst_file.write((char*) &c, sizeof(c));
@@ -1667,16 +1667,16 @@ void PRadDataHandler::ReadEPICSMapFromDST(ifstream &dst_file) throw(PRadExceptio
     epics_map.clear();
     epics_values.clear();
 
-    size_t ch_size, str_size, id;
+    uint32_t ch_size, str_size, id;
     string str;
     float value;
 
     dst_file.read((char*) &ch_size, sizeof(ch_size));
-    for(size_t i = 0; i < ch_size; ++i)
+    for(uint32_t i = 0; i < ch_size; ++i)
     {
         str = "";
         dst_file.read((char*) &str_size, sizeof(str_size));
-        for(size_t j = 0; j < str_size; ++j)
+        for(uint32_t j = 0; j < str_size; ++j)
         {
             char c;
             dst_file.read(&c, sizeof(c));
@@ -1717,7 +1717,7 @@ void PRadDataHandler::WriteHyCalInfoToDST(ofstream &dst_file) throw(PRadExceptio
     uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_HyCal_Info;
     dst_file.write((char*) &event_info, sizeof(event_info));
 
-    size_t ch_size = channelList.size();
+    uint32_t ch_size = channelList.size();
     dst_file.write((char*) &ch_size, sizeof(ch_size));
 
     for(auto channel : channelList)
@@ -1726,7 +1726,7 @@ void PRadDataHandler::WriteHyCalInfoToDST(ofstream &dst_file) throw(PRadExceptio
         dst_file.write((char*) &ped, sizeof(ped));
 
         PRadDAQUnit::CalibrationConstant cal = channel->GetCalibrationConstant();
-        size_t gain_size = cal.base_gain.size();
+        uint32_t gain_size = cal.base_gain.size();
         dst_file.write((char*) &cal.factor, sizeof(cal.factor)); 
         dst_file.write((char*) &cal.base_factor, sizeof(cal.base_factor));
         dst_file.write((char*) &gain_size, sizeof(gain_size));
@@ -1740,10 +1740,10 @@ void PRadDataHandler::ReadHyCalInfoFromDST(ifstream &dst_file) throw(PRadExcepti
     if(!dst_file.is_open())
         throw PRadException("READ DST", "input file is not opened!");
 
-    size_t ch_size;
+    uint32_t ch_size;
     dst_file.read((char*) &ch_size, sizeof(ch_size));
 
-    for(size_t i = 0; i < ch_size; ++i)
+    for(uint32_t i = 0; i < ch_size; ++i)
     {
         PRadDAQUnit::Pedestal ped;
         dst_file.read((char*) &ped, sizeof(ped));
@@ -1753,10 +1753,10 @@ void PRadDataHandler::ReadHyCalInfoFromDST(ifstream &dst_file) throw(PRadExcepti
         dst_file.read((char*) &cal.base_factor, sizeof(cal.base_factor));
 
         double gain;
-        size_t gain_size;
+        uint32_t gain_size;
         dst_file.read((char*) &gain_size, sizeof(gain_size));
 
-        for(size_t j = 0; j < gain_size; ++j)
+        for(uint32_t j = 0; j < gain_size; ++j)
         {
             dst_file.read((char*) &gain, sizeof(gain));
             cal.base_gain.push_back(gain);
@@ -1781,7 +1781,7 @@ void PRadDataHandler::WriteGEMInfoToDST(ofstream &dst_file) throw(PRadException)
 
     vector<PRadGEMAPV *> apv_list = gem_srs->GetAPVList();
 
-    size_t apv_size = apv_list.size();
+    uint32_t apv_size = apv_list.size();
     dst_file.write((char*) &apv_size, sizeof(apv_size));
 
     for(auto apv : apv_list)
@@ -1790,7 +1790,7 @@ void PRadDataHandler::WriteGEMInfoToDST(ofstream &dst_file) throw(PRadException)
         dst_file.write((char*) &addr, sizeof(addr));
 
         vector<PRadGEMAPV::Pedestal> ped_list = apv->GetPedestalList();
-        size_t ped_size = ped_list.size();
+        uint32_t ped_size = ped_list.size();
         dst_file.write((char*) &ped_size, sizeof(ped_size));
 
         for(auto &ped : ped_list)
@@ -1803,10 +1803,10 @@ void PRadDataHandler::ReadGEMInfoFromDST(ifstream &dst_file) throw(PRadException
     if(!dst_file.is_open())
         throw PRadException("READ DST", "input file is not opened!");
 
-    size_t apv_size, ped_size;
+    uint32_t apv_size, ped_size;
     dst_file.read((char*) &apv_size, sizeof(apv_size));
 
-    for(size_t i = 0; i < apv_size; ++i)
+    for(uint32_t i = 0; i < apv_size; ++i)
     {
         GEMChannelAddress addr;
         dst_file.read((char*) &addr, sizeof(addr));
@@ -1815,7 +1815,7 @@ void PRadDataHandler::ReadGEMInfoFromDST(ifstream &dst_file) throw(PRadException
 
         dst_file.read((char*) &ped_size, sizeof(ped_size));
 
-        for(size_t j = 0; j < ped_size; ++j)
+        for(uint32_t j = 0; j < ped_size; ++j)
         {
             PRadGEMAPV::Pedestal ped;
             dst_file.read((char*) &ped, sizeof(ped));

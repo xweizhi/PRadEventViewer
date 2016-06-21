@@ -189,21 +189,24 @@ private:
 #ifdef MULTI_THREAD
     std::mutex myLock;
 #endif
+
+    // maps
     std::unordered_map< ChannelAddress, PRadDAQUnit* > map_daq;
     std::unordered_map< std::string, PRadDAQUnit* > map_name;
     std::unordered_map< std::string, PRadTDCGroup* > map_name_tdc;
     std::unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
 
-    // to save space, separate epics channels to map (string to vector index) and values (vector)
-    std::unordered_map< std::string, size_t > epics_map;
-    std::vector< float > epics_values;
-
     std::vector< PRadDAQUnit* > channelList;
     std::vector< PRadDAQUnit* > freeList; // channels that should be freed by handler
     std::vector< PRadTDCGroup* > tdcList;
+
+    // data related
+    std::unordered_map< std::string, size_t > epics_map;
+    std::vector< float > epics_values;
     std::vector< ScalarChannel > triggerScalars;
     std::deque< EventData > energyData;
     std::deque< EPICSData > epicsData;
+
     EventData *newEvent;
     TH1D *energyHist;
     TH2I *TagEHist;
