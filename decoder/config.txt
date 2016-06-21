@@ -1,0 +1,14 @@
+# don't change the order
+TDC List: ../config/tdc_group_list.txt
+Channel List: ../config/module_list.txt
+HyCal Calibration: ../config/calibration.txt
+EPICS Channels: ../config/epics_channels.txt
+GEM Configuration: ../config/gem_map.cfg
+
+# initialize by file
+#Run Number: 1323
+#HyCal Pedestal: config/pedestal.dat
+#GEM Pedestal: config/gem_ped.dat
+# initialize by data
+#Initialize File: /data/totape/prad_001498.evio.0
+

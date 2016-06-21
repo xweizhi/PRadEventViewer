@@ -5,7 +5,13 @@
 // 02/27/2016                                                                 //
 //============================================================================//
 
-#include "PRadDecoder.h"
+#include "PRadDataHandler.h"
+#include "PRadEvioParser.h"
+#include "PRadBenchMark.h"
+#include "PRadDAQUnit.h"
+#include "PRadGEMSystem.h"
+#include "evioUtil.hxx"
+#include "evioFileChannel.hxx"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -19,26 +25,23 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     // read configuration files
     handler->ReadConfig("config.txt");
-    //handler->GetSRS()->SetUnivTimeSample(5);
-    //handler->GetSRS()->SetUnivZeroSupThresLevel(5);
 
     PRadBenchMark timer;
-    //handler->ReadFromEvio("../prad_001197.evio.0");
-    //handler->ReadFromEvio("../prad_001197.evio.1");
-    handler->ReadFromDST("gem.dst");
+    handler->ReadFromDST("prad_1498.dst");
+//    handler->ReadFromEvio("/work/prad/xbai/1323/prad_001323.evio.1");
+//    handler->ReadFromSplitEvio("/work/prad/xbai/1323/prad_001323.evio", 10);
+//    handler->Replay("/data/totape/prad_001498.evio", 100);
+//    handler->GetSRS()->SavePedestal("gem_ped.txt");
 
-    size_t size = handler->GetEventCount();
-    cout << size << endl;
-    for(size_t i = 0; i < size; ++i)
-    {
-        cout << handler->GetEventData(i).gem_data.size() << endl;
-    }
-    //handler->ReadFromDST("gem.dst");
-    cout << "TIMER: Second method, took " << timer.GetElapsedTime() << " ms" << endl;
+
+    cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;
     cout << "Read " << handler->GetEventCount() << " events and "
          << handler->GetEPICSEventCount() << " EPICS events from file."
          << endl;
-//    handler->WriteToDST("gem.dst");
+    cout << handler->GetBeamCharge() << endl;
+    cout << handler->GetLiveTime() << endl;
+
+//    handler->WriteToDST("prad_001323_0-10.dst");
     //handler->PrintOutEPICS();
     return 0;
 }

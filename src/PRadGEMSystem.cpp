@@ -106,7 +106,7 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
             // default levels
             new_apv->SetTimeSample(3);
             new_apv->SetCommonModeThresLevel(20.);
-            new_apv->SetZeroSupThresLevel(6.);
+            new_apv->SetZeroSupThresLevel(5.);
 
             RegisterAPV(new_apv);
         }
@@ -789,9 +789,9 @@ void PRadGEMAPV::CollectZeroSupHits(vector<GEM_Data> &hits)
         GEM_Data hit(fec_id, adc_ch, i);
         for(size_t j = 0; j < time_samples; ++j)
         {
-            hit.add_value(raw_data[i + ts_index + j*TIME_SAMPLE_DIFF]);
+            hit.values.emplace_back(raw_data[i + ts_index + j*TIME_SAMPLE_DIFF]);
         }
-        hits.push_back(hit);
+        hits.emplace_back(hit);
     }
 }
 

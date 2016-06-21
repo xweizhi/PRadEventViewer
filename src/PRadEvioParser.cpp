@@ -44,7 +44,7 @@ void PRadEvioParser::ReadEvioFile(const char *filepath, const int &evt, const bo
     }
 
     evio_in.seekg(0, evio_in.end);
-    int length = evio_in.tellg();
+    int64_t length = evio_in.tellg();
     evio_in.seekg(0, evio_in.beg);
 
     uint32_t *buffer = new uint32_t[MAX_BUFFER_SIZE];

@@ -91,7 +91,9 @@ public:
     void ReadEPICSChannels(const std::string &path);
 
     // dst data file
-    void WriteToDST(const std::string &pat, std::ios::openmode mode = std::ios::out | std::ios::binary);
+    void Replay(const std::string &r_path, const int &split = -1, const std::string &w_path = "");
+    void WriteDSTHeader(std::ofstream &dst_file) throw(PRadException);
+    void WriteToDST(const std::string &path, std::ios::openmode mode = std::ios::out | std::ios::binary);
     void WriteToDST(std::ofstream &dst_file, const EventData &data) throw(PRadException);
     void WriteToDST(std::ofstream &dst_file, const EPICSData &data) throw(PRadException);
     void WriteEPICSMapToDST(std::ofstream &dst_file) throw(PRadException);
@@ -117,6 +119,7 @@ public:
     void StartofNewEvent(const unsigned char &tag);
     void EndofThisEvent(const unsigned int &ev = 0);
     void EndProcess(EventData *data);
+    void WaitEventProcess();
     void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);
     void FeedData(TDCV767Data &tdcData);
@@ -179,7 +182,9 @@ private:
     RunInfo runInfo;
     double totalE;
     bool onlineMode;
+    bool replayMode;
     int current_event;
+    std::ofstream replay_out;
     std::thread end_thread;
 #ifdef MULTI_THREAD
     std::mutex myLock;

@@ -7,13 +7,13 @@
 #############################################################################
 
 MAKEFILE      = Makefile
-PRAD_PATH     = ../..
+PRAD_PATH     = ..
 ####### Compiler, tools and options
 
 CC            = gcc
 CXX           = g++
 CXXFLAGS      = -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I. -I$(PRAD_PATH)/include -I$(PRAD_PATH)/decoder/include -I/u/apps/root/5.34.21/root/include
+INCPATH       = -I. -I$(PRAD_PATH)/include -I$(PRAD_PATH)/thirdparty/include -I/apps/root/5.34.21/include -Ilib/include
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
 MKDIR         = mkdir -p
@@ -31,7 +31,7 @@ TAR           = tar -cf
 COMPRESS      = gzip -9f
 LINK          = g++
 LFLAGS        = -Wl,-O1 -Wl,-z,relro
-LIBS          = $(SUBLIBS) -L$(PRAD_PATH)/thirdparty/lib64 -levio -levioxx -L/apps/root/5.34.21/lib -lCore -lCint -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lGL -lpthread -Llib -lexpat -L$(PRAD_PATH)/decoder/lib -lPRadDecoder
+LIBS          = $(SUBLIBS) -L$(PRAD_PATH)/thirdparty/lib64 -levio -levioxx -L/apps/root/5.34.21/lib -lCore -lCint -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lGL -lpthread -Llib -lPRadDecoder -lexpat
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -39,9 +39,9 @@ STRIP         =
 
 ####### Files
 
-SOURCES       = main.cpp \
+SOURCES       = src/main.cpp \
 
-OBJECTS       = main.o \
+OBJECTS       = obj/main.o \
 
 TARGET        = decoder
 
@@ -60,8 +60,8 @@ clean:
 	-$(DEL_FILE) $(OBJECTS)
 	-$(DEL_FILE) $(TARGET)
 
-main.o: main.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
+obj/main.o: src/main.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/main.o src/main.cpp
 
 ####### Install
 

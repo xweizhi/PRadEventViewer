@@ -13,7 +13,7 @@ PRAD_PATH     = ../..
 CC            = gcc
 CXX           = g++
 CXXFLAGS      = -shared -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I. -I$(PRAD_PATH)/include -I/u/apps/root/5.34.21/root/include
+INCPATH       = -I. -I$(PRAD_PATH)/include -I/apps/root/5.34.21/include
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
 MKDIR         = mkdir -p
