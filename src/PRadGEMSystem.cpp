@@ -590,7 +590,10 @@ void PRadGEMAPV::ClearData()
 {
     for(size_t i = 0; i < buffer_size; ++i)
         raw_data[i] = 5000.;
+}
 
+void PRadGEMAPV::ResetHitPos()
+{
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
         hit_pos[i] = false;
 }
@@ -744,6 +747,13 @@ size_t PRadGEMAPV::GetTimeSampleStart()
 
 void PRadGEMAPV::ZeroSuppression()
 {
+    if((ts_index + TIME_SAMPLE_DIFF*(time_samples - 1) + TIME_SAMPLE_SIZE) >= buffer_size)
+    {
+        cout << fec_id << "  " << adc_ch << "  ";
+        cout << "incorrect time sample position: "  << ts_index << " " << buffer_size << " " <<time_samples<< endl;
+        return;
+    }
+
     // common mode correction
     for(size_t ts = 0; ts < time_samples; ++ts)
     {

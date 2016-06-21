@@ -22,9 +22,11 @@
 #include "TH1.h"
 #include "TH2.h"
 
-#define EPICS_UNDEFINED_VALUE -9999.9
-
 #define DST_FILE_VERSION 0x12  // 0xff
+
+#define EPICS_UNDEFINED_VALUE -9999.9
+#define TAGGER_CHANID 30000 // Tagger tdc id will start from this number
+#define TAGGER_T_CHANID 1000 // Start from TAGGER_CHANID, more than 1000 will be t channel
 
 using namespace std;
 
@@ -203,7 +205,6 @@ void PRadDataHandler::Clear()
     // used memory won't be released, but it can be used again for new data file
     energyData.clear();
     epicsData.clear();
-    newEvent.clear();
     runInfo.clear();
 
     parser->SetEventNumber(0);
@@ -238,14 +239,14 @@ void PRadDataHandler::ResetChannelHists()
 
 void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
 {
-    if(newEvent.trigger && (newEvent.trigger != trg)) {
+    if(newEvent->trigger && (newEvent->trigger != trg)) {
         cerr << "ERROR: Trigger type mismatch at event "
              << parser->GetEventNumber()
-             << ", was " << (int) newEvent.trigger
+             << ", was " << (int) newEvent->trigger
              << " now " << (int) trg
              << endl;
     }
-    newEvent.trigger = trg;
+    newEvent->trigger = trg;
 }
 
 void PRadDataHandler::UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated)
@@ -280,13 +281,13 @@ void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
 
 void PRadDataHandler::AccumulateBeamCharge(const double &c)
 {
-    if(newEvent.isPhysicsEvent())
+    if(newEvent->isPhysicsEvent())
         runInfo.beam_charge += c;
 }
 
 void PRadDataHandler::UpdateLiveTimeScaler(const unsigned int &ungated, const unsigned int &gated)
 {
-    if(newEvent.isPhysicsEvent()) {
+    if(newEvent->isPhysicsEvent()) {
         runInfo.ungated_count += (double) ungated;
         runInfo.dead_count += (double) gated;
     }
@@ -324,9 +325,9 @@ float PRadDataHandler::GetEPICSValue(const string &name, const int &index)
 
 void PRadDataHandler::FeedData(JLabTIData &tiData)
 {
-    newEvent.timestamp = tiData.time_high;
-    newEvent.timestamp <<= 32;
-    newEvent.timestamp |= tiData.time_low;
+    newEvent->timestamp = tiData.time_high;
+    newEvent->timestamp <<= 32;
+    newEvent->timestamp |= tiData.time_low;
 }
 
 // feed ADC1881M data
@@ -342,35 +343,26 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // get the channel
     PRadDAQUnit *channel = it->second;
 
-    if(newEvent.isPhysicsEvent()) {
-        unsigned short sparsify = channel->Sparsification(adcData.val);
-
-        if(sparsify) {
-            // fill histograms by trigger type, only sparsified channel get through for physics events
-            channel->FillHist(adcData.val, newEvent.trigger);
+    if(newEvent->isPhysicsEvent()) {
+        
+        if(channel->Sparsification(adcData.val)) {
 
 #ifdef MULTI_THREAD
             // unfortunately, we have some non-local variable to deal with
             // so lock the thread to prevent concurrent access
             myLock.lock();
 #endif
-            if(channel->IsHyCalModule())
-                totalE += channel->Calibration(sparsify); // calculate total energy of this event
-
-            newEvent.add_adc(ADC_Data(channel->GetID(), adcData.val)); // store this data word
+            newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val)); // store this data word
 #ifdef MULTI_THREAD
             myLock.unlock();
 #endif
         }
 
-    } else if (newEvent.isMonitorEvent()) {
-        // fill histograms by trigger type
-        channel->FillHist(adcData.val, newEvent.trigger);
-
+    } else if (newEvent->isMonitorEvent()) {
 #ifdef MULTI_THREAD
         myLock.lock();
 #endif
-        newEvent.add_adc(ADC_Data(channel->GetID(), adcData.val)); 
+        newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val)); 
 #ifdef MULTI_THREAD
         myLock.unlock();
 #endif
@@ -385,11 +377,8 @@ void PRadDataHandler::FeedData(TDCV767Data &tdcData)
         return;
 
     PRadTDCGroup *tdc = it->second;
-    if(newEvent.isPhysicsEvent())
-        tdc->FillHist(tdcData.val);
 
-
-    newEvent.tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
+    newEvent->tdc_data.push_back(TDC_Data(tdc->GetID(), tdcData.val));
 }
 
 void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
@@ -401,21 +390,19 @@ void PRadDataHandler::FeedData(TDCV1190Data &tdcData)
         }
 
         PRadTDCGroup *tdc = it->second;
-        if(newEvent.isPhysicsEvent())
-            tdc->FillHist(tdcData.val);
-
-        newEvent.add_tdc(TDC_Data(tdc->GetID(), tdcData.val));
+        newEvent->add_tdc(TDC_Data(tdc->GetID(), tdcData.val));
     } else {
-        FillTaggerHist(tdcData);
+        FeedTaggerHits(tdcData);
     }
 }
 
-void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
+void PRadDataHandler::FeedTaggerHits(TDCV1190Data &tdcData)
 {
     if(tdcData.config.slot == 3 || tdcData.config.slot == 5 || tdcData.config.slot == 7)
     {
-        int e_ch = tdcData.config.channel + (tdcData.config.slot - 3)*64;
-        TagEHist->Fill(tdcData.val, e_ch);
+        int e_ch = tdcData.config.channel + (tdcData.config.slot - 3)*64 + TAGGER_CHANID;
+        // E Channel 30000 + channel
+        newEvent->add_tdc(TDC_Data(e_ch, tdcData.val));
     }
     if(tdcData.config.slot == 14)
     {
@@ -426,51 +413,90 @@ void PRadDataHandler::FillTaggerHist(TDCV1190Data &tdcData)
         else
             t_ch = (t_ch + 16)%32;
         t_ch += t_lr*64;
-
-        TagTHist->Fill(tdcData.val, t_ch);
+        newEvent->add_tdc(TDC_Data(t_ch + TAGGER_CHANID + TAGGER_T_CHANID, tdcData.val));
     }
 }
 
 // feed GEM data
 void PRadDataHandler::FeedData(GEMRawData &gemData)
 {
-    gem_srs->FillRawData(gemData, newEvent.gem_data, newEvent.isMonitorEvent());
+    gem_srs->FillRawData(gemData, newEvent->gem_data, newEvent->isMonitorEvent());
+}
+
+void PRadDataHandler::FillHistograms(EventData &data)
+{
+    double Energy = 0.;
+
+    // for all types of events
+    for(auto &adc : data.adc_data)
+    {
+        if(adc.channel_id < channelList.size()) {
+            channelList[adc.channel_id]->FillHist(adc.value, data.trigger);
+            Energy += channelList[adc.channel_id]->GetEnergy(adc.value);
+        }
+    }
+
+    if(!data.isPhysicsEvent())
+        return;
+
+    // for only physics events
+    energyHist->Fill(Energy);
+
+    for(auto &tdc : data.tdc_data)
+    {
+        if(tdc.channel_id < tdcList.size()) {
+            tdcList[tdc.channel_id]->FillHist(tdc.value);
+        } else if(tdc.channel_id >= TAGGER_CHANID) {
+            int id = tdc.channel_id - TAGGER_CHANID;
+            if(id >= TAGGER_T_CHANID)
+                TagTHist->Fill(tdc.value, id - TAGGER_T_CHANID);
+            else
+                TagEHist->Fill(tdc.value, id - TAGGER_CHANID);
+        }
+    }
 }
 
 // signal of new event
 void PRadDataHandler::StartofNewEvent(const unsigned char &tag)
 {
+    newEvent = new EventData(tag);
     // clear buffer for nes event
-    newEvent.initialize(tag);
-    totalE = 0;
+    newEvent->last_epics = (int)epicsData.size() - 1; // update the epics info on newEvent
 }
 
 // signal of event end, save event or discard event in online mode
 void PRadDataHandler::EndofThisEvent(const unsigned int &ev)
 {
-    if(newEvent.type == CODA_Event) {
+       newEvent->event_number = ev;
 
-        newEvent.event_number = ev;
-        if(onlineMode && energyData.size()) { // online mode only saves the last event, to reduce usage of memory
+        // wait for the thread
+        if(end_thread.joinable())
+            end_thread.join();
+
+        end_thread = thread(&PRadDataHandler::EndProcess, this, newEvent);
+
+}
+
+void PRadDataHandler::EndProcess(EventData *data)
+{
+    if(data->type == CODA_Event) {
+
+        FillHistograms(*data);
+
+        if(onlineMode && energyData.size()) // online mode only saves the last event, to reduce usage of memory
             energyData.pop_front();
-        }
 
-        if(newEvent.isPhysicsEvent()) {
-            energyHist->Fill(totalE); // fill energy histogram
-        }
+        energyData.push_back(move(*data)); // save event
 
-        energyData.push_back(newEvent); // save event
+    } else if(newEvent->type == EPICS_Info) {
 
-    } else if(newEvent.type == EPICS_Info) {
-
-        if(onlineMode && epicsData.size()) {
+        if(onlineMode && epicsData.size())
             epicsData.pop_front();
-        }
 
-        epicsData.push_back(EPICSData(ev, epics_values));
-        newEvent.last_epics = epicsData.size() - 1; // update the epics info on newEvent
-
+        epicsData.push_back(EPICSData(data->event_number, epics_values));
     }
+
+    delete data; // new data memory is released here
 }
 
 // show the event to event viewer
@@ -1205,6 +1231,7 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
               {
                 EventData event;
                 ReadFromDST(input, event);
+                FillHistograms(event);
                 energyData.push_back(event);
               } break;
             case PRad_DST_Epics:
@@ -1260,29 +1287,18 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
     TDC_Data tdc;
  
     dst_file.read((char*) &adc_size, sizeof(adc_size));
-    totalE = 0;
     for(size_t i = 0; i < adc_size; ++i)
     {
         dst_file.read((char*) &adc, sizeof(adc));
         data.add_adc(adc);
-        if(adc.channel_id < channelList.size()) {
-            channelList[adc.channel_id]->FillHist(adc.value, data.trigger);
-            totalE += channelList[adc.channel_id]->GetEnergy(adc.value);
-        }
     }
 
-    if(data.isPhysicsEvent())
-        energyHist->Fill(totalE);
-    
     dst_file.read((char*) &tdc_size, sizeof(tdc_size));
     for(size_t i = 0; i < tdc_size; ++i)
     {
         dst_file.read((char*) &tdc, sizeof(tdc));
         data.add_tdc(tdc);
-        if(data.isPhysicsEvent() && (tdc.channel_id < tdcList.size())) {
-            tdcList[tdc.channel_id]->FillHist(tdc.value);
-        }
-    }
+   }
 
     float value;
     dst_file.read((char*) &gem_size, sizeof(gem_size));
@@ -1298,7 +1314,6 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
         }
         data.add_gemhit(gemhit);
     }
-
 }
 
 void PRadDataHandler::ReadFromDST(ifstream &dst_file, EPICSData &data) throw(PRadException)

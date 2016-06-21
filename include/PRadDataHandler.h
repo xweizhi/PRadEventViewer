@@ -9,9 +9,9 @@
 #include "PRadEventStruct.h"
 #include "PRadException.h"
 #include "ConfigParser.h"
+#include <thread>
 
 #ifdef MULTI_THREAD
-#include <thread>
 #include <mutex>
 #endif
 
@@ -116,12 +116,14 @@ public:
     void SetRunNumber(const int &run) {runInfo.run_number = run;};
     void StartofNewEvent(const unsigned char &tag);
     void EndofThisEvent(const unsigned int &ev = 0);
+    void EndProcess(EventData *data);
     void FeedData(JLabTIData &tiData);
     void FeedData(ADC1881MData &adcData);
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
     void FeedData(GEMRawData &gemData);
-    void FillTaggerHist(TDCV1190Data &tdcData);
+    void FeedTaggerHits(TDCV1190Data &tdcData);
+    void FillHistograms(EventData &data);
     void UpdateEPICS(const std::string &name, const float &value);
     void UpdateTrgType(const unsigned char &trg);
     void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
@@ -178,6 +180,7 @@ private:
     double totalE;
     bool onlineMode;
     int current_event;
+    std::thread end_thread;
 #ifdef MULTI_THREAD
     std::mutex myLock;
 #endif
@@ -196,7 +199,7 @@ private:
     std::vector< ScalarChannel > triggerScalars;
     std::deque< EventData > energyData;
     std::deque< EPICSData > epicsData;
-    EventData newEvent;
+    EventData *newEvent;
     TH1D *energyHist;
     TH2I *TagEHist;
     TH2I *TagTHist;

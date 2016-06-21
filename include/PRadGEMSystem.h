@@ -197,6 +197,7 @@ public:
     void CommonModeCorrection_Split(float *buf, const size_t &size);
     void CollectZeroSupHits(std::vector<GEM_Data> &hits);
     void BuildStripMap();
+    void ResetHitPos();
     void PrintOutPedestal(std::ofstream &out);
     std::vector<TH1I *> GetHistList();
     std::vector<Pedestal> GetPedestalList();

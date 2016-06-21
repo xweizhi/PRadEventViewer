@@ -2,7 +2,7 @@
 #define PRAD_DATA_STRUCT_H
 
 #include "stddef.h"
-#define MULTI_THREAD
+//#define MULTI_THREAD
 
 enum PRadEventType
 {

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 struct RunInfo
 {
@@ -111,18 +112,35 @@ struct EventData
 
     // constructors
     EventData()
-    : type(0), trigger(0), timestamp(0), last_epics(-1)
+    : event_number(0), type(0), trigger(0), timestamp(0), last_epics(-1)
     {};
     EventData(const unsigned char &t)
-    : type(t), trigger(0), timestamp(0), last_epics(-1)
+    : event_number(0), type(t), trigger(0), timestamp(0), last_epics(-1)
     {};
     EventData(const unsigned char &t,
               const PRadTriggerType &tr,
               std::vector<ADC_Data> &adc,
               std::vector<TDC_Data> &tdc,
               std::vector<GEM_Data> &gem)
-    : type(t), trigger((unsigned char)tr), timestamp(0), last_epics(-1),
-      adc_data(adc), tdc_data(tdc), gem_data(gem)
+    : event_number(0), type(t), trigger((unsigned char)tr), timestamp(0),
+      last_epics(-1), adc_data(adc), tdc_data(tdc), gem_data(gem)
+    {};
+
+    // move constructor
+    EventData(const EventData &e)
+    : event_number(e.event_number), type(e.type), trigger(e.trigger),
+      timestamp(e.timestamp), last_epics(e.last_epics),
+      adc_data(std::move(e.adc_data)),
+      tdc_data(std::move(e.tdc_data)),
+      gem_data(std::move(e.gem_data))
+    {};
+
+    EventData(EventData &&e)
+    : event_number(e.event_number), type(e.type), trigger(e.trigger),
+      timestamp(e.timestamp), last_epics(e.last_epics),
+      adc_data(std::move(e.adc_data)),
+      tdc_data(std::move(e.tdc_data)),
+      gem_data(std::move(e.gem_data))
     {};
 
     // functions
