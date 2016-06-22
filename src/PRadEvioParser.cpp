@@ -20,6 +20,7 @@
 
 #define HEADER_SIZE 2
 #define MAX_BUFFER_SIZE 100000
+#define ROC_THREAD_THRES 5000
 
 using namespace std;
 
@@ -113,7 +114,6 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
     case CODA_Event:
     case CODA_Sync:
     case EPICS_Info:
-        myHandler->StartofNewEvent(header->tag);
         break; // go on to process
     case CODA_Prestart:
     case CODA_Go:
@@ -122,120 +122,99 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
         return; // not interested event type
     }
 
-    const uint32_t *buffer = (const uint32_t*) header;
-    size_t evtSize = header->length;
-    size_t dataSize = 0;
-    size_t index = 0;
-#ifdef MULTI_THREAD // definition in PRadDataHandler.h
-    vector<thread> bank_threads;
-#endif
-    index += HEADER_SIZE; // skip event header
+    myHandler->StartofNewEvent(header->tag);
 
-    while(index < evtSize)
+    uint32_t buf_size = header->length - 1;
+    uint32_t *buf = (uint32_t*) &header[1]; // skip current header
+    uint32_t index = 0;
+ 
+#ifdef MULTI_THREAD
+    vector<thread> roc_threads;
+#endif
+
+    while(index < buf_size)
     {
-        PRadEventHeader* evtHeader = (PRadEventHeader*) &buffer[index];
-        index += HEADER_SIZE; // header info is read
-        if(evtHeader->length < 2)
-           continue;
-
-        dataSize = evtHeader->length - 1;
-        // check the header, skip uninterested ones
-        switch(evtHeader->type)
-        {
-        case EvioBank: // Bank type header for ROC
-        case EvioBank_B:
-            switch(evtHeader->tag)
-            {
-            case PRadTagE:  // Tagger E, ROC id 7
-            case PRadSRS_2: // SRS, ROC id 9
-            case PRadSRS_1: // SRS, ROC id 8
-            case PRadROC_3: // Fastbus, ROC id 6
-            case PRadROC_2: // Fastbus, ROC id 5
-            case PRadROC_1: // Fastbus, ROC id 4
-            case PRadTS: // VME, ROC id 2
-            case EPICS_IOC:
-                continue; // Interested in ROCs, to next header
-
-            default: // unrecognized ROC
-                // Skip the whole segment
-                break;
-            }
-            break;
-
-        case UnsignedInt_32bit: // uint32 data bank
-            switch(evtHeader->tag)
-            {
-            default:
-            case LIVE_BANK: // bank contains the live time
-                break;
-            case EVINFO_BANK: // Bank contains the event information
-                event_number = buffer[index];
-                break;
-            case TI_BANK: // Bank 0x4, TI data, contains live time and event type information
-                parseTIData(&buffer[index], dataSize, evtHeader->num);
-                break;
-            case TDC_BANK:
-            case TAG_BANK:
 #ifdef MULTI_THREAD
-                bank_threads.push_back(thread(&PRadEvioParser::parseTDCV1190, this, &buffer[index], dataSize, evtHeader->num));
-#else
-                parseTDCV1190(&buffer[index], dataSize, evtHeader->num);
+        if(buf[index] > ROC_THREAD_THRES)
+            roc_threads.emplace_back(&PRadEvioParser::parseROCBank, this, (PRadEventHeader *)&buf[index]);
+        else
 #endif
-                break;
-            case DSC_BANK:
-                parseDSCData(&buffer[index], dataSize);
-                break;
-            case FASTBUS_BANK: // Bank 0x7, Fastbus data
-#ifdef MULTI_THREAD
-                    // for LMS event, since every module is fired, each thread needs to modify the non-local
-                    // variable E_total and the container for current event. Which means very frequent actions
-                    // on mutex lock and unlock, it indeed undermine the performance
-                    // TODO, separate thread for GEM and HyCal only, there won't be any shared object between
-                    // these two sub-system
-                    bank_threads.push_back(thread(&PRadEvioParser::parseADC1881M, this, &buffer[index]));
-#else
-                    parseADC1881M(&buffer[index]);
-#endif
-                break;
-            case GEM_BANK: // Bank 0x8, gem data, single FEC right now
-#ifdef MULTI_THREAD
-                bank_threads.push_back(thread(&PRadEvioParser::parseGEMData, this, &buffer[index], dataSize, evtHeader->num));
-//                parseGEMData(&buffer[index], dataSize, evtHeader->num);
-#else
-                parseGEMData(&buffer[index], dataSize, evtHeader->num);
-#endif
-                break;
-            }
-            break;
-
-        case CharString_8bit: // string data bank
-            switch(evtHeader->tag)
-            {
-            case EPICS_BANK: // epics information
-                parseEPICS(&buffer[index]);
-                break;
-            case CONF_BANK: // configuration information
-            default:
-                break;
-            }
-            break;
-        default:
-            // Unknown header
-            break;
-        }
-
-        index += dataSize; // Data are either processed or skipped above
+        parseROCBank((PRadEventHeader *)&buf[index]);
+        index += buf[index] + 1;
     }
 
 #ifdef MULTI_THREAD
-    // wait for all threads finished
-    for(auto &thread : bank_threads)
+    for(auto &roc : roc_threads)
     {
-        if(thread.joinable()) thread.join();
+        if(roc.joinable()) roc.join();
     }
 #endif
-
     myHandler->EndofThisEvent(event_number); // inform handler the end of event
+}
+
+void PRadEvioParser::parseROCBank(PRadEventHeader *roc_header)
+{
+    uint32_t *buf = (uint32_t*) &roc_header[1]; // skip current header
+
+    switch(roc_header->tag)
+    {
+    case PRadTagE:  // Tagger E, ROC id 2
+    case PRadSRS_2: // SRS, ROC id 8
+    case PRadSRS_1: // SRS, ROC id 7
+    case PRadROC_3: // Fastbus, ROC id 6
+    case PRadROC_2: // Fastbus, ROC id 5
+    case PRadROC_1: // Fastbus, ROC id 4
+    case PRadTS: // VME, ROC id 1
+    case EPICS_IOC:
+        break; // Interested in ROCs, to next header
+    case EVINFO_BANK: // special bank
+        event_number = buf[0]; // then skip
+    default: // unrecognized ROC, skip
+        return;
+    }
+
+    size_t roc_size = roc_header->length - 1;
+    size_t index = 0;
+
+    while(index < roc_size)
+    {
+        parseDataBank((PRadEventHeader *)&buf[index]);
+        index += buf[index] + 1;
+    }
+}
+
+void PRadEvioParser::parseDataBank(PRadEventHeader *data_header)
+{
+    const uint32_t *buffer = (const uint32_t*) &data_header[1]; // skip current header
+    size_t dataSize = data_header->length - 1;
+
+    // check the header, skip uninterested ones
+    switch(data_header->tag)
+    {
+    default:
+    case LIVE_BANK: // bank contains the live time
+    case CONF_BANK: // configuration information
+        break;
+   case TI_BANK: // Bank 0x4, TI data, contains live time and event type information
+        parseTIData(buffer, dataSize, data_header->num);
+        break;
+    case TDC_BANK:
+    case TAG_BANK:
+        parseTDCV1190(buffer, dataSize, data_header->num);
+        break;
+    case DSC_BANK:
+        parseDSCData(buffer, dataSize);
+        break;
+    case FASTBUS_BANK: // Bank 0x7, Fastbus data
+        parseADC1881M(buffer);
+        break;
+    case GEM_BANK: // Bank 0x8, gem data, single FEC right now
+        parseGEMData(buffer, dataSize, data_header->num);
+        break;
+    case EPICS_BANK: // epics information
+        parseEPICS(buffer);
+        break;
+    }
 }
 
 void PRadEvioParser::parseADC1881M(const uint32_t *data)

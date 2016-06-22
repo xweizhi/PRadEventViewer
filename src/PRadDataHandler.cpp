@@ -346,28 +346,11 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     PRadDAQUnit *channel = it->second;
 
     if(newEvent->isPhysicsEvent()) {
-        
         if(channel->Sparsification(adcData.val)) {
-
-#ifdef MULTI_THREAD
-            // unfortunately, we have some non-local variable to deal with
-            // so lock the thread to prevent concurrent access
-            myLock.lock();
-#endif
             newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val)); // store this data word
-#ifdef MULTI_THREAD
-            myLock.unlock();
-#endif
         }
-
     } else if (newEvent->isMonitorEvent()) {
-#ifdef MULTI_THREAD
-        myLock.lock();
-#endif
         newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val)); 
-#ifdef MULTI_THREAD
-        myLock.unlock();
-#endif
     }
     
 }
@@ -470,8 +453,7 @@ void PRadDataHandler::StartofNewEvent(const unsigned char &tag)
 void PRadDataHandler::EndofThisEvent(const unsigned int &ev)
 {
     newEvent->event_number = ev;
-
-     // wait for the thread
+    // wait for the process thread
     WaitEventProcess();
 
     end_thread = thread(&PRadDataHandler::EndProcess, this, newEvent);

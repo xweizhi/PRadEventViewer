@@ -11,10 +11,6 @@
 #include "ConfigParser.h"
 #include <thread>
 
-#ifdef MULTI_THREAD
-#include <mutex>
-#endif
-
 class PRadEvioParser;
 class PRadDAQUnit;
 class PRadTDCGroup;
@@ -117,7 +113,7 @@ public:
     void Clear();
     void SetRunNumber(const int &run) {runInfo.run_number = run;};
     void StartofNewEvent(const unsigned char &tag);
-    void EndofThisEvent(const unsigned int &ev = 0);
+    void EndofThisEvent(const unsigned int &ev);
     void EndProcess(EventData *data);
     void WaitEventProcess();
     void FeedData(JLabTIData &tiData);
@@ -186,9 +182,6 @@ private:
     int current_event;
     std::ofstream replay_out;
     std::thread end_thread;
-#ifdef MULTI_THREAD
-    std::mutex myLock;
-#endif
 
     // maps
     std::unordered_map< ChannelAddress, PRadDAQUnit* > map_daq;
