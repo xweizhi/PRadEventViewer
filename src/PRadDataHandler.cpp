@@ -1548,7 +1548,7 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
     uint32_t adc_size, tdc_size, gem_size, value_size;
     ADC_Data adc;
     TDC_Data tdc;
- 
+
     dst_file.read((char*) &adc_size, sizeof(adc_size));
     for(uint32_t i = 0; i < adc_size; ++i)
     {
@@ -1561,7 +1561,7 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
     {
         dst_file.read((char*) &tdc, sizeof(tdc));
         data.add_tdc(tdc);
-   }
+    }
 
     float value;
     dst_file.read((char*) &gem_size, sizeof(gem_size));

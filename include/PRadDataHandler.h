@@ -23,9 +23,9 @@ class TH2I;
 struct epics_ch
 {
     std::string name;
-    size_t id;
+    uint32_t id;
 
-    epics_ch(const std::string &n, const size_t &i)
+    epics_ch(const std::string &n, const uint32_t &i)
     : name(n), id(i)
     {};
 };
@@ -194,7 +194,7 @@ private:
     std::vector< PRadTDCGroup* > tdcList;
 
     // data related
-    std::unordered_map< std::string, size_t > epics_map;
+    std::unordered_map< std::string, uint32_t > epics_map;
     std::vector< float > epics_values;
     std::vector< ScalarChannel > triggerScalars;
     std::deque< EventData > energyData;
