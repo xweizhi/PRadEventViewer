@@ -1333,7 +1333,6 @@ void PRadDataHandler::Replay(const string &r_path, const int &split, const strin
     replayMode = true;
 
     ReadFromSplitEvio(r_path, split);
-    WaitEventProcess();
 
     WriteRunInfoToDST(replay_out);
 
