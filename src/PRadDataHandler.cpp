@@ -1318,7 +1318,6 @@ int PRadDataHandler::FindEventIndex(const int &ev)
 
 void PRadDataHandler::Replay(const string &r_path, const int &split, const string &w_path)
 {
-    ofstream output;
     if(w_path.empty()) {
         string file = "prad_" + to_string(runInfo.run_number) + ".dst";
         replay_out.open(file, ios::binary | ios::out);
@@ -1341,8 +1340,6 @@ void PRadDataHandler::Replay(const string &r_path, const int &split, const strin
     replayMode = false;
 
     cout << "Replay done, took " << timer.GetElapsedTime()/1000. << " s!" << endl;
-
-    output.close();
 }
 
 void PRadDataHandler::WriteDSTHeader(ofstream &dst_file) throw(PRadException)

@@ -1175,7 +1175,7 @@ void PRadEventViewer::findPeak()
     int nfound = s.Search(h, 20 , "", 0.05);
     if(nfound) {
         double ped = selection->GetPedestal().mean;
-        float *xpeaks = s.GetPositionX();
+        auto *xpeaks = s.GetPositionX();
         std::cout <<"Main peak location: " << xpeaks[0] <<". "
                   << int(xpeaks[0] - ped) << " away from the pedestal."
                   << std:: endl;
