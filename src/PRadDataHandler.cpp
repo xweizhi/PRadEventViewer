@@ -1336,6 +1336,8 @@ void PRadDataHandler::Replay(const string &r_path, const int &split, const strin
     ReadFromSplitEvio(r_path, split);
     WaitEventProcess();
 
+    WriteRunInfoToDST(replay_out);
+
     replayMode = false;
 
     cout << "Replay done, took " << timer.GetElapsedTime()/1000. << " s!" << endl;
