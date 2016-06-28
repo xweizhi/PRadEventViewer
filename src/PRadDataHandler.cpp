@@ -1340,6 +1340,7 @@ void PRadDataHandler::Replay(const string &r_path, const int &split, const strin
     replayMode = false;
 
     cout << "Replay done, took " << timer.GetElapsedTime()/1000. << " s!" << endl;
+    replay_out.close();
 }
 
 void PRadDataHandler::WriteDSTHeader(ofstream &dst_file) throw(PRadException)
