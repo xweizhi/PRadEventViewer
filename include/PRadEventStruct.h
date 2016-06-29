@@ -192,15 +192,15 @@ struct EventData
     bool operator < (const int &ev) const
     {
         return ev < event_number;
-    }; 
+    };
     bool operator > (const EventData &other) const
     {
         return other.event_number > event_number;
-    } 
+    };
     bool operator < (const EventData &other) const
     {
         return other.event_number < event_number;
-    } 
+    };
 };
 
 struct ScalarChannel

@@ -467,8 +467,17 @@ void PRadDataHandler::WaitEventProcess()
 
 void PRadDataHandler::EndProcess(EventData *data)
 {
-    if(data->type == CODA_Event) {
+    if(data->type == EPICS_Info) {
 
+        if(onlineMode && epicsData.size())
+            epicsData.pop_front();
+
+        if(replayMode)
+            WriteToDST(replay_out, EPICSData(data->event_number, epics_values));
+        else
+            epicsData.emplace_back(data->event_number, epics_values);
+
+    } else { // event or sync event
         FillHistograms(*data);
 
         if(onlineMode && energyData.size()) // online mode only saves the last event, to reduce usage of memory
@@ -478,16 +487,6 @@ void PRadDataHandler::EndProcess(EventData *data)
             WriteToDST(replay_out, *data);
         else
             energyData.emplace_back(move(*data)); // save event
-
-    } else if(newEvent->type == EPICS_Info) {
-
-        if(onlineMode && epicsData.size())
-            epicsData.pop_front();
-
-        if(replayMode)
-            WriteToDST(replay_out, EPICSData(data->event_number, epics_values));
-        else
-            epicsData.emplace_back(data->event_number, epics_values);
     }
 
     delete data; // new data memory is released here
