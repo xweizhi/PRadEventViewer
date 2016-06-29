@@ -309,20 +309,25 @@ float PRadDataHandler::GetEPICSValue(const string &name, const int &index)
     if((unsigned int)index >= energyData.size())
         return GetEPICSValue(name);
 
+    float result = EPICS_UNDEFINED_VALUE;
+
     auto it = epics_map.find(name);
     if(it == epics_map.end())
-        return EPICS_UNDEFINED_VALUE;
+        return result;
 
-    size_t channel_id = it->second;
-    unsigned int epics_idx = (unsigned int) energyData.at(index).last_epics;
+    uint32_t channel_id = it->second;
+    int event_number = energyData.at(index).event_number;
 
-    if( (epics_idx > epicsData.size()) ||
-        (channel_id > epicsData.at(epics_idx).values.size()) )
+    // find the epics event before this event
+    for(size_t i = 0; i < epicsData.size(); ++i)
     {
-        return EPICS_UNDEFINED_VALUE;
+        if(epicsData.at(i).event_number >= event_number) {
+            if(i > 0) result = epicsData.at(i-1).values.at(channel_id);
+            break;
+        }
     }
-        
-    return epicsData.at(epics_idx).values.at(channel_id);
+
+    return result;
 }
 
 void PRadDataHandler::FeedData(JLabTIData &tiData)
@@ -445,8 +450,6 @@ void PRadDataHandler::FillHistograms(EventData &data)
 void PRadDataHandler::StartofNewEvent(const unsigned char &tag)
 {
     newEvent = new EventData(tag);
-    // clear buffer for nes event
-    newEvent->last_epics = (int)epicsData.size() - 1; // update the epics info on newEvent
 }
 
 // signal of event end, save event or discard event in online mode
@@ -1504,7 +1507,6 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
     dst_file.write((char*) &data.type        , sizeof(data.type));
     dst_file.write((char*) &data.trigger     , sizeof(data.trigger));
     dst_file.write((char*) &data.timestamp   , sizeof(data.timestamp));
-    dst_file.write((char*) &data.last_epics  , sizeof(data.last_epics));
 
     // all data banks
     uint32_t adc_size = data.adc_data.size();
@@ -1541,7 +1543,6 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
     dst_file.read((char*) &data.type        , sizeof(data.type));
     dst_file.read((char*) &data.trigger     , sizeof(data.trigger));
     dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
-    dst_file.read((char*) &data.last_epics  , sizeof(data.last_epics));
 
     uint32_t adc_size, tdc_size, gem_size, value_size;
     ADC_Data adc;

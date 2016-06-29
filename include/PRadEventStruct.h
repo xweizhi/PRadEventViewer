@@ -104,7 +104,6 @@ struct EventData
     unsigned char type;
     unsigned char trigger;
     uint64_t timestamp;
-    int last_epics;
 
     // data banks
     std::vector< ADC_Data > adc_data;
@@ -113,32 +112,30 @@ struct EventData
 
     // constructors
     EventData()
-    : event_number(0), type(0), trigger(0), timestamp(0), last_epics(-1)
+    : event_number(0), type(0), trigger(0), timestamp(0)
     {};
     EventData(const unsigned char &t)
-    : event_number(0), type(t), trigger(0), timestamp(0), last_epics(-1)
+    : event_number(0), type(t), trigger(0), timestamp(0)
     {};
     EventData(const unsigned char &t,
-              const PRadTriggerType &tr,
+              const PRadTriggerType &trg,
               std::vector<ADC_Data> &adc,
               std::vector<TDC_Data> &tdc,
               std::vector<GEM_Data> &gem)
-    : event_number(0), type(t), trigger((unsigned char)tr), timestamp(0),
-      last_epics(-1), adc_data(adc), tdc_data(tdc), gem_data(gem)
+    : event_number(0), type(t), trigger((unsigned char)trg), timestamp(0),
+      adc_data(adc), tdc_data(tdc), gem_data(gem)
     {};
 
     // move constructor
     EventData(const EventData &e)
-    : event_number(e.event_number), type(e.type), trigger(e.trigger),
-      timestamp(e.timestamp), last_epics(e.last_epics),
+    : event_number(e.event_number), type(e.type), trigger(e.trigger), timestamp(e.timestamp),
       adc_data(std::move(e.adc_data)),
       tdc_data(std::move(e.tdc_data)),
       gem_data(std::move(e.gem_data))
     {};
 
     EventData(EventData &&e)
-    : event_number(e.event_number), type(e.type), trigger(e.trigger),
-      timestamp(e.timestamp), last_epics(e.last_epics),
+    : event_number(e.event_number), type(e.type), trigger(e.trigger), timestamp(e.timestamp),
       adc_data(std::move(e.adc_data)),
       tdc_data(std::move(e.tdc_data)),
       gem_data(std::move(e.gem_data))
@@ -158,7 +155,6 @@ struct EventData
         initialize();
         event_number = 0;
         timestamp = 0;
-        last_epics = -1;
     };
     void update_type(const unsigned char &t) {type = t;};
     void update_trigger(const unsigned char &t) {trigger = t;};
