@@ -261,6 +261,7 @@ void PRadDataHandler::UpdateScalarGroup(const unsigned int &size, const unsigned
 
     for(unsigned int i = 0; i < size; ++i)
     {
+        newEvent->dsc_data.emplace_back(gated[i], ungated[i]);
         triggerScalars[i].gated_count = gated[i];
         triggerScalars[i].count = ungated[i];
     }
@@ -1512,6 +1513,7 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
     uint32_t adc_size = data.adc_data.size();
     uint32_t tdc_size = data.tdc_data.size();
     uint32_t gem_size = data.gem_data.size();
+    uint32_t dsc_size = data.dsc_data.size();
 
     dst_file.write((char*) &adc_size, sizeof(adc_size));
     for(auto &adc : data.adc_data)
@@ -1531,6 +1533,9 @@ void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) thro
             dst_file.write((char*) &value, sizeof(value));
     }
 
+    dst_file.write((char*) &dsc_size, sizeof(dsc_size));
+    for(auto &dsc : data.dsc_data)
+        dst_file.write((char*) &dsc, sizeof(dsc));
 }
 
 void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRadException)
@@ -1544,9 +1549,10 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
     dst_file.read((char*) &data.trigger     , sizeof(data.trigger));
     dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
 
-    uint32_t adc_size, tdc_size, gem_size, value_size;
+    uint32_t adc_size, tdc_size, gem_size, value_size, dsc_size;
     ADC_Data adc;
     TDC_Data tdc;
+    DSC_Data dsc;
 
     dst_file.read((char*) &adc_size, sizeof(adc_size));
     for(uint32_t i = 0; i < adc_size; ++i)
@@ -1575,6 +1581,13 @@ void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRa
             gemhit.add_value(value);
         }
         data.add_gemhit(gemhit);
+    }
+
+    dst_file.read((char*) &dsc_size, sizeof(dsc_size));
+    for(uint32_t i = 0; i < dsc_size; ++i)
+    {
+        dst_file.read((char*) &dsc, sizeof(dsc));
+        data.add_dsc(dsc);
     }
 }
 

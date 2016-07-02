@@ -44,6 +44,19 @@ typedef struct ChannelData
 
 } TDC_Data, ADC_Data;
 
+struct DSC_Data
+{
+    unsigned int gated_count;
+    unsigned int ungated_count;
+
+    DSC_Data()
+    : gated_count(0), ungated_count(0)
+    {};
+    DSC_Data(const unsigned int &g1, const unsigned int &g2)
+    : gated_count(g1), ungated_count(g2)
+    {};
+};
+
 struct APVAddress
 {
     unsigned char fec;
@@ -85,6 +98,16 @@ struct GEM_Data
     }
 };
 
+struct ScalarChannel
+{
+    std::string name;
+    unsigned int count;
+    unsigned int gated_count;
+
+    ScalarChannel() : name("undefined"), count(0), gated_count(0) {};
+    ScalarChannel(const std::string &n) : name(n), count(0), gated_count(0) {};
+};
+
 struct EPICSData
 {
     int event_number;
@@ -109,6 +132,7 @@ struct EventData
     std::vector< ADC_Data > adc_data;
     std::vector< TDC_Data > tdc_data;
     std::vector< GEM_Data > gem_data;
+    std::vector< DSC_Data > dsc_data;
 
     // constructors
     EventData()
@@ -121,9 +145,10 @@ struct EventData
               const PRadTriggerType &trg,
               std::vector<ADC_Data> &adc,
               std::vector<TDC_Data> &tdc,
-              std::vector<GEM_Data> &gem)
+              std::vector<GEM_Data> &gem,
+              std::vector<DSC_Data> &dsc)
     : event_number(0), type(t), trigger((unsigned char)trg), timestamp(0),
-      adc_data(adc), tdc_data(tdc), gem_data(gem)
+      adc_data(adc), tdc_data(tdc), gem_data(gem), dsc_data(dsc)
     {};
 
     // move constructor
@@ -159,12 +184,17 @@ struct EventData
     void update_type(const unsigned char &t) {type = t;};
     void update_trigger(const unsigned char &t) {trigger = t;};
     void update_time(const uint64_t &t) {timestamp = t;};
+
     void add_adc(const ADC_Data &a) {adc_data.push_back(a);};
     void add_tdc(const TDC_Data &t) {tdc_data.push_back(t);};
     void add_gemhit(const GEM_Data &g) {gem_data.push_back(g);};
-    std::vector< ADC_Data> &get_adc_data() {return adc_data;};
-    std::vector< TDC_Data> &get_tdc_data() {return tdc_data;};
-    std::vector< GEM_Data> &get_gem_data() {return gem_data;};
+    void add_dsc(const DSC_Data &d) {dsc_data.push_back(d);};
+
+    std::vector<ADC_Data> &get_adc_data() {return adc_data;};
+    std::vector<TDC_Data> &get_tdc_data() {return tdc_data;};
+    std::vector<GEM_Data> &get_gem_data() {return gem_data;};
+    std::vector<DSC_Data> &get_dsc_data() {return dsc_data;};
+
     bool isPhysicsEvent()
     {
         return ( (trigger == PHYS_LeadGlassSum) ||
@@ -177,6 +207,7 @@ struct EventData
         return ( (trigger == LMS_Led) ||
                  (trigger == LMS_Alpha) );
     };
+
     bool operator == (const int &ev) const
     {
         return ev == event_number;
@@ -197,16 +228,6 @@ struct EventData
     {
         return other.event_number < event_number;
     };
-};
-
-struct ScalarChannel
-{
-    std::string name;
-    unsigned int count;
-    unsigned int gated_count;
-
-    ScalarChannel() : name("undefined"), count(0), gated_count(0) {};
-    ScalarChannel(const std::string &n) : name(n), count(0), gated_count(0) {};
 };
 
 struct HyCalHit
