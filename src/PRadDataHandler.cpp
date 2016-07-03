@@ -39,12 +39,12 @@ PRadDataHandler::PRadDataHandler()
     TagEHist = new TH2I("Tagger E", "Tagger E counter", 2000, 0, 20000, 384, 0, 383);
     TagTHist = new TH2I("Tagger T", "Tagger T counter", 2000, 0, 20000, 128, 0, 127);
 
-    triggerScalers.push_back(scaler_ch("Lead Glass Sum", 0));
-    triggerScalers.push_back(scaler_ch("Total Sum", 1));
-    triggerScalers.push_back(scaler_ch("LMS Led", 2));
-    triggerScalers.push_back(scaler_ch("LMS Alpha Source", 3));
-    triggerScalers.push_back(scaler_ch("Tagger Master OR", 4));
-    triggerScalers.push_back(scaler_ch("Scintillator", 5));
+    onlineInfo.add_trigger("Lead Glass Sum", 0);
+    onlineInfo.add_trigger("Total Sum", 1);
+    onlineInfo.add_trigger("LMS Led", 2);
+    onlineInfo.add_trigger("LMS Alpha Source", 3);
+    onlineInfo.add_trigger("Tagger Master OR", 4);
+    onlineInfo.add_trigger("Scintillator", 5);
 }
 
 PRadDataHandler::~PRadDataHandler()
@@ -278,13 +278,18 @@ void PRadDataHandler::UpdateLiveTimeScaler(EventData &event)
     }
 }
 
-void PRadDataHandler::UpdateScalerGroup(EventData &event)
+void PRadDataHandler::UpdateOnlineInfo(EventData &event)
 {
-    for(auto trg_ch : triggerScalers)
+    // update triggers
+    for(auto trg_ch : onlineInfo.trigger_info)
     {
         if(trg_ch.id < event.dsc_data.size())
         {
-            trg_ch.counts = event.get_dsc_scaled_by_ref(trg_ch.id);
+            // get ungated trigger counts
+            unsigned int counts = event.get_dsc_channel(trg_ch.id).ungated_count;
+
+            // calculate the frequency
+            trg_ch.freq = (double)counts / event.get_beam_time();
         }
 
         else {
@@ -296,6 +301,12 @@ void PRadDataHandler::UpdateScalerGroup(EventData &event)
                  << " dsc channels." << endl;
         }
     }
+
+    // update live time
+    onlineInfo.live_time = event.get_live_time();
+
+    //update beam current
+    onlineInfo.beam_current = event.get_beam_current();
 }
 
 float PRadDataHandler::GetEPICSValue(const string &name)
@@ -492,11 +503,14 @@ void PRadDataHandler::EndProcess(EventData *data)
             epicsData.emplace_back(data->event_number, epics_values);
 
     } else { // event or sync event
+
         FillHistograms(*data);
+
         if(data->type == CODA_Sync) {
             AccumulateBeamCharge(*data);
             UpdateLiveTimeScaler(*data);
-            UpdateScalerGroup(*data);
+            if(onlineMode)
+                UpdateOnlineInfo(*data);
         }
 
         if(onlineMode && energyData.size()) // online mode only saves the last event, to reduce usage of memory
@@ -506,6 +520,7 @@ void PRadDataHandler::EndProcess(EventData *data)
             WriteToDST(replay_out, *data);
         else
             energyData.emplace_back(move(*data)); // save event
+
     }
 
     delete data; // new data memory is released here
@@ -721,69 +736,45 @@ EPICSData &PRadDataHandler::GetEPICSData(const unsigned int &index)
     }
 }
 
-unsigned int PRadDataHandler::GetScalerCount(const unsigned int &group, const bool &gated)
-{
-    if(group >= triggerScalers.size())
-        return 0;
-    if(gated)
-        return triggerScalers[group].counts.gated_count;
-    else
-        return triggerScalers[group].counts.ungated_count;
-}
-
-vector<unsigned int> PRadDataHandler::GetScalersCount(const bool &gated)
-{
-    vector<unsigned int> result;
-
-    for(auto scaler : triggerScalers)
-    {
-        if(gated)
-            result.push_back(scaler.counts.gated_count);
-        else
-            result.push_back(scaler.counts.ungated_count);
-    }
-
-    return result;
-}
-
 void PRadDataHandler::FitHistogram(const string &channel,
                                    const string &hist_name,
                                    const string &fit_function,
                                    const double &range_min,
                                    const double &range_max) throw(PRadException)
 {
-        // If the user didn't dismiss the dialog, do something with the fields
-        PRadDAQUnit *ch = GetChannel(channel);
-        if(ch == nullptr) {
-            throw PRadException("Fit Histogram Failure", "Channel " + channel + " does not exist!");
-        }
+    // If the user didn't dismiss the dialog, do something with the fields
+    PRadDAQUnit *ch = GetChannel(channel);
+    if(ch == nullptr) {
+        throw PRadException("Fit Histogram Failure", "Channel " + channel + " does not exist!");
+    }
 
-        TH1 *hist = ch->GetHist(hist_name);
-        if(hist == nullptr) {
-            throw PRadException("Fit Histogram Failure", "Histogram " + hist_name + " does not exist!");
-        }
+    TH1 *hist = ch->GetHist(hist_name);
+    if(hist == nullptr) {
+        throw PRadException("Fit Histogram Failure", "Histogram " + hist_name + " does not exist!");
+    }
 
-        int beg_bin = hist->GetXaxis()->FindBin(range_min);
-        int end_bin = hist->GetXaxis()->FindBin(range_max) - 1;
- 
-        if(!hist->Integral(beg_bin, end_bin)) {
-            throw PRadException("Fit Histogram Failure", "Histogram does not have entries in specified range!");
-        }
+    int beg_bin = hist->GetXaxis()->FindBin(range_min);
+    int end_bin = hist->GetXaxis()->FindBin(range_max) - 1;
 
-        TF1 *fit = new TF1("newfit", fit_function.c_str(), range_min, range_max);
+    if(!hist->Integral(beg_bin, end_bin)) {
+        throw PRadException("Fit Histogram Failure", "Histogram does not have entries in specified range!");
+    }
 
-        hist->Fit(fit, "qR");
-        TF1 *myfit = (TF1*) hist->GetFunction("newfit");
+    TF1 *fit = new TF1("newfit", fit_function.c_str(), range_min, range_max);
 
-        // print out result
-        cout << "Fit histogram " << hist->GetTitle() << endl;
-        for(int i = 0; i < myfit->GetNpar(); ++i)
-        {
-            cout << "Parameter " << i+1 << ": " << myfit->GetParameter(i+1) << endl;
-        }
-        cout << endl;
+    hist->Fit(fit, "qR");
 
-        delete fit;
+    TF1 *myfit = (TF1*) hist->GetFunction("newfit");
+
+    // print out result
+    cout << "Fit histogram " << hist->GetTitle() << endl;
+    for(int i = 0; i < myfit->GetNpar(); ++i)
+    {
+        cout << "Parameter " << i+1 << ": " << myfit->GetParameter(i+1) << endl;
+    }
+    cout << endl;
+
+    delete fit;
 }
 
 void PRadDataHandler::FitPedestal()

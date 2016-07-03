@@ -168,8 +168,8 @@ void PRadEventViewer::generateScalerBoxes()
     HyCal->AddScalerBox(tr("LMS Alpha")       , Qt::black, QRectF(-200, -640, 150, 40), QColor(255, 200, 100, 50));
     HyCal->AddScalerBox(tr("Master Or")       , Qt::black, QRectF( -50, -640, 150, 40), QColor(100, 255, 200, 50));
     HyCal->AddScalerBox(tr("Scintillator")    , Qt::black, QRectF( 100, -640, 150, 40), QColor(200, 100, 255, 50));
-    HyCal->AddScalerBox(tr("Faraday Cup")     , Qt::black, QRectF( 250, -640, 150, 40), QColor(200, 255, 100, 50));
-    HyCal->AddScalerBox(tr("Pulser")          , Qt::black, QRectF( 400, -640, 150, 40), QColor(100, 200, 255, 50));
+    HyCal->AddScalerBox(tr("Live Time")       , Qt::black, QRectF( 250, -640, 150, 40), QColor(200, 255, 100, 50));
+    HyCal->AddScalerBox(tr("Beam Current")    , Qt::black, QRectF( 400, -640, 150, 40), QColor(100, 200, 255, 50));
 }
 
 //============================================================================//
@@ -187,13 +187,12 @@ void PRadEventViewer::createMainMenu()
 
     QAction *openPedAction = fileMenu->addAction(tr("Open &Pedestal File"));
     openPedAction->setShortcuts(QKeySequence::Print);
-    
+
     QAction *saveHistAction = fileMenu->addAction(tr("Save &Histograms"));
     saveHistAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
 
     QAction *savePedAction = fileMenu->addAction(tr("&Save Pedestal File"));
     savePedAction->setShortcuts(QKeySequence::Save);
-    
 
     QAction *quitAction = fileMenu->addAction(tr("&Quit"));
     quitAction->setShortcuts(QKeySequence::Quit);
@@ -235,8 +234,8 @@ void PRadEventViewer::createMainMenu()
     // calibration related
     QMenu *caliMenu = new QMenu(tr("&Calibration"));
 
-    QAction *initializeAction = caliMenu->addAction(tr("Initialize From Data File")); 
-    
+    QAction *initializeAction = caliMenu->addAction(tr("Initialize From Data File"));
+
     QAction *openCalFileAction = caliMenu->addAction(tr("Read Calibration Constants"));
 
     QAction *openGainFileAction = caliMenu->addAction(tr("Normalize Gain From File"));
@@ -889,6 +888,22 @@ void PRadEventViewer::UpdateStatusBar(ViewerStatus mode)
     lStatusLabel->setText(statusText);
 }
 
+void PRadEventViewer::UpdateOnlineInfo()
+{
+    QStringList onlineText;
+    auto info = handler->GetOnlineInfo();
+
+    for(auto &trg : info.trigger_info)
+    {
+        onlineText << QString::number(trg.freq) + tr(" Hz");
+    }
+
+    onlineText << QString::number(info.live_time*100.) + tr("%");
+    onlineText << QString::number(info.beam_current) + tr(" nA");
+
+    HyCal->UpdateScalerBox(onlineText);
+}
+
 void PRadEventViewer::changeCurrentEvent(int evt)
 {
     currentEvent = evt;
@@ -1468,7 +1483,7 @@ void PRadEventViewer::onlineUpdate(const size_t &max_events)
 
         if(num) {
             UpdateHistCanvas();
-            HyCal->UpdateScalersCount(handler->GetScalersCount());
+            UpdateOnlineInfo();
             Refresh();
         }
 

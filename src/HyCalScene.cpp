@@ -90,19 +90,19 @@ void HyCalScene::AddScalerBox(const QString &text, const QColor &textColor, cons
     scalarBoxList.push_back(TextBox(text, textColor, textBox, bkgColor));
 }
 
-void HyCalScene::UpdateScalerCount(const int &group, const unsigned int &count)
+void HyCalScene::UpdateScalerBox(const QString &text, const int &group)
 {
     if(group < 0 || group >= scalarBoxList.size())
         return;
 
-    scalarBoxList[group].text = QString::number(count);
+    scalarBoxList[group].text = text;
 }
 
-void HyCalScene::UpdateScalersCount(const std::vector<unsigned int> &counts)
+void HyCalScene::UpdateScalerBox(const QStringList &texts)
 {
-    for(size_t i = 0; i < counts.size(); ++i)
+    for(int i = 0; i < texts.size(); ++i)
     {
-        UpdateScalerCount((int)i, counts[i]);
+        UpdateScalerBox(texts.at(i), i);
     }
 }
 

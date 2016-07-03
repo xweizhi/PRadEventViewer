@@ -30,20 +30,6 @@ struct epics_ch
     {};
 };
 
-// scalers channel
-struct scaler_ch
-{
-    std::string name;
-    uint32_t id;
-    DSC_Data counts;
-
-    scaler_ch() : name("undefined"), id(-1)
-    {};
-    scaler_ch(const std::string &n, const uint32_t &i) : name(n), id(i)
-    {};
-};
-
-
 // a simple hash function for DAQ configuration
 namespace std
 {
@@ -87,7 +73,7 @@ public:
     PRadTDCGroup *GetTDCGroup(const ChannelAddress &addr);
     const std::unordered_map< std::string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};
     std::vector< PRadDAQUnit* > &GetChannelList() {return channelList;};
- 
+
     // read config files
     void ReadConfig(const std::string &path);
     template<typename... Args>
@@ -142,7 +128,7 @@ public:
     void UpdateTrgType(const unsigned char &trg);
     void AccumulateBeamCharge(EventData &event);
     void UpdateLiveTimeScaler(EventData &event);
-    void UpdateScalerGroup(EventData &event);
+    void UpdateOnlineInfo(EventData &event);
 
     // show data
     int GetCurrentEventNb();
@@ -150,17 +136,17 @@ public:
     void ChooseEvent(const EventData &event);
     unsigned int GetEventCount() {return energyData.size();};
     unsigned int GetEPICSEventCount() {return epicsData.size();};
-    unsigned int GetScalerCount(const unsigned int &group = 0, const bool &gated = false);
     int GetRunNumber() {return runInfo.run_number;};
     double GetBeamCharge() {return runInfo.beam_charge;};
     double GetLiveTime() {return (1. - runInfo.dead_count/runInfo.ungated_count);};
-    std::vector<unsigned int> GetScalersCount(const bool &gated = false);
     TH1D *GetEnergyHist() {return energyHist;};
     TH2I *GetTagEHist() {return TagEHist;};
     TH2I *GetTagTHist() {return TagTHist;};
     EventData &GetEventData(const unsigned int &index);
     EventData &GetLastEvent();
     EPICSData &GetEPICSData(const unsigned int &index);
+    RunInfo &GetRunInfo() {return runInfo;};
+    OnlineInfo &GetOnlineInfo() {return onlineInfo;};
     double GetEnergy() {return totalE;};
     float GetEPICSValue(const std::string &name);
     float GetEPICSValue(const std::string &name, const int &index);
@@ -191,6 +177,7 @@ private:
     PRadEvioParser *parser;
     PRadGEMSystem *gem_srs;
     RunInfo runInfo;
+    OnlineInfo onlineInfo;
     double totalE;
     bool onlineMode;
     bool replayMode;
@@ -211,7 +198,6 @@ private:
     // data related
     std::unordered_map< std::string, uint32_t > epics_map;
     std::vector< float > epics_values;
-    std::vector< scaler_ch > triggerScalers;
     std::deque< EventData > energyData;
     std::deque< EPICSData > epicsData;
 

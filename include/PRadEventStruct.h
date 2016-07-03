@@ -38,6 +38,37 @@ struct RunInfo
     }
 };
 
+struct TriggerChannel
+{
+    std::string name;
+    uint32_t id;
+    double freq;
+
+    TriggerChannel()
+    : name("undefined"), id(0), freq(0.)
+    {};
+    TriggerChannel(const std::string &n, const uint32_t &i)
+    : name(n), id(i), freq(0.)
+    {};
+};
+
+// online information
+struct OnlineInfo
+{
+    double live_time;
+    double beam_current;
+    std::vector<TriggerChannel> trigger_info;
+
+    OnlineInfo()
+    : live_time(0.), beam_current(0.)
+    {};
+
+    void add_trigger(const std::string &n, const uint32_t &i)
+    {
+        trigger_info.emplace_back(n, i);
+    };
+};
+
 typedef struct ChannelData
 {
     unsigned short channel_id;
@@ -217,7 +248,7 @@ struct EventData
         }
 
         return elapsed_time;
-    }
+    };
 
     double get_live_time()
     {
@@ -228,7 +259,7 @@ struct EventData
         }
 
         return live_time;
-    }
+    };
 
     double get_beam_charge()
     {
@@ -239,7 +270,7 @@ struct EventData
         }
 
         return beam_charge;
-    }
+    };
 
     double get_beam_current()
     {
@@ -248,17 +279,22 @@ struct EventData
             return get_beam_charge()/beam_time;
         else
             return 0.;
-    }
+    };
+
+    DSC_Data get_dsc_channel(const uint32_t &idx)
+    {
+        if(dsc_data.size() <= idx)
+            return DSC_Data();
+        else
+            return dsc_data.at(idx);
+    };
 
     DSC_Data get_ref_channel()
     {
-        if(dsc_data.size() <= REF_CHANNEL)
-            return DSC_Data();
-        else
-            return dsc_data.at(REF_CHANNEL);
-    }
+        return get_dsc_channel(REF_CHANNEL);
+    };
 
-    DSC_Data get_dsc_scaled_by_ref(uint32_t &idx)
+    DSC_Data get_dsc_scaled_by_ref(const uint32_t &idx)
     {
         if(idx >= dsc_data.size())
             return DSC_Data();
@@ -268,7 +304,7 @@ struct EventData
         uint64_t gated_scaled = (dsc_data.at(idx).gated_count*ref_pulser)/REF_PULSER_FREQ;
 
         return DSC_Data((unsigned int)gated_scaled, (unsigned int)ungated_scaled);
-    }
+    };
 
     bool operator == (const int &ev) const
     {

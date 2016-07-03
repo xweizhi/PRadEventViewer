@@ -81,6 +81,7 @@ public:
     QColor GetColor(const double &val);
     void UpdateStatusBar(ViewerStatus mode);
     void UpdateStatusInfo();
+    void UpdateOnlineInfo();
     void UpdateHistCanvas();
     void SelectModule(HyCalModule* module);
     PRadDataHandler *GetHandler() {return handler;};

@@ -47,8 +47,8 @@ public:
 
     void AddTDCBox(const QString &name, const QColor &textColor, const QRectF &textBox, const QColor &bgColor);
     void AddScalerBox(const QString &name, const QColor &textColor, const QRectF &textBox, const QColor &bgColor);
-    void UpdateScalerCount(const int &group, const unsigned int &count);
-    void UpdateScalersCount(const std::vector<unsigned int> &counts);
+    void UpdateScalerBox(const QString &text, const int &group = 0);
+    void UpdateScalerBox(const QStringList &texts);
     void ShowScalers(const bool &s = true) {showScalers = s;};
     void addModule(HyCalModule *module);
     void addItem(QGraphicsItem *item);
