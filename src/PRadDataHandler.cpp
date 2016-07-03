@@ -22,7 +22,7 @@
 #include "TH1.h"
 #include "TH2.h"
 
-#define DST_FILE_VERSION 0x12  // 0xff
+#define DST_FILE_VERSION 0x13  // 0xff
 
 #define EPICS_UNDEFINED_VALUE -9999.9
 #define TAGGER_CHANID 30000 // Tagger tdc id will start from this number
@@ -282,17 +282,17 @@ void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
     }
 }
 
-void PRadDataHandler::AccumulateBeamCharge(const double &c)
+void PRadDataHandler::AccumulateBeamCharge(EventData &event)
 {
-    if(newEvent->isPhysicsEvent())
-        runInfo.beam_charge += c;
+    if(event.is_physics_event())
+        runInfo.beam_charge += event.get_beam_charge();
 }
 
-void PRadDataHandler::UpdateLiveTimeScaler(const unsigned int &ungated, const unsigned int &gated)
+void PRadDataHandler::UpdateLiveTimeScaler(EventData &event)
 {
-    if(newEvent->isPhysicsEvent()) {
-        runInfo.ungated_count += (double) ungated;
-        runInfo.dead_count += (double) gated;
+    if(event.is_physics_event()) {
+        runInfo.ungated_count += event.get_ref_channel().ungated_count;
+        runInfo.dead_count += event.get_ref_channel().gated_count;
     }
 }
 
@@ -351,11 +351,11 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
     // get the channel
     PRadDAQUnit *channel = it->second;
 
-    if(newEvent->isPhysicsEvent()) {
+    if(newEvent->is_physics_event()) {
         if(channel->Sparsification(adcData.val)) {
             newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val)); // store this data word
         }
-    } else if (newEvent->isMonitorEvent()) {
+    } else if (newEvent->is_monitor_event()) {
         newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val)); 
     }
     
@@ -411,7 +411,7 @@ void PRadDataHandler::FeedTaggerHits(TDCV1190Data &tdcData)
 // feed GEM data
 void PRadDataHandler::FeedData(GEMRawData &gemData)
 {
-    gem_srs->FillRawData(gemData, newEvent->gem_data, newEvent->isMonitorEvent());
+    gem_srs->FillRawData(gemData, newEvent->gem_data, newEvent->is_monitor_event());
 }
 
 void PRadDataHandler::FillHistograms(EventData &data)
@@ -427,7 +427,7 @@ void PRadDataHandler::FillHistograms(EventData &data)
         }
     }
 
-    if(!data.isPhysicsEvent())
+    if(!data.is_physics_event())
         return;
 
     // for only physics events
@@ -483,6 +483,10 @@ void PRadDataHandler::EndProcess(EventData *data)
 
     } else { // event or sync event
         FillHistograms(*data);
+        if(data->type == CODA_Sync) {
+            AccumulateBeamCharge(*data);
+            UpdateLiveTimeScaler(*data);
+        }
 
         if(onlineMode && energyData.size()) // online mode only saves the last event, to reduce usage of memory
             energyData.pop_front();
@@ -1153,7 +1157,7 @@ void PRadDataHandler::RefillEnergyHist()
 
     for(auto &event : energyData)
     {
-        if(!event.isPhysicsEvent())
+        if(!event.is_physics_event())
             continue;
 
         double ene = 0.;

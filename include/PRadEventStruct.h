@@ -6,6 +6,14 @@
 #include <deque>
 #include <utility>
 
+// some discriminator related settings
+#define REF_CHANNEL 7
+#define REF_PULSER_FREQ 500000
+
+#define FCUP_CHANNEL 6
+#define FCUP_OFFSET 100.0
+#define FCUP_SLOPE 906.2
+
 struct RunInfo
 {
     int run_number;
@@ -156,14 +164,16 @@ struct EventData
     : event_number(e.event_number), type(e.type), trigger(e.trigger), timestamp(e.timestamp),
       adc_data(std::move(e.adc_data)),
       tdc_data(std::move(e.tdc_data)),
-      gem_data(std::move(e.gem_data))
+      gem_data(std::move(e.gem_data)),
+      dsc_data(std::move(e.dsc_data))
     {};
 
     EventData(EventData &&e)
     : event_number(e.event_number), type(e.type), trigger(e.trigger), timestamp(e.timestamp),
       adc_data(std::move(e.adc_data)),
       tdc_data(std::move(e.tdc_data)),
-      gem_data(std::move(e.gem_data))
+      gem_data(std::move(e.gem_data)),
+      dsc_data(std::move(e.dsc_data))
     {};
 
     // functions
@@ -195,18 +205,60 @@ struct EventData
     std::vector<GEM_Data> &get_gem_data() {return gem_data;};
     std::vector<DSC_Data> &get_dsc_data() {return dsc_data;};
 
-    bool isPhysicsEvent()
+    bool is_physics_event()
     {
         return ( (trigger == PHYS_LeadGlassSum) ||
                  (trigger == PHYS_TotalSum)     ||
                  (trigger == PHYS_TaggerE)      ||
                  (trigger == PHYS_Scintillator) );
     };
-    bool isMonitorEvent()
+    bool is_monitor_event()
     {
         return ( (trigger == LMS_Led) ||
                  (trigger == LMS_Alpha) );
     };
+
+    double get_time()
+    {
+        double elapsed_time = 0.;
+        if(dsc_data.size() > REF_CHANNEL)
+        {
+            elapsed_time = (double)dsc_data.at(REF_CHANNEL).ungated_count/(double)REF_PULSER_FREQ;
+        }
+
+        return elapsed_time;
+    }
+
+    double get_live_time()
+    {
+        double live_time = 1.;
+        if(dsc_data.size() > REF_CHANNEL)
+        {
+            live_time -= (double)dsc_data.at(REF_CHANNEL).gated_count/(double)dsc_data.at(REF_CHANNEL).ungated_count;
+        }
+
+        return live_time;
+    }
+
+    double get_beam_charge()
+    {
+        double beam_charge = 0.;
+        if(dsc_data.size() > FCUP_CHANNEL)
+        {
+            double beam_current = ((double)dsc_data.at(FCUP_CHANNEL).ungated_count - FCUP_OFFSET)/FCUP_SLOPE;
+            beam_charge = beam_current * get_time();
+        }
+
+        return beam_charge;
+    }
+
+    DSC_Data get_ref_channel()
+    {
+        if(dsc_data.size() <= REF_CHANNEL)
+            return DSC_Data();
+        else
+            return dsc_data.at(REF_CHANNEL);
+    }
 
     bool operator == (const int &ev) const
     {

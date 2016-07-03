@@ -126,9 +126,9 @@ public:
     void UpdateEPICS(const std::string &name, const float &value);
     void UpdateTrgType(const unsigned char &trg);
     void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
-    void AccumulateBeamCharge(const double &c);
-    void UpdateLiveTimeScaler(const unsigned int &ungated, const unsigned int &gated);
- 
+    void AccumulateBeamCharge(EventData &event);
+    void UpdateLiveTimeScaler(EventData &event);
+
     // show data
     int GetCurrentEventNb();
     void ChooseEvent(const int &idx = -1);

@@ -383,52 +383,18 @@ void PRadEvioParser::parseTDCV1190(const uint32_t *data, const size_t &size, con
 
 void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
 {
-#define REF_PULSER_FREQ 500000
 #define GATED_TDC_GROUP 3
 #define GATED_TRG_GROUP 19
 #define UNGATED_TDC_GROUP 35
 #define UNGATED_TRG_GROUP 51
-
-#define FCUP_OFFSET 100.0
-#define FCUP_SLOPE 906.2
 
     if(size < 72) {
         cerr << "Unexpected scalar data bank size: " << size << endl;
         return;
     }
 
-    unsigned int gated_counts[8];
-    unsigned int ungated_counts[8];
-    unsigned int pulser_read = data[7 + UNGATED_TRG_GROUP];
-    unsigned int pulser_dead = data[7 + GATED_TRG_GROUP];
+    myHandler->UpdateScalarGroup(8, &data[GATED_TRG_GROUP], &data[UNGATED_TRG_GROUP]);
 
-    myHandler->UpdateLiveTimeScaler(pulser_read, pulser_dead);
-
-    auto scale_to_ref = [](const unsigned int &num, const unsigned int &ref_read, const unsigned int &ref_freq = REF_PULSER_FREQ)
-                        {
-                            if(!ref_read)
-                                return num;
-
-                            uint64_t tmp = num;
-                            tmp *= ref_freq;
-                            tmp /= ref_read;
-                            return (unsigned int)tmp;
-                        };
-
-    for(int i = 0; i < 8; ++i)
-    {
-        gated_counts[i] = scale_to_ref(data[i + GATED_TRG_GROUP], pulser_read);
-        ungated_counts[i] = scale_to_ref(data[i + UNGATED_TRG_GROUP], pulser_read);
-    }
-
-    myHandler->UpdateScalarGroup(8, gated_counts, ungated_counts);
-
-    // calculate beam charge
-    double beam_current = ((double)ungated_counts[6] - FCUP_OFFSET)/FCUP_SLOPE;
-    double beam_charge = beam_current * (double)pulser_read/(double)REF_PULSER_FREQ;
-    double live_time = 1. - (double)data[7 + GATED_TRG_GROUP]/(double)pulser_read;
-
-    myHandler->AccumulateBeamCharge(live_time * beam_charge);
 }
 
 void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const int &roc_id)
