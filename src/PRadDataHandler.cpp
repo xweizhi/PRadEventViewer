@@ -39,14 +39,12 @@ PRadDataHandler::PRadDataHandler()
     TagEHist = new TH2I("Tagger E", "Tagger E counter", 2000, 0, 20000, 384, 0, 383);
     TagTHist = new TH2I("Tagger T", "Tagger T counter", 2000, 0, 20000, 128, 0, 127);
 
-    triggerScalars.push_back(ScalarChannel("Lead Glass Sum"));
-    triggerScalars.push_back(ScalarChannel("Total Sum"));
-    triggerScalars.push_back(ScalarChannel("LMS Led"));
-    triggerScalars.push_back(ScalarChannel("LMS Alpha Source"));
-    triggerScalars.push_back(ScalarChannel("Tagger Master OR"));
-    triggerScalars.push_back(ScalarChannel("Scintillator"));
-    triggerScalars.push_back(ScalarChannel("Faraday Cage"));
-    triggerScalars.push_back(ScalarChannel("External Pulser"));
+    triggerScalers.push_back(scaler_ch("Lead Glass Sum", 0));
+    triggerScalers.push_back(scaler_ch("Total Sum", 1));
+    triggerScalers.push_back(scaler_ch("LMS Led", 2));
+    triggerScalers.push_back(scaler_ch("LMS Alpha Source", 3));
+    triggerScalers.push_back(scaler_ch("Tagger Master OR", 4));
+    triggerScalers.push_back(scaler_ch("Scintillator", 5));
 }
 
 PRadDataHandler::~PRadDataHandler()
@@ -251,22 +249,6 @@ void PRadDataHandler::UpdateTrgType(const unsigned char &trg)
     newEvent->trigger = trg;
 }
 
-void PRadDataHandler::UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated)
-{
-    if(size > triggerScalars.size())
-    {
-        cerr << "ERROR: Received too many scalar channels, scalar counts will not be updated" << endl;
-        return;
-    }
-
-    for(unsigned int i = 0; i < size; ++i)
-    {
-        newEvent->dsc_data.emplace_back(gated[i], ungated[i]);
-        triggerScalars[i].gated_count = gated[i];
-        triggerScalars[i].count = ungated[i];
-    }
-}
-
 void PRadDataHandler::UpdateEPICS(const string &name, const float &value)
 {
     auto it = epics_map.find(name);
@@ -293,6 +275,26 @@ void PRadDataHandler::UpdateLiveTimeScaler(EventData &event)
     if(event.is_physics_event()) {
         runInfo.ungated_count += event.get_ref_channel().ungated_count;
         runInfo.dead_count += event.get_ref_channel().gated_count;
+    }
+}
+
+void PRadDataHandler::UpdateScalerGroup(EventData &event)
+{
+    for(auto trg_ch : triggerScalers)
+    {
+        if(trg_ch.id < event.dsc_data.size())
+        {
+            trg_ch.counts = event.get_dsc_scaled_by_ref(trg_ch.id);
+        }
+
+        else {
+            cerr << "Data Handler: Unmatched discriminator data from event "
+                 << event.event_number
+                 << ", expect trigger " << trg_ch.name
+                 << " at channel " << trg_ch.id
+                 << ", but the event only has " << event.dsc_data.size()
+                 << " dsc channels." << endl;
+        }
     }
 }
 
@@ -336,6 +338,14 @@ void PRadDataHandler::FeedData(JLabTIData &tiData)
     newEvent->timestamp = tiData.time_high;
     newEvent->timestamp <<= 32;
     newEvent->timestamp |= tiData.time_low;
+}
+
+void PRadDataHandler::FeedData(JLabDSCData &dscData)
+{
+    for(uint32_t i = 0; i < dscData.size; ++i)
+    {
+        newEvent->dsc_data.emplace_back(dscData.gated_buf[i], dscData.ungated_buf[i]);
+    }
 }
 
 // feed ADC1881M data
@@ -486,6 +496,7 @@ void PRadDataHandler::EndProcess(EventData *data)
         if(data->type == CODA_Sync) {
             AccumulateBeamCharge(*data);
             UpdateLiveTimeScaler(*data);
+            UpdateScalerGroup(*data);
         }
 
         if(onlineMode && energyData.size()) // online mode only saves the last event, to reduce usage of memory
@@ -710,26 +721,26 @@ EPICSData &PRadDataHandler::GetEPICSData(const unsigned int &index)
     }
 }
 
-unsigned int PRadDataHandler::GetScalarCount(const unsigned int &group, const bool &gated)
+unsigned int PRadDataHandler::GetScalerCount(const unsigned int &group, const bool &gated)
 {
-    if(group >= triggerScalars.size())
+    if(group >= triggerScalers.size())
         return 0;
     if(gated)
-        return triggerScalars[group].gated_count;
+        return triggerScalers[group].counts.gated_count;
     else
-        return triggerScalars[group].count;
+        return triggerScalers[group].counts.ungated_count;
 }
 
-vector<unsigned int> PRadDataHandler::GetScalarsCount(const bool &gated)
+vector<unsigned int> PRadDataHandler::GetScalersCount(const bool &gated)
 {
     vector<unsigned int> result;
 
-    for(auto scalar : triggerScalars)
+    for(auto scaler : triggerScalers)
     {
         if(gated)
-            result.push_back(scalar.gated_count);
+            result.push_back(scaler.counts.gated_count);
         else
-            result.push_back(scalar.count);
+            result.push_back(scaler.counts.ungated_count);
     }
 
     return result;

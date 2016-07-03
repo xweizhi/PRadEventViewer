@@ -19,7 +19,7 @@ class PRadGEMAPV;
 class TH1D;
 class TH2I;
 
-// helper struct
+// epics channel
 struct epics_ch
 {
     std::string name;
@@ -29,6 +29,20 @@ struct epics_ch
     : name(n), id(i)
     {};
 };
+
+// scalers channel
+struct scaler_ch
+{
+    std::string name;
+    uint32_t id;
+    DSC_Data counts;
+
+    scaler_ch() : name("undefined"), id(-1)
+    {};
+    scaler_ch(const std::string &n, const uint32_t &i) : name(n), id(i)
+    {};
+};
+
 
 // a simple hash function for DAQ configuration
 namespace std
@@ -117,6 +131,7 @@ public:
     void EndProcess(EventData *data);
     void WaitEventProcess();
     void FeedData(JLabTIData &tiData);
+    void FeedData(JLabDSCData &dscData);
     void FeedData(ADC1881MData &adcData);
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
@@ -125,9 +140,9 @@ public:
     void FillHistograms(EventData &data);
     void UpdateEPICS(const std::string &name, const float &value);
     void UpdateTrgType(const unsigned char &trg);
-    void UpdateScalarGroup(const unsigned int &size, const unsigned int *gated, const unsigned int *ungated);
     void AccumulateBeamCharge(EventData &event);
     void UpdateLiveTimeScaler(EventData &event);
+    void UpdateScalerGroup(EventData &event);
 
     // show data
     int GetCurrentEventNb();
@@ -135,11 +150,11 @@ public:
     void ChooseEvent(const EventData &event);
     unsigned int GetEventCount() {return energyData.size();};
     unsigned int GetEPICSEventCount() {return epicsData.size();};
-    unsigned int GetScalarCount(const unsigned int &group = 0, const bool &gated = false);
+    unsigned int GetScalerCount(const unsigned int &group = 0, const bool &gated = false);
     int GetRunNumber() {return runInfo.run_number;};
     double GetBeamCharge() {return runInfo.beam_charge;};
     double GetLiveTime() {return (1. - runInfo.dead_count/runInfo.ungated_count);};
-    std::vector<unsigned int> GetScalarsCount(const bool &gated = false);
+    std::vector<unsigned int> GetScalersCount(const bool &gated = false);
     TH1D *GetEnergyHist() {return energyHist;};
     TH2I *GetTagEHist() {return TagEHist;};
     TH2I *GetTagTHist() {return TagTHist;};
@@ -196,7 +211,7 @@ private:
     // data related
     std::unordered_map< std::string, uint32_t > epics_map;
     std::vector< float > epics_values;
-    std::vector< ScalarChannel > triggerScalars;
+    std::vector< scaler_ch > triggerScalers;
     std::deque< EventData > energyData;
     std::deque< EPICSData > epicsData;
 

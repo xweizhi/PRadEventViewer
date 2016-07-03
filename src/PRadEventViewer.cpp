@@ -74,7 +74,7 @@ void PRadEventViewer::initView()
     HyCal = new HyCalScene(this, -800, -800, 1600, 1600);
     HyCal->setBackgroundBrush(QColor(255, 255, 238));
 
-    generateScalarBoxes();
+    generateScalerBoxes();
     generateSpectrum();
     generateHyCalModules();
 
@@ -160,16 +160,16 @@ void PRadEventViewer::generateHyCalModules()
 
 }
 
-void PRadEventViewer::generateScalarBoxes()
+void PRadEventViewer::generateScalerBoxes()
 {
-    HyCal->AddScalarBox(tr("Pb-Glass Sum")    , Qt::black, QRectF(-650, -640, 150, 40), QColor(255, 155, 155, 50)); 
-    HyCal->AddScalarBox(tr("Total Sum")       , Qt::black, QRectF(-500, -640, 150, 40), QColor(155, 255, 155, 50));
-    HyCal->AddScalarBox(tr("LMS Led")         , Qt::black, QRectF(-350, -640, 150, 40), QColor(155, 155, 255, 50));
-    HyCal->AddScalarBox(tr("LMS Alpha")       , Qt::black, QRectF(-200, -640, 150, 40), QColor(255, 200, 100, 50));
-    HyCal->AddScalarBox(tr("Master Or")       , Qt::black, QRectF( -50, -640, 150, 40), QColor(100, 255, 200, 50));
-    HyCal->AddScalarBox(tr("Scintillator")    , Qt::black, QRectF( 100, -640, 150, 40), QColor(200, 100, 255, 50));
-    HyCal->AddScalarBox(tr("Faraday Cup")     , Qt::black, QRectF( 250, -640, 150, 40), QColor(200, 255, 100, 50));
-    HyCal->AddScalarBox(tr("Pulser")          , Qt::black, QRectF( 400, -640, 150, 40), QColor(100, 200, 255, 50));
+    HyCal->AddScalerBox(tr("Pb-Glass Sum")    , Qt::black, QRectF(-650, -640, 150, 40), QColor(255, 155, 155, 50)); 
+    HyCal->AddScalerBox(tr("Total Sum")       , Qt::black, QRectF(-500, -640, 150, 40), QColor(155, 255, 155, 50));
+    HyCal->AddScalerBox(tr("LMS Led")         , Qt::black, QRectF(-350, -640, 150, 40), QColor(155, 155, 255, 50));
+    HyCal->AddScalerBox(tr("LMS Alpha")       , Qt::black, QRectF(-200, -640, 150, 40), QColor(255, 200, 100, 50));
+    HyCal->AddScalerBox(tr("Master Or")       , Qt::black, QRectF( -50, -640, 150, 40), QColor(100, 255, 200, 50));
+    HyCal->AddScalerBox(tr("Scintillator")    , Qt::black, QRectF( 100, -640, 150, 40), QColor(200, 100, 255, 50));
+    HyCal->AddScalerBox(tr("Faraday Cup")     , Qt::black, QRectF( 250, -640, 150, 40), QColor(200, 255, 100, 50));
+    HyCal->AddScalerBox(tr("Pulser")          , Qt::black, QRectF( 400, -640, 150, 40), QColor(100, 200, 255, 50));
 }
 
 //============================================================================//
@@ -1417,7 +1417,7 @@ void PRadEventViewer::startOnlineMode()
     UpdateStatusBar(ONLINE_MODE);
 
     // show scalar counts
-    HyCal->ShowScalars(true);
+    HyCal->ShowScalers(true);
     Refresh();
 
     // Start online timer
@@ -1446,7 +1446,7 @@ void PRadEventViewer::stopOnlineMode()
     UpdateStatusBar(NO_INPUT);
 
     // turn off show scalars
-    HyCal->ShowScalars(false);
+    HyCal->ShowScalers(false);
     Refresh();
 }
 
@@ -1468,7 +1468,7 @@ void PRadEventViewer::onlineUpdate(const size_t &max_events)
 
         if(num) {
             UpdateHistCanvas();
-            HyCal->UpdateScalarsCount(handler->GetScalarsCount());
+            HyCal->UpdateScalersCount(handler->GetScalersCount());
             Refresh();
         }
 

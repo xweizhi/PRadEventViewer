@@ -190,6 +190,13 @@ struct JLabTIData
     unsigned int time_low;
 };
 
+struct JLabDSCData
+{
+    unsigned int size;
+    const uint32_t *gated_buf;
+    const uint32_t *ungated_buf;
+};
+
 struct ADC1881MData
 {
     ChannelAddress config;

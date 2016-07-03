@@ -393,8 +393,12 @@ void PRadEvioParser::parseDSCData(const uint32_t *data, const size_t &size)
         return;
     }
 
-    myHandler->UpdateScalarGroup(8, &data[GATED_TRG_GROUP], &data[UNGATED_TRG_GROUP]);
+    JLabDSCData dscData;
+    dscData.size = 8;
+    dscData.gated_buf = &data[GATED_TRG_GROUP];
+    dscData.ungated_buf = &data[UNGATED_TRG_GROUP];
 
+    myHandler->FeedData(dscData);
 }
 
 void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const int &roc_id)

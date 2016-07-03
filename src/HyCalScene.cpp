@@ -23,7 +23,7 @@ void HyCalScene::drawForeground(QPainter *painter, const QRectF &rect)
     painter->save();
 
     // print scalar boxes
-    if(showScalars) {
+    if(showScalers) {
         painter->setFont(QFont("times", 16, QFont::Bold));
         for(auto it = scalarBoxList.begin(); it != scalarBoxList.end(); ++it)
         {
@@ -85,12 +85,12 @@ void HyCalScene::AddTDCBox(const QString &text, const QColor &textColor, const Q
     tdcBoxList.append(TextBox(text, textColor, textBox, bkgColor));
 }
 
-void HyCalScene::AddScalarBox(const QString &text, const QColor &textColor, const QRectF &textBox, const QColor &bkgColor)
+void HyCalScene::AddScalerBox(const QString &text, const QColor &textColor, const QRectF &textBox, const QColor &bkgColor)
 {
     scalarBoxList.push_back(TextBox(text, textColor, textBox, bkgColor));
 }
 
-void HyCalScene::UpdateScalarCount(const int &group, const unsigned int &count)
+void HyCalScene::UpdateScalerCount(const int &group, const unsigned int &count)
 {
     if(group < 0 || group >= scalarBoxList.size())
         return;
@@ -98,11 +98,11 @@ void HyCalScene::UpdateScalarCount(const int &group, const unsigned int &count)
     scalarBoxList[group].text = QString::number(count);
 }
 
-void HyCalScene::UpdateScalarsCount(const std::vector<unsigned int> &counts)
+void HyCalScene::UpdateScalersCount(const std::vector<unsigned int> &counts)
 {
     for(size_t i = 0; i < counts.size(); ++i)
     {
-        UpdateScalarCount((int)i, counts[i]);
+        UpdateScalerCount((int)i, counts[i]);
     }
 }
 

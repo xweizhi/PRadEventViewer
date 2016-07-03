@@ -131,7 +131,7 @@ private:
     void setupUI();
     void generateSpectrum();
     void generateHyCalModules();
-    void generateScalarBoxes();
+    void generateScalerBoxes();
     void buildModuleMap();
     void setupOnlineMode();
     void readModuleList();

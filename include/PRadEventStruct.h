@@ -106,16 +106,6 @@ struct GEM_Data
     }
 };
 
-struct ScalarChannel
-{
-    std::string name;
-    unsigned int count;
-    unsigned int gated_count;
-
-    ScalarChannel() : name("undefined"), count(0), gated_count(0) {};
-    ScalarChannel(const std::string &n) : name(n), count(0), gated_count(0) {};
-};
-
 struct EPICSData
 {
     int event_number;
@@ -258,6 +248,18 @@ struct EventData
             return DSC_Data();
         else
             return dsc_data.at(REF_CHANNEL);
+    }
+
+    DSC_Data get_dsc_scaled_by_ref(uint32_t &idx)
+    {
+        if(idx >= dsc_data.size())
+            return DSC_Data();
+
+        uint64_t ref_pulser = get_ref_channel().ungated_count;
+        uint64_t ungated_scaled = (dsc_data.at(idx).ungated_count*ref_pulser)/REF_PULSER_FREQ;
+        uint64_t gated_scaled = (dsc_data.at(idx).gated_count*ref_pulser)/REF_PULSER_FREQ;
+
+        return DSC_Data((unsigned int)gated_scaled, (unsigned int)ungated_scaled);
     }
 
     bool operator == (const int &ev) const
