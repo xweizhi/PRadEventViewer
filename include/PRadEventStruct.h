@@ -208,7 +208,7 @@ struct EventData
                  (trigger == LMS_Alpha) );
     };
 
-    double get_time()
+    double get_beam_time()
     {
         double elapsed_time = 0.;
         if(dsc_data.size() > REF_CHANNEL)
@@ -235,11 +235,19 @@ struct EventData
         double beam_charge = 0.;
         if(dsc_data.size() > FCUP_CHANNEL)
         {
-            double beam_current = ((double)dsc_data.at(FCUP_CHANNEL).ungated_count - FCUP_OFFSET)/FCUP_SLOPE;
-            beam_charge = beam_current * get_time();
+            beam_charge = ((double)dsc_data.at(FCUP_CHANNEL).ungated_count - FCUP_OFFSET)/FCUP_SLOPE;
         }
 
         return beam_charge;
+    }
+
+    double get_beam_current()
+    {
+        double beam_time = get_beam_time();
+        if(beam_time > 0.)
+            return get_beam_charge()/beam_time;
+        else
+            return 0.;
     }
 
     DSC_Data get_ref_channel()
