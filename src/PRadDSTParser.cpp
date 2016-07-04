@@ -129,6 +129,7 @@ void PRadDSTParser::WriteEvent(const EventData &data) throw(PRadException)
     dst_out.write((char*) &dsc_size, sizeof(dsc_size));
     for(auto &dsc : data.dsc_data)
         dst_out.write((char*) &dsc, sizeof(dsc));
+
 }
 
 void PRadDSTParser::readEvent(EventData &data) throw(PRadException)
@@ -422,9 +423,8 @@ void PRadDSTParser::readGEMInfo(bool update) throw(PRadException)
 }
 
 //============================================================================//
-// Return type:  0. file end or error                                         //
-//               1. event                                                     //
-//               2. epics event                                               //
+// Return type:  false. file end or error                                     //
+//               true. successfully read                                      //
 //============================================================================//
 bool PRadDSTParser::Read(bool update)
 {

@@ -25,7 +25,15 @@ int main(int /*argc*/, char * /*argv*/ [])
     handler->ReadConfig("config.txt");
 
     PRadBenchMark timer;
-    handler->ReadFromDST("prad_1498.dst");
+    handler->ReadFromDST("test.dst");
+
+    for(auto &channel : handler->GetChannelList())
+    {
+        cout << channel->GetPedestal().mean << "  " << channel->GetCalibrationConstant().factor << endl;
+    }
+    handler->PrintOutEPICS();
+    handler->SaveHistograms("test.root");
+    handler->SaveToDST("test.dst");
 
     cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;
     cout << "Read " << handler->GetEventCount() << " events and "

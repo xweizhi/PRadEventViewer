@@ -220,6 +220,7 @@ struct EventData
         adc_data.clear();
         tdc_data.clear();
         gem_data.clear();
+        dsc_data.clear();
     };
     void clear() // fully clear
     {
@@ -227,6 +228,7 @@ struct EventData
         event_number = 0;
         timestamp = 0;
     };
+
     void update_type(const unsigned char &t) {type = t;};
     void update_trigger(const unsigned char &t) {trigger = t;};
     void update_time(const uint64_t &t) {timestamp = t;};

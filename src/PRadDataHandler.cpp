@@ -1384,6 +1384,10 @@ void PRadDataHandler::ReadFromDST(const string &path)
     try {
         dst_parser->OpenInput(path);
 
+        cout << "Data Handler: Reading events from DST file "
+             << "\"" << path << "\""
+             << endl;
+
         while(dst_parser->Read())
         {
             switch(dst_parser->EventType())
@@ -1415,6 +1419,10 @@ void PRadDataHandler::SaveToDST(const string &path)
 {
     try {
         dst_parser->OpenOutput(path);
+
+        cout << "Data Handler: Saving DST file "
+             << "\"" << path << "\""
+             << endl;
 
         dst_parser->WriteHyCalInfo();
         dst_parser->WriteGEMInfo();
