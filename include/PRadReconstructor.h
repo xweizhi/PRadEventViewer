@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "datastruct.h"
 #include "PRadEventStruct.h"
 #include "ConfigParser.h"
 

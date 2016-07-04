@@ -5,6 +5,7 @@
 #include <vector>
 #include <deque>
 #include <utility>
+#include "datastruct.h"
 
 // some discriminator related settings
 #define REF_CHANNEL 7
@@ -147,6 +148,20 @@ struct EPICSData
     EPICSData(const int &ev, std::vector<float> &val)
     : event_number(ev), values(val)
     {};
+    EPICSData(const EPICSData &e)
+    : event_number(e.event_number),
+      values(std::move(e.values))
+    {};
+    EPICSData(EPICSData &&e)
+    : event_number(e.event_number),
+      values(std::move(e.values))
+    {};
+
+    void clear()
+    {
+        event_number = 0;
+        values.clear();
+    };
 };
 
 struct EventData

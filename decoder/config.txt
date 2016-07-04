@@ -9,6 +9,7 @@ GEM Configuration: ../config/gem_map.cfg
 #Run Number: 1323
 #HyCal Pedestal: config/pedestal.dat
 #GEM Pedestal: config/gem_ped.dat
+
 # initialize by data
 #Initialize File: /data/totape/prad_001498.evio.0
 

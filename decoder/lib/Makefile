@@ -13,7 +13,7 @@ PRAD_PATH     = ../..
 CC            = gcc
 CXX           = g++
 CXXFLAGS      = -shared -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I. -I$(PRAD_PATH)/include -I/apps/root/5.34.21/include
+INCPATH       = -I. -I$(PRAD_PATH)/include -I$(ROOTSYS)/include
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
 MKDIR         = mkdir -p
@@ -31,7 +31,7 @@ TAR           = tar -cf
 COMPRESS      = gzip -9f
 LINK          = g++
 LFLAGS        = -shared -Wl,-O1 -Wl,-z,relro
-LIBS          = $(SUBLIBS) -L/apps/root/5.34.21/lib -lCore -lCint -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lGL -lpthread 
+LIBS          = $(SUBLIBS) -L$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lGL -lpthread 
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -40,9 +40,10 @@ STRIP         =
 ####### Files
 
 SOURCES       = $(PRAD_PATH)/src/PRadDAQUnit.cpp \
-		$(PRAD_PATH)/src/PRadTDCGroup.cpp \
-		$(PRAD_PATH)/src/PRadEvioParser.cpp \
-		$(PRAD_PATH)/src/PRadDataHandler.cpp \
+                $(PRAD_PATH)/src/PRadTDCGroup.cpp \
+                $(PRAD_PATH)/src/PRadEvioParser.cpp \
+                $(PRAD_PATH)/src/PRadDSTParser.cpp \
+                $(PRAD_PATH)/src/PRadDataHandler.cpp \
                 $(PRAD_PATH)/src/PRadException.cpp \
                 $(PRAD_PATH)/src/PRadBenchMark.cpp \
                 $(PRAD_PATH)/src/ConfigParser.cpp \
@@ -50,9 +51,10 @@ SOURCES       = $(PRAD_PATH)/src/PRadDAQUnit.cpp \
                 $(PRAD_PATH)/src/PRadGEMSystem.cpp
 
 OBJECTS       = PRadDAQUnit.o \
-		PRadTDCGroup.o \
-		PRadEvioParser.o \
-		PRadDataHandler.o \
+                PRadTDCGroup.o \
+                PRadEvioParser.o \
+                PRadDSTParser.o \
+                PRadDataHandler.o \
                 PRadException.o \
                 PRadBenchMark.o \
                 ConfigParser.o \
@@ -67,7 +69,7 @@ OBJECTS_DIR   = obj
 first: all
 ####### Build rules
 
-$(TARGET):  $(OBJECTS)  
+$(TARGET):  $(OBJECTS)
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
 all: Makefile $(TARGET)
@@ -80,25 +82,28 @@ cleanobj:
 cleantgt:
 	-$(DEL_FILE) $(TARGET)
 
-PRadDAQUnit.o: $(PRAD_PATH)/src/PRadDAQUnit.cpp 
+PRadDAQUnit.o: $(PRAD_PATH)/src/PRadDAQUnit.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadDAQUnit.o $(PRAD_PATH)/src/PRadDAQUnit.cpp
 
-PRadTDCGroup.o: $(PRAD_PATH)/src/PRadTDCGroup.cpp 
+PRadTDCGroup.o: $(PRAD_PATH)/src/PRadTDCGroup.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadTDCGroup.o $(PRAD_PATH)/src/PRadTDCGroup.cpp
 
-PRadEvioParser.o: $(PRAD_PATH)/src/PRadEvioParser.cpp 
+PRadEvioParser.o: $(PRAD_PATH)/src/PRadEvioParser.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadEvioParser.o $(PRAD_PATH)/src/PRadEvioParser.cpp
 
-PRadDataHandler.o: $(PRAD_PATH)/src/PRadDataHandler.cpp 
+PRadDSTParser.o: $(PRAD_PATH)/src/PRadDSTParser.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadDSTParser.o $(PRAD_PATH)/src/PRadDSTParser.cpp
+
+PRadDataHandler.o: $(PRAD_PATH)/src/PRadDataHandler.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadDataHandler.o $(PRAD_PATH)/src/PRadDataHandler.cpp
 
-ConfigParser.o: $(PRAD_PATH)/src/ConfigParser.cpp 
+ConfigParser.o: $(PRAD_PATH)/src/ConfigParser.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ConfigParser.o $(PRAD_PATH)/src/ConfigParser.cpp
 
-PRadException.o: $(PRAD_PATH)/src/PRadException.cpp 
+PRadException.o: $(PRAD_PATH)/src/PRadException.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadException.o $(PRAD_PATH)/src/PRadException.cpp
 
-PRadBenchMark.o: $(PRAD_PATH)/src/PRadBenchMark.cpp 
+PRadBenchMark.o: $(PRAD_PATH)/src/PRadBenchMark.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadBenchMark.o $(PRAD_PATH)/src/PRadBenchMark.cpp
 
 PRadReconstructor.o: $(PRAD_PATH)/src/PRadReconstructor.cpp

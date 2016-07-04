@@ -5,13 +5,13 @@
 #include <map>
 #include <deque>
 #include <fstream>
-#include "datastruct.h"
 #include "PRadEventStruct.h"
 #include "PRadException.h"
 #include "ConfigParser.h"
 #include <thread>
 
 class PRadEvioParser;
+class PRadDSTParser;
 class PRadDAQUnit;
 class PRadTDCGroup;
 class PRadGEMSystem;
@@ -24,9 +24,10 @@ struct epics_ch
 {
     std::string name;
     uint32_t id;
+    float value;
 
-    epics_ch(const std::string &n, const uint32_t &i)
-    : name(n), id(i)
+    epics_ch(const std::string &n, const uint32_t &i, const float &v)
+    : name(n), id(i), value(v)
     {};
 };
 
@@ -62,6 +63,7 @@ public:
     void AddChannel(PRadDAQUnit *channel);
     void AddTDCGroup(PRadTDCGroup *group);
     void RegisterChannel(PRadDAQUnit *channel);
+    void RegisterEPICS(const std::string &name, const uint32_t &id, const float &value);
     void BuildChannelMap();
 
     // get channels/lists
@@ -86,28 +88,13 @@ public:
     void ReadCalibrationFile(const std::string &path);
     void ReadEPICSChannels(const std::string &path);
 
-    // dst data file
-    void Replay(const std::string &r_path, const int &split = -1, const std::string &w_path = "");
-    void WriteDSTHeader(std::ofstream &dst_file) throw(PRadException);
-    void WriteToDST(const std::string &path, std::ios::openmode mode = std::ios::out | std::ios::binary);
-    void WriteToDST(std::ofstream &dst_file, const EventData &data) throw(PRadException);
-    void WriteToDST(std::ofstream &dst_file, const EPICSData &data) throw(PRadException);
-    void WriteEPICSMapToDST(std::ofstream &dst_file) throw(PRadException);
-    void WriteRunInfoToDST(std::ofstream &dst_file) throw(PRadException);
-    void WriteHyCalInfoToDST(std::ofstream &dst_file) throw(PRadException);
-    void WriteGEMInfoToDST(std::ofstream &dst_file) throw(PRadException);
-    void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
-    void ReadFromDST(std::ifstream &dst_file, EventData &data) throw(PRadException);
-    void ReadFromDST(std::ifstream &dst_file, EPICSData &data) throw(PRadException);
-    void ReadEPICSMapFromDST(std::ifstream &dst_file) throw(PRadException);
-    void ReadRunInfoFromDST(std::ifstream &dst_file) throw(PRadException);
-    void ReadHyCalInfoFromDST(std::ifstream &dst_file) throw(PRadException);
-    void ReadGEMInfoFromDST(std::ifstream &dst_file) throw(PRadException);
-
-    // evio data file
+    // file reading and writing
+    void ReadFromDST(const std::string &path);
     void ReadFromEvio(const std::string &path, const int &evt = -1, const bool &verbose = false);
     void ReadFromSplitEvio(const std::string &path, const int &split = -1, const bool &verbose = true);
     void Decode(const void *buffer);
+    void Replay(const std::string &r_path, const int &split = -1, const std::string &w_path = "");
+    void SaveToDST(const std::string &path);
 
     // data handler
     void Clear();
@@ -129,6 +116,7 @@ public:
     void AccumulateBeamCharge(EventData &event);
     void UpdateLiveTimeScaler(EventData &event);
     void UpdateOnlineInfo(EventData &event);
+    void UpdateRunInfo(const RunInfo &ri) {runInfo = ri;};
 
     // show data
     int GetCurrentEventNb();
@@ -142,15 +130,18 @@ public:
     TH1D *GetEnergyHist() {return energyHist;};
     TH2I *GetTagEHist() {return TagEHist;};
     TH2I *GetTagTHist() {return TagTHist;};
-    EventData &GetEventData(const unsigned int &index);
+    EventData &GetEvent(const unsigned int &index);
     EventData &GetLastEvent();
-    EPICSData &GetEPICSData(const unsigned int &index);
+    std::deque<EventData> &GetEventData() {return energyData;};
+    EPICSData &GetEPICSEvent(const unsigned int &index);
+    std::deque<EPICSData> &GetEPICSData() {return epicsData;};
     RunInfo &GetRunInfo() {return runInfo;};
     OnlineInfo &GetOnlineInfo() {return onlineInfo;};
     double GetEnergy() {return totalE;};
     double GetEnergy(const EventData &event);
     float GetEPICSValue(const std::string &name);
     float GetEPICSValue(const std::string &name, const int &index);
+    float GetEPICSValue(const std::string &name, const EventData &event);
     void PrintOutEPICS();
     void PrintOutEPICS(const std::string &name);
 
@@ -176,6 +167,7 @@ public:
 
 private:
     PRadEvioParser *parser;
+    PRadDSTParser *dst_parser;
     PRadGEMSystem *gem_srs;
     RunInfo runInfo;
     OnlineInfo onlineInfo;
@@ -183,7 +175,6 @@ private:
     bool onlineMode;
     bool replayMode;
     int current_event;
-    std::ofstream replay_out;
     std::thread end_thread;
 
     // maps

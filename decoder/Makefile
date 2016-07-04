@@ -13,7 +13,7 @@ PRAD_PATH     = ..
 CC            = gcc
 CXX           = g++
 CXXFLAGS      = -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I. -I$(PRAD_PATH)/include -I$(PRAD_PATH)/thirdparty/include -I/apps/root/5.34.21/include -Ilib/include
+INCPATH       = -I. -I$(PRAD_PATH)/include -I$(PRAD_PATH)/thirdparty/include -I$(ROOTSYS)/include
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
 MKDIR         = mkdir -p
@@ -31,7 +31,7 @@ TAR           = tar -cf
 COMPRESS      = gzip -9f
 LINK          = g++
 LFLAGS        = -Wl,-O1 -Wl,-z,relro
-LIBS          = $(SUBLIBS) -L$(PRAD_PATH)/thirdparty/lib64 -levio -levioxx -L/apps/root/5.34.21/lib -lCore -lCint -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lGL -lpthread -Llib -lPRadDecoder -lexpat
+LIBS          = $(SUBLIBS) -L$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lGL -lpthread -Llib -lPRadDecoder -lexpat
 AR            = ar cqs
 RANLIB        = 
 SED           = sed

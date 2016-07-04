@@ -222,18 +222,4 @@ struct GEMRawData
     size_t size;
 };
 
-enum PRadDST
-{
-    PRad_DST_Event = 0,
-    PRad_DST_Epics = 1,
-    PRad_DST_Epics_Map = 2,
-    PRad_DST_Run_Info = 3,
-    PRad_DST_HyCal_Info = 4,
-    PRad_DST_GEM_Info = 5,
-
-    // headers
-    PRad_DST_Header = 0xc0c0c0,
-    PRad_DST_EvHeader = 0xe0e0e0,
-};
-
 #endif

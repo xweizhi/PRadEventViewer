@@ -11,6 +11,7 @@
 #include <algorithm>
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
+#include "PRadDSTParser.h"
 #include "PRadGEMSystem.h"
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
@@ -22,8 +23,6 @@
 #include "TH1.h"
 #include "TH2.h"
 
-#define DST_FILE_VERSION 0x13  // 0xff
-
 #define EPICS_UNDEFINED_VALUE -9999.9
 #define TAGGER_CHANID 30000 // Tagger tdc id will start from this number
 #define TAGGER_T_CHANID 1000 // Start from TAGGER_CHANID, more than 1000 will be t channel
@@ -31,7 +30,9 @@
 using namespace std;
 
 PRadDataHandler::PRadDataHandler()
-: parser(new PRadEvioParser(this)), gem_srs(new PRadGEMSystem()),
+: parser(new PRadEvioParser(this)),
+  dst_parser(new PRadDSTParser(this)),
+  gem_srs(new PRadGEMSystem()),
   totalE(0), onlineMode(false), replayMode(false), current_event(0)
 {
     // total energy histogram
@@ -64,6 +65,7 @@ PRadDataHandler::~PRadDataHandler()
     }
 
     delete parser;
+    delete dst_parser;
     delete gem_srs;
 }
 
@@ -153,6 +155,17 @@ void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
 {
     channel->AssignID(channelList.size());
     channelList.push_back(channel);
+}
+
+void PRadDataHandler::RegisterEPICS(const string &name, const uint32_t &id, const float &value)
+{
+    if(id >= (uint32_t)epics_values.size())
+    {
+        epics_values.resize(id, EPICS_UNDEFINED_VALUE);
+    }
+
+    epics_map[name] = id;
+    epics_values.at(id) = value;
 }
 
 void PRadDataHandler::AddTDCGroup(PRadTDCGroup *group)
@@ -323,6 +336,11 @@ float PRadDataHandler::GetEPICSValue(const string &name, const int &index)
     if((unsigned int)index >= energyData.size())
         return GetEPICSValue(name);
 
+    return GetEPICSValue(name, energyData.at(index));
+}
+
+float PRadDataHandler::GetEPICSValue(const string &name, const EventData &event)
+{
     float result = EPICS_UNDEFINED_VALUE;
 
     auto it = epics_map.find(name);
@@ -330,7 +348,7 @@ float PRadDataHandler::GetEPICSValue(const string &name, const int &index)
         return result;
 
     uint32_t channel_id = it->second;
-    int event_number = energyData.at(index).event_number;
+    int event_number = event.event_number;
 
     // find the epics event before this event
     for(size_t i = 0; i < epicsData.size(); ++i)
@@ -499,7 +517,7 @@ void PRadDataHandler::EndProcess(EventData *data)
             epicsData.pop_front();
 
         if(replayMode)
-            WriteToDST(replay_out, EPICSData(data->event_number, epics_values));
+            dst_parser->WriteEPICS(EPICSData(data->event_number, epics_values));
         else
             epicsData.emplace_back(data->event_number, epics_values);
 
@@ -518,7 +536,7 @@ void PRadDataHandler::EndProcess(EventData *data)
             energyData.pop_front();
 
         if(replayMode)
-            WriteToDST(replay_out, *data);
+            dst_parser->WriteEvent(*data);
         else
             energyData.emplace_back(move(*data)); // save event
 
@@ -639,7 +657,8 @@ vector<epics_ch> PRadDataHandler::GetSortedEPICSList()
 
     for(auto &ch : epics_map)
     {
-        epics_list.emplace_back(ch.first, ch.second);
+        float value = epics_values.at(ch.second);
+        epics_list.emplace_back(ch.first, ch.second, value);
     }
 
     sort(epics_list.begin(), epics_list.end(), [](const epics_ch &a, const epics_ch &b) {return a.id < b.id;});
@@ -650,7 +669,7 @@ vector<epics_ch> PRadDataHandler::GetSortedEPICSList()
 void PRadDataHandler::PrintOutEPICS()
 {
     vector<epics_ch> epics_list = GetSortedEPICSList();
-     
+
     for(auto &ch : epics_list)
     {
         cout << ch.name << ": " << epics_values.at(ch.id) << endl;
@@ -732,7 +751,7 @@ void PRadDataHandler::SaveHistograms(const string &path)
     delete f;
 }
 
-EventData &PRadDataHandler::GetEventData(const unsigned int &index)
+EventData &PRadDataHandler::GetEvent(const unsigned int &index)
 {
     if(index >= energyData.size()) {
         return energyData.back();
@@ -741,7 +760,7 @@ EventData &PRadDataHandler::GetEventData(const unsigned int &index)
     }
 }
 
-EPICSData &PRadDataHandler::GetEPICSData(const unsigned int &index)
+EPICSData &PRadDataHandler::GetEPICSEvent(const unsigned int &index)
 {
     if(index >= epicsData.size()) {
         return epicsData.back();
@@ -1332,169 +1351,49 @@ int PRadDataHandler::FindEventIndex(const int &ev)
     return result;
 }
 
-
-//===========================================================================//
-//                                                                           //
-//  DST reading and writing related functions                                //
-//                                                                           //
-//===========================================================================//
-
 void PRadDataHandler::Replay(const string &r_path, const int &split, const string &w_path)
 {
     if(w_path.empty()) {
         string file = "prad_" + to_string(runInfo.run_number) + ".dst";
-        replay_out.open(file, ios::binary | ios::out);
+        dst_parser->OpenOutput(file);
     } else {
-        replay_out.open(w_path);
+        dst_parser->OpenOutput(w_path);
     }
 
     cout << "Replay started!" << endl;
     PRadBenchMark timer;
 
-    WriteDSTHeader(replay_out);
+    dst_parser->WriteHyCalInfo();
+    dst_parser->WriteGEMInfo();
+    dst_parser->WriteEPICSMap();
 
     replayMode = true;
 
     ReadFromSplitEvio(r_path, split);
 
-    WriteRunInfoToDST(replay_out);
+    dst_parser->WriteRunInfo();
 
     replayMode = false;
 
     cout << "Replay done, took " << timer.GetElapsedTime()/1000. << " s!" << endl;
-    replay_out.close();
+    dst_parser->CloseOutput();
 }
 
-void PRadDataHandler::WriteDSTHeader(ofstream &dst_file) throw(PRadException)
+void PRadDataHandler::ReadFromDST(const string &path)
 {
-    if(!dst_file.is_open())
-        throw PRadException("WRITE DST", "output file is not opened!");
-
-    uint32_t version_info = (PRad_DST_Header << 8) | DST_FILE_VERSION;
-    dst_file.write((char*) &version_info, sizeof(version_info));
-
-    WriteRunInfoToDST(dst_file);
-    WriteHyCalInfoToDST(dst_file);
-    WriteGEMInfoToDST(dst_file);
-    WriteEPICSMapToDST(dst_file);
-}
-
-void PRadDataHandler::WriteToDST(const string &path, ios::openmode mode)
-{
-    ofstream output;
-
     try {
-        output.open(path, mode);
+        dst_parser->OpenInput(path);
 
-        if(!output.is_open()) {
-            cerr << "Data Handler: Cannot open output file " << path
-                 << ", stop writing!" << endl;
-            return;
-        }
-
-        WriteDSTHeader(output);
-
-        for(auto &event : energyData)
+        while(dst_parser->Read())
         {
-            WriteToDST(output, event);
-        }
-
-        for(auto &epics : epicsData)
-        {
-            WriteToDST(output, epics);
-        }
-
-    } catch(PRadException &e) {
-        cerr << e.FailureType() << ": "
-             << e.FailureDesc() << endl
-             << "Write to DST Aborted!" << endl;
-    } catch(exception &e) {
-        cerr << e.what() << endl
-             << "Write to DST Aborted!" << endl;
-    }
-
-    output.close();
-}
-
-void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
-{
-    ifstream input;
-
-    try {
-        input.open(path, mode);
-
-        if(!input.is_open()) {
-            cerr << "Data Handler: Cannot open input dst file "
-                 << "\"" << path << "\""
-                 << ", stop reading!" << endl;
-            return;
-        }
-
-        input.seekg(0, input.end);
-        int64_t length = input.tellg();
-        input.seekg(0, input.beg);
-
-        uint32_t version_info, event_info;
-        input.read((char*) &version_info, sizeof(version_info));
-
-        if((version_info >> 8) != PRad_DST_Header) {
-            cerr << "Data Handler: Unrecognized PRad dst file, stop reading!" << endl;
-            return;
-        }
-        if((version_info & 0xff) != DST_FILE_VERSION) {
-            cerr << "Data Handler: Version mismatch between the file and library. "
-                 << endl
-                 << "Expected version " << (DST_FILE_VERSION >> 4)
-                 << "." << (DST_FILE_VERSION & 0xf)
-                 << ", but the file version is "
-                 << ((version_info >> 4) & 0xf)
-                 << "." << (version_info & 0xf)
-                 << ", please use correct library to open this file."
-                 << endl;
-            return;
-        }
-
-        cout << "Data Handler: Reading DST file "
-             << "\"" << path << "\"." << endl;
-
-        while(input.tellg() < length && input.tellg() != -1)
-        {
-            input.read((char*) &event_info, sizeof(event_info));
-
-            if((event_info >> 8) != PRad_DST_EvHeader) {
-                cerr << "Data Handler: Unrecognized event header "
-                     << hex << setw(8) << setfill('0') << event_info
-                     <<" in PRad dst file, probably corrupted file!"
-                     << dec << endl;
-                return;
-            }
-            // read by event type
-            switch(event_info&0xff)
+            switch(dst_parser->EventType())
             {
             case PRad_DST_Event:
-              {
-                EventData event;
-                ReadFromDST(input, event);
-                FillHistograms(event);
-                energyData.emplace_back(event);
-              } break;
+                FillHistograms(dst_parser->GetEvent());
+                energyData.push_back(dst_parser->GetEvent());
+                break;
             case PRad_DST_Epics:
-              {
-                EPICSData epics;
-                ReadFromDST(input, epics);
-                epicsData.emplace_back(epics);
-              } break;
-            case PRad_DST_Epics_Map:
-                ReadEPICSMapFromDST(input);
-                break;
-            case PRad_DST_Run_Info:
-                ReadRunInfoFromDST(input);
-                break;
-            case PRad_DST_HyCal_Info:
-                ReadHyCalInfoFromDST(input);
-                break;
-            case PRad_DST_GEM_Info:
-                ReadGEMInfoFromDST(input);
+                epicsData.push_back(dst_parser->GetEPICSEvent());
                 break;
             default:
                 break;
@@ -1504,337 +1403,44 @@ void PRadDataHandler::ReadFromDST(const string &path, ios::openmode mode)
     } catch(PRadException &e) {
         cerr << e.FailureType() << ": "
              << e.FailureDesc() << endl
-             << "Read from DST Aborted!" << endl;
+             << "Write to DST Aborted!" << endl;
     } catch(exception &e) {
         cerr << e.what() << endl
-             << "Read from DST Aborted!" << endl;
+             << "Write to DST Aborted!" << endl;
     }
+    dst_parser->CloseInput();
+ }
 
-    input.close();
-
-}
-
-void PRadDataHandler::WriteToDST(ofstream &dst_file, const EventData &data) throw(PRadException)
+void PRadDataHandler::SaveToDST(const string &path)
 {
-    if(!dst_file.is_open())
-        throw PRadException("WRITE DST", "output file is not opened!");
+    try {
+        dst_parser->OpenOutput(path);
 
-    // write header
-    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Event;
-    dst_file.write((char*) &event_info, sizeof(event_info));
+        dst_parser->WriteHyCalInfo();
+        dst_parser->WriteGEMInfo();
+        dst_parser->WriteEPICSMap();
 
-    // event information
-    dst_file.write((char*) &data.event_number, sizeof(data.event_number));
-    dst_file.write((char*) &data.type        , sizeof(data.type));
-    dst_file.write((char*) &data.trigger     , sizeof(data.trigger));
-    dst_file.write((char*) &data.timestamp   , sizeof(data.timestamp));
-
-    // all data banks
-    uint32_t adc_size = data.adc_data.size();
-    uint32_t tdc_size = data.tdc_data.size();
-    uint32_t gem_size = data.gem_data.size();
-    uint32_t dsc_size = data.dsc_data.size();
-
-    dst_file.write((char*) &adc_size, sizeof(adc_size));
-    for(auto &adc : data.adc_data)
-        dst_file.write((char*) &adc, sizeof(adc));
-
-    dst_file.write((char*) &tdc_size, sizeof(tdc_size));
-    for(auto &tdc : data.tdc_data)
-        dst_file.write((char*) &tdc, sizeof(tdc));
-
-    dst_file.write((char*) &gem_size, sizeof(gem_size));
-    for(auto &gem : data.gem_data)
-    {
-        dst_file.write((char*) &gem.addr, sizeof(gem.addr));
-        uint32_t hit_size = gem.values.size();
-        dst_file.write((char*) &hit_size, sizeof(hit_size));
-        for(auto &value : gem.values)
-            dst_file.write((char*) &value, sizeof(value));
-    }
-
-    dst_file.write((char*) &dsc_size, sizeof(dsc_size));
-    for(auto &dsc : data.dsc_data)
-        dst_file.write((char*) &dsc, sizeof(dsc));
-}
-
-void PRadDataHandler::ReadFromDST(ifstream &dst_file, EventData &data) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("READ DST", "input file is not opened!");
-
-    // event information
-    dst_file.read((char*) &data.event_number, sizeof(data.event_number));
-    dst_file.read((char*) &data.type        , sizeof(data.type));
-    dst_file.read((char*) &data.trigger     , sizeof(data.trigger));
-    dst_file.read((char*) &data.timestamp   , sizeof(data.timestamp));
-
-    uint32_t adc_size, tdc_size, gem_size, value_size, dsc_size;
-    ADC_Data adc;
-    TDC_Data tdc;
-    DSC_Data dsc;
-
-    dst_file.read((char*) &adc_size, sizeof(adc_size));
-    for(uint32_t i = 0; i < adc_size; ++i)
-    {
-        dst_file.read((char*) &adc, sizeof(adc));
-        data.add_adc(adc);
-    }
-
-    dst_file.read((char*) &tdc_size, sizeof(tdc_size));
-    for(uint32_t i = 0; i < tdc_size; ++i)
-    {
-        dst_file.read((char*) &tdc, sizeof(tdc));
-        data.add_tdc(tdc);
-    }
-
-    float value;
-    dst_file.read((char*) &gem_size, sizeof(gem_size));
-    for(uint32_t i = 0; i < gem_size; ++i)
-    {
-        GEM_Data gemhit;
-        dst_file.read((char*) &gemhit.addr, sizeof(gemhit.addr));
-        dst_file.read((char*) &value_size, sizeof(value_size));
-        for(uint32_t j = 0; j < value_size; ++j)
+        for(auto &event : energyData)
         {
-            dst_file.read((char*) &value, sizeof(value));
-            gemhit.add_value(value);
+            dst_parser->WriteEvent(event);
         }
-        data.add_gemhit(gemhit);
-    }
 
-    dst_file.read((char*) &dsc_size, sizeof(dsc_size));
-    for(uint32_t i = 0; i < dsc_size; ++i)
-    {
-        dst_file.read((char*) &dsc, sizeof(dsc));
-        data.add_dsc(dsc);
-    }
-}
-
-void PRadDataHandler::ReadFromDST(ifstream &dst_file, EPICSData &data) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("READ DST", "input file is not opened!");
-
-    dst_file.read((char*) &data.event_number, sizeof(data.event_number));
-
-    uint32_t value_size;
-    dst_file.read((char*) &value_size, sizeof(value_size));
-
-    for(uint32_t i = 0; i < value_size; ++i)
-    {
-        float value;
-        dst_file.read((char*) &value, sizeof(value));
-        data.values.push_back(value);
-    }
-}
-
-void PRadDataHandler::WriteToDST(ofstream &dst_file, const EPICSData &data) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("WRITE DST", "output file is not opened!");
-
-    // write header
-    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Epics;
-    dst_file.write((char*) &event_info, sizeof(event_info));
-
-    dst_file.write((char*) &data.event_number, sizeof(data.event_number));
-
-    uint32_t value_size = data.values.size();
-    dst_file.write((char*) &value_size, sizeof(value_size));
-
-    for(auto value : data.values)
-        dst_file.write((char*) &value, sizeof(value));
-}
-
-
-void PRadDataHandler::WriteEPICSMapToDST(ofstream &dst_file) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("WRITE DST", "output file is not opened!");
-
-    // write header
-    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Epics_Map;
-    dst_file.write((char*) &event_info, sizeof(event_info));
-
-    vector<epics_ch> epics_channels = GetSortedEPICSList();
-
-    uint32_t ch_size = epics_channels.size();
-    dst_file.write((char*) &ch_size, sizeof(ch_size));
-
-    for(auto &ch : epics_channels)
-    {
-        uint32_t str_size = ch.name.size();
-        dst_file.write((char*) &str_size, sizeof(str_size));
-        for(auto &c : ch.name)
-            dst_file.write((char*) &c, sizeof(c));
-        dst_file.write((char*) &ch.id, sizeof(ch.id));
-        dst_file.write((char*) &epics_values.at(ch.id), sizeof(epics_values.at(ch.id)));
-    }
-}
-
-void PRadDataHandler::ReadEPICSMapFromDST(ifstream &dst_file) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("READ DST", "input file is not opened!");
-
-    epics_map.clear();
-    epics_values.clear();
-
-    uint32_t ch_size, str_size, id;
-    string str;
-    float value;
-
-    dst_file.read((char*) &ch_size, sizeof(ch_size));
-    for(uint32_t i = 0; i < ch_size; ++i)
-    {
-        str = "";
-        dst_file.read((char*) &str_size, sizeof(str_size));
-        for(uint32_t j = 0; j < str_size; ++j)
+        for(auto &epics : epicsData)
         {
-            char c;
-            dst_file.read(&c, sizeof(c));
-            str.push_back(c);
-        }
-        dst_file.read((char*) &id, sizeof(id));
-        dst_file.read((char*) &value, sizeof(value));
-        epics_map[str] = id;
-        epics_values.push_back(value);
-    }
-}
-
-void PRadDataHandler::WriteRunInfoToDST(ofstream &dst_file) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("WRITE DST", "output file is not opened!");
-
-    // write header
-    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_Run_Info;
-    dst_file.write((char*) &event_info, sizeof(event_info));
-    dst_file.write((char*) &runInfo, sizeof(runInfo));
-}
-
-void PRadDataHandler::ReadRunInfoFromDST(ifstream &dst_file) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("READ DST", "input file is not opened!");
-
-    dst_file.read((char*) &runInfo, sizeof(runInfo));
-}
-
-void PRadDataHandler::WriteHyCalInfoToDST(ofstream &dst_file) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("WRITE DST", "output file is not opened!");
-
-    // write header
-    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_HyCal_Info;
-    dst_file.write((char*) &event_info, sizeof(event_info));
-
-    uint32_t ch_size = channelList.size();
-    dst_file.write((char*) &ch_size, sizeof(ch_size));
-
-    for(auto channel : channelList)
-    {
-        PRadDAQUnit::Pedestal ped = channel->GetPedestal();
-        dst_file.write((char*) &ped, sizeof(ped));
-
-        PRadDAQUnit::CalibrationConstant cal = channel->GetCalibrationConstant();
-        uint32_t gain_size = cal.base_gain.size();
-        dst_file.write((char*) &cal.factor, sizeof(cal.factor)); 
-        dst_file.write((char*) &cal.base_factor, sizeof(cal.base_factor));
-        dst_file.write((char*) &gain_size, sizeof(gain_size));
-        for(auto &gain : cal.base_gain)
-            dst_file.write((char*) &gain, sizeof(gain));
-    }
-}
-
-void PRadDataHandler::ReadHyCalInfoFromDST(ifstream &dst_file) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("READ DST", "input file is not opened!");
-
-    uint32_t ch_size;
-    dst_file.read((char*) &ch_size, sizeof(ch_size));
-
-    for(uint32_t i = 0; i < ch_size; ++i)
-    {
-        PRadDAQUnit::Pedestal ped;
-        dst_file.read((char*) &ped, sizeof(ped));
-
-        PRadDAQUnit::CalibrationConstant cal;
-        dst_file.read((char*) &cal.factor, sizeof(cal.factor));
-        dst_file.read((char*) &cal.base_factor, sizeof(cal.base_factor));
-
-        double gain;
-        uint32_t gain_size;
-        dst_file.read((char*) &gain_size, sizeof(gain_size));
-
-        for(uint32_t j = 0; j < gain_size; ++j)
-        {
-            dst_file.read((char*) &gain, sizeof(gain));
-            cal.base_gain.push_back(gain);
+            dst_parser->WriteEPICS(epics);
         }
 
-        if(i < channelList.size()) {
-            channelList.at(i)->UpdatePedestal(ped);
-            channelList.at(i)->UpdateCalibrationConstant(cal);
-        }
+        dst_parser->WriteRunInfo();
+
+    } catch(PRadException &e) {
+        cerr << e.FailureType() << ": "
+             << e.FailureDesc() << endl
+             << "Write to DST Aborted!" << endl;
+    } catch(exception &e) {
+        cerr << e.what() << endl
+             << "Write to DST Aborted!" << endl;
     }
+
+    dst_parser->CloseOutput();
 }
 
-
-void PRadDataHandler::WriteGEMInfoToDST(ofstream &dst_file) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("WRITE DST", "output file is not opened!");
-
-    // write header
-    uint32_t event_info = (PRad_DST_EvHeader << 8) | PRad_DST_GEM_Info;
-    dst_file.write((char*) &event_info, sizeof(event_info));
-
-    vector<PRadGEMAPV *> apv_list = gem_srs->GetAPVList();
-
-    uint32_t apv_size = apv_list.size();
-    dst_file.write((char*) &apv_size, sizeof(apv_size));
-
-    for(auto apv : apv_list)
-    {
-        GEMChannelAddress addr(apv->fec_id, apv->adc_ch);
-        dst_file.write((char*) &addr, sizeof(addr));
-
-        vector<PRadGEMAPV::Pedestal> ped_list = apv->GetPedestalList();
-        uint32_t ped_size = ped_list.size();
-        dst_file.write((char*) &ped_size, sizeof(ped_size));
-
-        for(auto &ped : ped_list)
-            dst_file.write((char*) &ped, sizeof(ped));
-    }
-}
-
-void PRadDataHandler::ReadGEMInfoFromDST(ifstream &dst_file) throw(PRadException)
-{
-    if(!dst_file.is_open())
-        throw PRadException("READ DST", "input file is not opened!");
-
-    uint32_t apv_size, ped_size;
-    dst_file.read((char*) &apv_size, sizeof(apv_size));
-
-    for(uint32_t i = 0; i < apv_size; ++i)
-    {
-        GEMChannelAddress addr;
-        dst_file.read((char*) &addr, sizeof(addr));
-
-        PRadGEMAPV *apv = gem_srs->GetAPV(addr);
-
-        dst_file.read((char*) &ped_size, sizeof(ped_size));
-
-        for(uint32_t j = 0; j < ped_size; ++j)
-        {
-            PRadGEMAPV::Pedestal ped;
-            dst_file.read((char*) &ped, sizeof(ped));
-            if(apv)
-                apv->UpdatePedestal(ped, j);
-        }
-    }
-}

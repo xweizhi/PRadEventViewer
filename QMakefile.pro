@@ -30,6 +30,7 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadDAQUnit.h \
            include/PRadTDCGroup.h \
            include/PRadEvioParser.h \
+           include/PRadDSTParser.h \
            include/PRadDataHandler.h \
            include/PRadEventStruct.h \
            include/PRadETChannel.h \
@@ -57,6 +58,7 @@ SOURCES += src/main.cpp \
            src/PRadDAQUnit.cpp \
            src/PRadTDCGroup.cpp \
            src/PRadEvioParser.cpp \
+           src/PRadDSTParser.cpp \
            src/PRadDataHandler.cpp \
            src/PRadETChannel.cpp \
            src/PRadETStation.cpp\

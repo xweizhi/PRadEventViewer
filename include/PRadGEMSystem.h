@@ -5,7 +5,6 @@
 #include <vector>
 #include <unordered_map>
 #include <fstream>
-#include "datastruct.h"
 #include "PRadEventStruct.h"
 #include "PRadException.h"
 
