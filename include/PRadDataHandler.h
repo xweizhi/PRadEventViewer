@@ -148,6 +148,7 @@ public:
     RunInfo &GetRunInfo() {return runInfo;};
     OnlineInfo &GetOnlineInfo() {return onlineInfo;};
     double GetEnergy() {return totalE;};
+    double GetEnergy(const EventData &event);
     float GetEPICSValue(const std::string &name);
     float GetEPICSValue(const std::string &name, const int &index);
     void PrintOutEPICS();

@@ -377,9 +377,9 @@ void PRadDataHandler::FeedData(ADC1881MData &adcData)
             newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val)); // store this data word
         }
     } else if (newEvent->is_monitor_event()) {
-        newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val)); 
+        newEvent->add_adc(ADC_Data(channel->GetID(), adcData.val));
     }
-    
+
 }
 
 void PRadDataHandler::FeedData(TDCV767Data &tdcData)
@@ -437,22 +437,23 @@ void PRadDataHandler::FeedData(GEMRawData &gemData)
 
 void PRadDataHandler::FillHistograms(EventData &data)
 {
-    double Energy = 0.;
+    double energy = 0.;
 
     // for all types of events
     for(auto &adc : data.adc_data)
     {
-        if(adc.channel_id < channelList.size()) {
-            channelList[adc.channel_id]->FillHist(adc.value, data.trigger);
-            Energy += channelList[adc.channel_id]->GetEnergy(adc.value);
-        }
+        if(adc.channel_id >= channelList.size())
+            continue;
+
+        channelList[adc.channel_id]->FillHist(adc.value, data.trigger);
+        energy += channelList[adc.channel_id]->GetEnergy(adc.value);
     }
 
     if(!data.is_physics_event())
         return;
 
     // for only physics events
-    energyHist->Fill(Energy);
+    energyHist->Fill(energy);
 
     for(auto &tdc : data.tdc_data)
     {
@@ -572,6 +573,19 @@ void PRadDataHandler::ChooseEvent(const EventData &event)
     }
 
     current_event = event.event_number;
+}
+
+double PRadDataHandler::GetEnergy(const EventData &event)
+{
+    double energy = 0.;
+    for(auto &adc : event.adc_data)
+    {
+        if(adc.channel_id >= channelList.size())
+            continue;
+        energy += channelList[adc.channel_id]->GetEnergy(adc.value);
+    }
+
+    return energy;
 }
 
 // find channels
@@ -949,7 +963,7 @@ void PRadDataHandler::ReadTDCList(const string &path)
 void PRadDataHandler::ReadChannelList(const string &path)
 {
     ConfigParser c_parser;
-    
+
     if(!c_parser.OpenFile(path)) {
         cerr << "WARNING: Fail to open channel list file "
                   << "\"" << path << "\""
