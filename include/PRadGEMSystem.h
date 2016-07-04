@@ -161,7 +161,10 @@ public:
         float offset;
         float noise;
 
-        Pedestal() : offset(0), noise(0) {};
+        // initialize with large noise level so there will be no hits instead
+        // of maximum hits when gem is not correctly initialized
+        Pedestal() : offset(0.), noise(5000.)
+        {};
         Pedestal(const float &o, const float &n)
         : offset(o), noise(n)
         {};

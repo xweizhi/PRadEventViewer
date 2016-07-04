@@ -94,7 +94,7 @@ public:
     void ReadFromSplitEvio(const std::string &path, const int &split = -1, const bool &verbose = true);
     void Decode(const void *buffer);
     void Replay(const std::string &r_path, const int &split = -1, const std::string &w_path = "");
-    void SaveToDST(const std::string &path);
+    void WriteToDST(const std::string &path);
 
     // data handler
     void Clear();

@@ -1415,7 +1415,7 @@ void PRadDataHandler::ReadFromDST(const string &path)
     dst_parser->CloseInput();
  }
 
-void PRadDataHandler::SaveToDST(const string &path)
+void PRadDataHandler::WriteToDST(const string &path)
 {
     try {
         dst_parser->OpenOutput(path);
