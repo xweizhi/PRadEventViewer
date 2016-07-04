@@ -98,11 +98,16 @@ std::vector<TH1*> PRadDAQUnit::GetHistList()
     return hlist;
 }
 
-void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
+void PRadDAQUnit::UpdatePedestal(const Pedestal &p)
 {
-    pedestal = Pedestal(m, s);
+    pedestal = p;
 
     sparsify = (unsigned short)(pedestal.mean + 5*pedestal.sigma + 0.5); // round
+}
+
+void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
+{
+    UpdatePedestal(Pedestal(m, s));
 }
 
 // universe calibration code, can be implemented by derivative class
