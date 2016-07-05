@@ -32,26 +32,30 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     // here shows an example how to read DST file while not saving all the events
     // in memory
-    dst_parser->OpenInput("test.dst");
+    dst_parser->OpenInput("prad_1287.dst");
+
     int count = 0;
-    while(dst_parser->Read() && count < 100000)
+    while(dst_parser->Read() && count < 30000)
     {
-        switch(dst_parser->EventType())
-        {
-        case PRad_DST_Event: {
+        if(dst_parser->EventType() == PRad_DST_Event) {
             ++count;
+            // you can push this event into data handler
+            // handler->GetEventData().push_back(dst_parser->GetEvent()
+            // or you can just do something with this event and discard it
             auto event = dst_parser->GetEvent();
             cout << event.event_number << "  ";
             cout << event.gem_data.size() << "  ";
             cout << handler->GetEPICSValue("MBSY2C_energy", event) << endl;
-          } break;
-        case PRad_DST_Epics:
+            for(auto &hit : handler->GetHyCalCluster(event))
+            {
+                cout << hit.E << "  " << hit.x << "  " << hit.y << endl;
+            }
+        } else if(dst_parser->EventType() == PRad_DST_Epics) {
+            // save epics into handler, otherwise get epicsvalue won't work
             handler->GetEPICSData().push_back(dst_parser->GetEPICSEvent());
-            break;
-        default:
-            break;
         }
     }
+
     dst_parser->CloseInput();
 
     cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;

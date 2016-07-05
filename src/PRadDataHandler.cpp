@@ -12,6 +12,7 @@
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
 #include "PRadDSTParser.h"
+#include "PRadReconstructor.h"
 #include "PRadGEMSystem.h"
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
@@ -30,9 +31,8 @@
 using namespace std;
 
 PRadDataHandler::PRadDataHandler()
-: parser(new PRadEvioParser(this)),
-  dst_parser(new PRadDSTParser(this)),
-  gem_srs(new PRadGEMSystem()),
+: parser(new PRadEvioParser(this)), dst_parser(new PRadDSTParser(this)),
+  gem_srs(new PRadGEMSystem()), hycal_recon(new PRadReconstructor(this)),
   totalE(0), onlineMode(false), replayMode(false), current_event(0)
 {
     // total energy histogram
@@ -67,6 +67,7 @@ PRadDataHandler::~PRadDataHandler()
     delete parser;
     delete dst_parser;
     delete gem_srs;
+    delete hycal_recon;
 }
 
 void PRadDataHandler::ReadConfig(const string &path)
@@ -1353,6 +1354,16 @@ int PRadDataHandler::FindEventIndex(const int &ev)
     }
 
     return result;
+}
+
+vector<HyCalHit> &PRadDataHandler::GetHyCalCluster(const int &event_index)
+{
+    return hycal_recon->CoarseHyCalReconstruct(event_index);
+}
+
+vector<HyCalHit> &PRadDataHandler::GetHyCalCluster(EventData &event)
+{
+    return hycal_recon->CoarseHyCalReconstruct(event);
 }
 
 void PRadDataHandler::Replay(const string &r_path, const int &split, const string &w_path)

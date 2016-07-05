@@ -13,18 +13,20 @@ class PRadDAQUnit;
 class PRadReconstructor
 {
 public:
-    PRadReconstructor();
-    virtual ~PRadReconstructor() {};
+    PRadReconstructor(PRadDataHandler *h = nullptr);
+    virtual ~PRadReconstructor();
 
     void InitConfig(const std::string &path);
     ConfigValue GetConfigValue(const std::string &var_name);
     void Clear();
-    void SetHandler(PRadDataHandler *theHandler);
+    void SetHandler(PRadDataHandler *h) {fHandler = h;};
     std::vector<HyCalHit> &CoarseHyCalReconstruct(const int &event_index = -1);
+    std::vector<HyCalHit> &CoarseHyCalReconstruct(EventData &event);
     unsigned short GetHighestModuleID() { return fHighestModuleID; }
     unsigned short FindClusterCenterModule (double x, double y);
+    std::vector<HyCalHit> &Reconstruct_fivebyfive();
+
 protected:
-    
     unsigned short getMaxEChannel();
     //void GEMCoorToLab(float* x, float *y, int type);
     //void HyCalCoorToLab(float* x, float *y);
@@ -33,7 +35,6 @@ protected:
     std::vector<unsigned short> &GetTimeForCluster(unsigned short channelID);
 
     PRadDataHandler *fHandler;
-    std::vector<PRadDAQUnit*> fModuleList;
     std::vector<unsigned short> fClusterCenterID;
     std::vector<HyCalHit> fHyCalHit;
     std::vector<float>* fGEM1XHit;

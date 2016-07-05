@@ -11,6 +11,7 @@
 #include <thread>
 
 class PRadEvioParser;
+class PRadReconstructor;
 class PRadDSTParser;
 class PRadDAQUnit;
 class PRadTDCGroup;
@@ -159,6 +160,9 @@ public:
     void CorrectGainFactor(const int &ref = 2);
     void RefillEnergyHist();
     int FindEventIndex(const int &event_number);
+    std::vector<HyCalHit> &GetHyCalCluster(const int &event_index);
+    std::vector<HyCalHit> &GetHyCalCluster(EventData &event);
+
 
     // other functions
     void GetRunNumberFromFileName(const std::string &name, const size_t &pos = 0, const bool &verbose = true);
@@ -169,6 +173,7 @@ private:
     PRadEvioParser *parser;
     PRadDSTParser *dst_parser;
     PRadGEMSystem *gem_srs;
+    PRadReconstructor *hycal_recon;
     RunInfo runInfo;
     OnlineInfo onlineInfo;
     double totalE;
