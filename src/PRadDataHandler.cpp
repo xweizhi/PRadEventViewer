@@ -216,8 +216,8 @@ void PRadDataHandler::BuildChannelMap()
 void PRadDataHandler::Clear()
 {
     // used memory won't be released, but it can be used again for new data file
-    energyData.clear();
-    epicsData.clear();
+    energyData = deque<EventData>();
+    epicsData = deque<EPICSData>();
     runInfo.clear();
 
     parser->SetEventNumber(0);
@@ -325,8 +325,10 @@ void PRadDataHandler::UpdateOnlineInfo(EventData &event)
 float PRadDataHandler::GetEPICSValue(const string &name)
 {
     auto it = epics_map.find(name);
-    if(it == epics_map.end())
+    if(it == epics_map.end()) {
+        cerr << "Data Handler: Did not find EPICS channel " << name << endl;
         return EPICS_UNDEFINED_VALUE;
+    }
 
     return epics_values.at(it->second);
 }
@@ -344,8 +346,10 @@ float PRadDataHandler::GetEPICSValue(const string &name, const EventData &event)
     float result = EPICS_UNDEFINED_VALUE;
 
     auto it = epics_map.find(name);
-    if(it == epics_map.end())
+    if(it == epics_map.end()) {
+        cerr << "Data Handler: Did not find EPICS channel " << name << endl;
         return result;
+    }
 
     uint32_t channel_id = it->second;
     int event_number = event.event_number;
@@ -1428,14 +1432,14 @@ void PRadDataHandler::WriteToDST(const string &path)
         dst_parser->WriteGEMInfo();
         dst_parser->WriteEPICSMap();
 
-        for(auto &event : energyData)
-        {
-            dst_parser->WriteEvent(event);
-        }
-
         for(auto &epics : epicsData)
         {
             dst_parser->WriteEPICS(epics);
+        }
+
+        for(auto &event : energyData)
+        {
+            dst_parser->WriteEvent(event);
         }
 
         dst_parser->WriteRunInfo();

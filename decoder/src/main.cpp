@@ -6,6 +6,7 @@
 //============================================================================//
 
 #include "PRadDataHandler.h"
+#include "PRadDSTParser.h"
 #include "PRadEvioParser.h"
 #include "PRadBenchMark.h"
 #include "PRadDAQUnit.h"
@@ -20,20 +21,38 @@ int main(int /*argc*/, char * /*argv*/ [])
 {
 
     PRadDataHandler *handler = new PRadDataHandler();
+    PRadDSTParser *dst_parser = new PRadDSTParser(handler);
 
     // read configuration files
     handler->ReadConfig("config.txt");
 
     PRadBenchMark timer;
-    handler->ReadFromDST("test.dst");
+//    handler->ReadFromDST("test.dst");
+//    handler->WriteToDST("test.dst");
 
-    for(auto &channel : handler->GetChannelList())
+    // here shows an example how to read DST file while not saving all the events
+    // in memory
+    dst_parser->OpenInput("test.dst");
+    int count = 0;
+    while(dst_parser->Read() && count < 100000)
     {
-        cout << channel->GetPedestal().mean << "  " << channel->GetCalibrationConstant().factor << endl;
+        switch(dst_parser->EventType())
+        {
+        case PRad_DST_Event: {
+            ++count;
+            auto event = dst_parser->GetEvent();
+            cout << event.event_number << "  ";
+            cout << event.gem_data.size() << "  ";
+            cout << handler->GetEPICSValue("MBSY2C_energy", event) << endl;
+          } break;
+        case PRad_DST_Epics:
+            handler->GetEPICSData().push_back(dst_parser->GetEPICSEvent());
+            break;
+        default:
+            break;
+        }
     }
-    handler->PrintOutEPICS();
-    handler->SaveHistograms("test.root");
-    handler->SaveToDST("test.dst");
+    dst_parser->CloseInput();
 
     cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;
     cout << "Read " << handler->GetEventCount() << " events and "
