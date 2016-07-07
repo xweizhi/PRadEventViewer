@@ -90,7 +90,7 @@ public:
     void ReadEPICSChannels(const std::string &path);
 
     // file reading and writing
-    void ReadFromDST(const std::string &path);
+    void ReadFromDST(const std::string &path, const uint32_t &mode = DST_UPDATE_ALL);
     void ReadFromEvio(const std::string &path, const int &evt = -1, const bool &verbose = false);
     void ReadFromSplitEvio(const std::string &path, const int &split = -1, const bool &verbose = true);
     void Decode(const void *buffer);

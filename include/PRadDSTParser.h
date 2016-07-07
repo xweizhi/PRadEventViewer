@@ -8,25 +8,6 @@
 
 class PRadDataHandler;
 
-enum PRadDSTInfo
-{
-    // event types
-    PRad_DST_Event = 0,
-    PRad_DST_Epics,
-    PRad_DST_Epics_Map,
-    PRad_DST_Run_Info,
-    PRad_DST_HyCal_Info,
-    PRad_DST_GEM_Info,
-    PRad_DST_Undefined,
-};
-
-enum PRadDSTHeader
-{
-    // headers
-    PRad_DST_Header = 0xc0c0c0,
-    PRad_DST_EvHeader = 0xe0e0e0,
-};
-
 class PRadDSTParser
 {
 public:
@@ -39,7 +20,8 @@ public:
     void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
     void CloseOutput();
     void CloseInput();
-    bool Read(bool update = true);
+    void SetMode(const uint32_t &bit) {update_mode = bit;};
+    bool Read();
     PRadDSTInfo EventType() {return type;};
     EventData &GetEvent() {return event;};
     EPICSData &GetEPICSEvent() {return epics_event;};
@@ -55,10 +37,10 @@ public:
 private:
     void readEvent(EventData &data) throw(PRadException);
     void readEPICS(EPICSData &data) throw(PRadException);
-    void readEPICSMap(bool update = true) throw(PRadException);
-    void readRunInfo(bool update = true) throw(PRadException);
-    void readHyCalInfo(bool update = true) throw(PRadException);
-    void readGEMInfo(bool update = true) throw(PRadException);
+    void readEPICSMap() throw(PRadException);
+    void readRunInfo() throw(PRadException);
+    void readHyCalInfo() throw(PRadException);
+    void readGEMInfo() throw(PRadException);
 
 private:
     PRadDataHandler *handler;
@@ -68,6 +50,7 @@ private:
     EventData event;
     EPICSData epics_event;
     PRadDSTInfo type;
+    uint32_t update_mode;
 };
 
 #endif

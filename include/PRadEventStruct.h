@@ -359,4 +359,35 @@ struct HyCalHit
     {};
 };
 
+// DST file related info
+enum PRadDSTInfo
+{
+    // event types
+    PRad_DST_Event = 0,
+    PRad_DST_Epics,
+    PRad_DST_Epics_Map,
+    PRad_DST_Run_Info,
+    PRad_DST_HyCal_Info,
+    PRad_DST_GEM_Info,
+    PRad_DST_Undefined,
+};
+
+enum PRadDSTHeader
+{
+    // headers
+    PRad_DST_Header = 0xc0c0c0,
+    PRad_DST_EvHeader = 0xe0e0e0,
+};
+
+enum PRadDSTMode
+{
+    DST_UPDATE_ALL = 0,
+    NO_GEM_PED_UPDATE = 1 << 0,
+    NO_HYCAL_PED_UPDATE = 1 << 1,
+    NO_HYCAL_CAL_UPDATE = 1 << 2,
+    NO_RUN_INFO_UPDATE = 1 << 3,
+    NO_EPICS_MAP_UPDATE = 1 << 4,
+    DST_UPDATE_NONE = 0xffffffff,
+};
+
 #endif

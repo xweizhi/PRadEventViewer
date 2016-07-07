@@ -1394,10 +1394,12 @@ void PRadDataHandler::Replay(const string &r_path, const int &split, const strin
     dst_parser->CloseOutput();
 }
 
-void PRadDataHandler::ReadFromDST(const string &path)
+void PRadDataHandler::ReadFromDST(const string &path, const uint32_t &mode)
 {
     try {
         dst_parser->OpenInput(path);
+
+        dst_parser->SetMode(mode);
 
         cout << "Data Handler: Reading events from DST file "
              << "\"" << path << "\""

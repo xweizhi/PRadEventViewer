@@ -17,7 +17,7 @@
 using namespace std;
 
 PRadDSTParser::PRadDSTParser(PRadDataHandler *h)
-: handler(h), input_length(0), type(PRad_DST_Undefined)
+: handler(h), input_length(0), type(PRad_DST_Undefined), update_mode(0)
 {
 }
 
@@ -240,7 +240,7 @@ void PRadDSTParser::WriteRunInfo() throw(PRadException)
     dst_out.write((char*) &runInfo, sizeof(runInfo));
 }
 
-void PRadDSTParser::readRunInfo(bool update) throw(PRadException)
+void PRadDSTParser::readRunInfo() throw(PRadException)
 {
     if(!dst_in.is_open())
         throw PRadException("READ DST", "input file is not opened!");
@@ -249,7 +249,7 @@ void PRadDSTParser::readRunInfo(bool update) throw(PRadException)
 
     dst_in.read((char*) &runInfo, sizeof(runInfo));
 
-    if(update)
+    if(!(update_mode & NO_RUN_INFO_UPDATE))
         handler->UpdateRunInfo(runInfo);
 }
 
@@ -278,7 +278,7 @@ void PRadDSTParser::WriteEPICSMap() throw(PRadException)
     }
 }
 
-void PRadDSTParser::readEPICSMap(bool update) throw(PRadException)
+void PRadDSTParser::readEPICSMap() throw(PRadException)
 {
     if(!dst_in.is_open())
         throw PRadException("READ DST", "input file is not opened!");
@@ -301,7 +301,7 @@ void PRadDSTParser::readEPICSMap(bool update) throw(PRadException)
         dst_in.read((char*) &id, sizeof(id));
         dst_in.read((char*) &value, sizeof(value));
 
-        if(update)
+        if(!(update_mode & NO_EPICS_MAP_UPDATE))
             handler->RegisterEPICS(str, id, value);
     }
 }
@@ -333,7 +333,7 @@ void PRadDSTParser::WriteHyCalInfo() throw(PRadException)
     }
 }
 
-void PRadDSTParser::readHyCalInfo(bool update) throw(PRadException)
+void PRadDSTParser::readHyCalInfo() throw(PRadException)
 {
     if(!dst_in.is_open())
         throw PRadException("READ DST", "input file is not opened!");
@@ -362,9 +362,11 @@ void PRadDSTParser::readHyCalInfo(bool update) throw(PRadException)
             cal.base_gain.push_back(gain);
         }
 
-        if((i < channelList.size()) && update) {
-            channelList.at(i)->UpdatePedestal(ped);
-            channelList.at(i)->UpdateCalibrationConstant(cal);
+        if(i < channelList.size()) {
+            if(!(update_mode & NO_HYCAL_PED_UPDATE))
+                channelList.at(i)->UpdatePedestal(ped);
+            if(!(update_mode & NO_HYCAL_CAL_UPDATE))
+                channelList.at(i)->UpdateCalibrationConstant(cal);
         }
     }
 }
@@ -397,7 +399,7 @@ void PRadDSTParser::WriteGEMInfo() throw(PRadException)
     }
 }
 
-void PRadDSTParser::readGEMInfo(bool update) throw(PRadException)
+void PRadDSTParser::readGEMInfo() throw(PRadException)
 {
     if(!dst_in.is_open())
         throw PRadException("READ DST", "input file is not opened!");
@@ -418,7 +420,7 @@ void PRadDSTParser::readGEMInfo(bool update) throw(PRadException)
         {
             PRadGEMAPV::Pedestal ped;
             dst_in.read((char*) &ped, sizeof(ped));
-            if(apv && update)
+            if(apv && !(update_mode & NO_GEM_PED_UPDATE))
                 apv->UpdatePedestal(ped, j);
         }
     }
@@ -428,7 +430,7 @@ void PRadDSTParser::readGEMInfo(bool update) throw(PRadException)
 // Return type:  false. file end or error                                     //
 //               true. successfully read                                      //
 //============================================================================//
-bool PRadDSTParser::Read(bool update)
+bool PRadDSTParser::Read()
 {
     try {
         if(dst_in.tellg() < input_length && dst_in.tellg() != -1)
@@ -455,16 +457,16 @@ bool PRadDSTParser::Read(bool update)
                 readEPICS(epics_event);
                 break;
             case PRad_DST_Epics_Map:
-                readEPICSMap(update);
+                readEPICSMap();
                 break;
             case PRad_DST_Run_Info:
-                readRunInfo(update);
+                readRunInfo();
                 break;
             case PRad_DST_HyCal_Info:
-                readHyCalInfo(update);
+                readHyCalInfo();
                 break;
             case PRad_DST_GEM_Info:
-                readGEMInfo(update);
+                readGEMInfo();
                 break;
             default:
                 return false;

@@ -35,6 +35,10 @@ int main(int /*argc*/, char * /*argv*/ [])
     dst_parser->OpenInput("prad_1287.dst");
 
     int count = 0;
+
+    // uncomment next line, it will not update calibration factor from dst file
+    //dst_parser->SetMode(NO_HYCAL_CAL_UPDATE);
+
     while(dst_parser->Read() && count < 30000)
     {
         if(dst_parser->EventType() == PRad_DST_Event) {
