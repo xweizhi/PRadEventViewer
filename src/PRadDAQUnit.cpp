@@ -13,7 +13,8 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const std::string &tdc,
                          const Geometry &geo)
 : channelName(name), geometry(geo), address(daqAddr), pedestal(Pedestal(0, 0)),
-  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), adc_value(0)
+  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), adc_value(0), primexID(-1),
+  gainP0(0.), gainP1(0.)
 {
     std::string hist_name;
 
@@ -43,6 +44,14 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
         MapHist("PHYS", PHYS_Scintillator);
     }
     MapHist("LMS", LMS_Led);
+
+    //save the primex ID
+    if (channelName.at(0) == 'W'){
+      primexID = stoi(channelName.substr(1)) + 1000;
+    }
+    else if (channelName.at(0) == 'G'){
+      primexID = stoi(channelName.substr(1));
+    }
 }
 
 PRadDAQUnit::~PRadDAQUnit()
@@ -102,7 +111,7 @@ void PRadDAQUnit::UpdatePedestal(const Pedestal &p)
 {
     pedestal = p;
 
-    sparsify = (unsigned short)(pedestal.mean + 5*pedestal.sigma + 0.5); // round
+    sparsify = (unsigned short)(pedestal.mean  + 0.5); // round
 }
 
 void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
@@ -114,6 +123,15 @@ void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 double PRadDAQUnit::Calibration(const unsigned short &adcVal)
 {
     return (double) adcVal*cal_const.factor;
+    /*double g1 = cal_const.GetReferenceGain(2);
+    double g2 = cal_const.base_factor*g1/cal_const.factor;
+    double trueADC = (double)adcVal*g1/g2;
+
+    if (g1 ==0 || g2 == 0){
+      return (double) adcVal*cal_const.factor;
+    }
+
+    return (double)trueADC*gainP0 / (1. - (double)trueADC*gainP1);*/
 }
 
 // erase current data
