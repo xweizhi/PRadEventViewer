@@ -318,25 +318,22 @@ bool ConfigParser::ParseLine()
 
     if(infile.is_open()) {
         string line;
-        bool not_end;
         while(elements.empty())
         {
-            not_end = getline(infile, line);
-            if(!not_end)
-                break;
+            if(!getline(infile, line))
+                return false; // end of file
             ParseLine(line);
         }
-        return not_end;
     } else {
        while(elements.empty())
         {
             if(lines.empty())
-                return false;
+                return false; // end of buffer
             ParseLine(lines.front());
             lines.pop();
         }
-        return true;
     }
+    return true; // parsed a line
 }
 
 void ConfigParser::ParseLine(const string &line)

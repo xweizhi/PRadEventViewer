@@ -1,5 +1,8 @@
 #!/bin/csh
 
+# load module for c++11
+module load gcc_4.8.2
+
 if (`uname -m` == 'x86_64') then
     setenv ET_LIB /site/coda/3.02/Linux/lib64
     setenv ET_INC /site/coda/3.02/common/include

@@ -1143,7 +1143,7 @@ void PRadEventViewer::saveHistToFile()
 {
     QString rootFile = getFileName(tr("Save histograms to root file"),
                                    tr("rootfiles/"),
-                                   {tr("root files (*.root)")},
+                                   QStringList(tr("root files (*.root)")),
                                    tr("root"),
                                    QFileDialog::AcceptSave);
 
@@ -1159,7 +1159,7 @@ void PRadEventViewer::savePedestalFile()
 {
     QString pedFile = getFileName(tr("Save pedestal to file"),
                                   tr("config/"),
-                                  {tr("data files (*.dat)")},
+                                  QStringList(tr("data files (*.dat)")),
                                   tr("dat"),
                                   QFileDialog::AcceptSave);
     if(pedFile.isEmpty())
@@ -1536,7 +1536,7 @@ void PRadEventViewer::saveHVSetting()
 {
     QString hvFile = getFileName(tr("Save High Voltage Settings to file"),
                                  tr("high_voltage/"),
-                                 {tr("text files (*.txt)")},
+                                 QStringList(tr("text files (*.txt)")),
                                  tr("txt"),
                                  QFileDialog::AcceptSave);
 
@@ -1552,7 +1552,7 @@ void PRadEventViewer::restoreHVSetting()
 {
     QString hvFile = getFileName(tr("Restore High Voltage Settings from file"),
                                  tr("high_voltage/"),
-                                 {tr("text files (*.txt)")},
+                                 QStringList(tr("text files (*.txt)")),
                                  tr("txt"),
                                  QFileDialog::AcceptOpen);
 
