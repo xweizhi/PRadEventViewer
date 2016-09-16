@@ -103,6 +103,7 @@ public:
     void GainCorrection(const double &g, const int &ref) {cal_const.GainCorrection(g, ref);};
     void UpdateADC(const unsigned short &adcVal) {adc_value = adcVal;};
     void UpdateGeometry(const Geometry &geo) {geometry = geo;};
+    void SetGainLinearity(double &a, double &b) { gainP0 = a; gainP1 = b; }
     void CleanBuffer();
     void ResetHistograms();
     void AddHist(const std::string &name);
@@ -125,6 +126,7 @@ public:
     double GetY() {return geometry.y;};
     const ChannelType &GetType() {return geometry.type;};
     bool IsHyCalModule() {return (geometry.type == LeadGlass) || (geometry.type == LeadTungstate);};
+    int GetPrimexID() { return primexID; }
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
     virtual unsigned short Sparsification(const unsigned short &adcVal);
 
@@ -198,9 +200,12 @@ protected:
     unsigned short sparsify;
     unsigned short channelID;
     unsigned short adc_value;
+    int primexID;
     CalibrationConstant cal_const;
     TH1 *hist[MAX_Trigger];
     std::unordered_map<std::string, TH1*> histograms;
+    double gainP0;
+    double gainP1;
 };
 
 #endif
