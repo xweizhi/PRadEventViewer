@@ -24,7 +24,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 
   //handler->UpdateHyCalGain("../config/gainfunc_round7.dat");
 
-  dst_parser->OpenInput("./data/prad_001291.dst");
+  dst_parser->OpenInput("/work/hallb/prad/replay/prad_001291.dst");
 
   PRadIslandWrapper *island = new PRadIslandWrapper();
   island->SetHandler(handler);

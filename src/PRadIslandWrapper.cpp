@@ -52,7 +52,7 @@ void PRadIslandWrapper::InitConstants()
 
   fp = fopen("../config/blockinfo.dat", "r");
   for(int i=0; i < T_BLOCKS; ++i) {
-    fread(&ival, sizeof(ival), 1, fp);
+    (void)fread(&ival, sizeof(ival), 1, fp);
     fBlockINFO[i].id = ival;
 
     fread(&ival, sizeof(ival), 1, fp);
@@ -582,7 +582,7 @@ void PRadIslandWrapper::MergeClusters(int i, int j)
 
 }
 //____________________________________________________________________________
-float PRadIslandWrapper::EnergyCorrect (float c_energy, int central_id) 
+float PRadIslandWrapper::EnergyCorrect (float c_energy, int /*central_id*/)
 {
   float energy = c_energy;
   //float fr = (central_id < 999) ? 0.062 : 0.042;

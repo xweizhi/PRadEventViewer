@@ -41,7 +41,7 @@ STRIP         =
 
 SOURCES       = src/main.cpp \
 
-OBJECTS       = obj/main.o \
+OBJECTS       = main.o \
 
 TARGET        = decoder
 
@@ -60,8 +60,8 @@ clean:
 	-$(DEL_FILE) $(OBJECTS)
 	-$(DEL_FILE) $(TARGET)
 
-obj/main.o: src/main.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/main.o src/main.cpp
+main.o: src/main.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o src/main.cpp
 
 ####### Install
 
