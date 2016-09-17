@@ -52,7 +52,7 @@ void PRadIslandWrapper::InitConstants()
 
   fp = fopen("../config/blockinfo.dat", "r");
   for(int i=0; i < T_BLOCKS; ++i) {
-    (void)fread(&ival, sizeof(ival), 1, fp);
+    fread(&ival, sizeof(ival), 1, fp);
     fBlockINFO[i].id = ival;
 
     fread(&ival, sizeof(ival), 1, fp);
