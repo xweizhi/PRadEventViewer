@@ -13,8 +13,7 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const std::string &tdc,
                          const Geometry &geo)
 : channelName(name), geometry(geo), address(daqAddr), pedestal(Pedestal(0, 0)),
-  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), adc_value(0), primexID(-1),
-  gainP0(0.), gainP1(0.)
+  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), adc_value(0), primexID(-1)
 {
     std::string hist_name;
 
@@ -111,7 +110,7 @@ void PRadDAQUnit::UpdatePedestal(const Pedestal &p)
 {
     pedestal = p;
 
-    sparsify = (unsigned short)(pedestal.mean  + 0.5); // round
+    sparsify = (unsigned short)(pedestal.mean + 5.*pedestal.sigma + 0.5); // round
 }
 
 void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
@@ -122,7 +121,7 @@ void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 // universe calibration code, can be implemented by derivative class
 double PRadDAQUnit::Calibration(const unsigned short &adcVal)
 {
-    return (double) adcVal*cal_const.factor;
+    return ((double)adcVal - pedestal.mean)*cal_const.factor;
     /*double g1 = cal_const.GetReferenceGain(2);
     double g2 = cal_const.base_factor*g1/cal_const.factor;
     double trueADC = (double)adcVal*g1/g2;
@@ -163,12 +162,12 @@ unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal)
 
 double PRadDAQUnit::GetEnergy(const unsigned short &adcVal)
 {
-    return Calibration(Sparsification(adcVal));
+    return Calibration(adcVal);
 }
 
 double PRadDAQUnit::GetEnergy()
 {
-    return GetEnergy(adc_value);
+    return Calibration(adc_value);
 }
 
 

@@ -54,12 +54,17 @@ public:
         double factor;
         double base_factor;
         std::vector<double> base_gain;
+        double p0;
+        double p1;
 
         CalibrationConstant()
-        : factor(0), base_factor(0)
+        : factor(0), base_factor(0), p0(1.), p1(0.)
         {};
-        CalibrationConstant(const double &calf, const std::vector<double> &gain)
-        : factor(calf), base_factor(calf), base_gain(gain)
+        CalibrationConstant(const double &calf,
+                            const std::vector<double> &gain,
+                            const double &pp0,
+                            const double &pp1)
+        : factor(calf), base_factor(calf), base_gain(gain), p0(pp0), p1(pp1)
         {};
 
         void AddReferenceGain(const double &gain)
@@ -103,7 +108,6 @@ public:
     void GainCorrection(const double &g, const int &ref) {cal_const.GainCorrection(g, ref);};
     void UpdateADC(const unsigned short &adcVal) {adc_value = adcVal;};
     void UpdateGeometry(const Geometry &geo) {geometry = geo;};
-    void SetGainLinearity(double &a, double &b) { gainP0 = a; gainP1 = b; }
     void CleanBuffer();
     void ResetHistograms();
     void AddHist(const std::string &name);
@@ -113,7 +117,7 @@ public:
     std::vector<TH1*> GetHistList();
     int GetOccupancy() {return occupancy;};
     const std::string &GetName() {return channelName;};
-    
+
     void AssignID(const unsigned short &id) {channelID = id;};
     unsigned short GetID() {return channelID;};
     const double &GetCalibrationFactor() {return cal_const.factor;};
@@ -204,8 +208,6 @@ protected:
     CalibrationConstant cal_const;
     TH1 *hist[MAX_Trigger];
     std::unordered_map<std::string, TH1*> histograms;
-    double gainP0;
-    double gainP1;
 };
 
 #endif

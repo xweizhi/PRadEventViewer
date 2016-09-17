@@ -72,7 +72,12 @@ int main(int argc, char *argv[])
         {
             if(!parser.NbofElements())
                 continue;
-            string key = parser.TakeFirst();
+            int id = parser.TakeFirst().Int();
+            string key;
+            if(id < 1000)
+                key = "G" + to_string(id);
+            else
+                key = "W" + to_string(id - 1000);
             auto it = eles_map.find(key);
             if(it == eles_map.end()) {
                 cout << "Cannot find key " << key << " in original map" << endl;
@@ -87,11 +92,11 @@ int main(int argc, char *argv[])
     ofstream outfile(output);
     for(auto ele : eles_map)
     {
-        outfile << setw(12) << ele.first;
+        outfile << setw(6) << ele.first;
         vector<ConfigValue> eles = ele.second;
         for(auto e : eles)
         {
-            outfile << setw(12) << e;
+            outfile << setw(13) << e;
         }
         outfile << endl;
     }

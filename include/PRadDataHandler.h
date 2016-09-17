@@ -88,7 +88,6 @@ public:
     void ReadGEMPedestalFile(const std::string &path);
     void ReadCalibrationFile(const std::string &path);
     void ReadEPICSChannels(const std::string &path);
-    void UpdateHyCalGain(const std::string path);
 
     // file reading and writing
     void ReadFromDST(const std::string &path, const uint32_t &mode = DST_UPDATE_ALL);
