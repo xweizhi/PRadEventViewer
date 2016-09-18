@@ -203,10 +203,10 @@ c
             if(iaf-ia(i).ge.100)  then      ! subclusters to be glued
               if(icl.lt.ncl-1.and.leng.le.10800) then
                 call ucopy(ia(last+1-leng),iwork(1),leng)
-                call ucopy(ia(last+1),ia(last+1-leng),(ib-1-last))
+                call ucopy2(ia(last+1),ia(last+1-leng),(ib-1-last))
                 call ucopy(iwork(1),ia(ib-leng),leng)
                 call ucopy(id(last+1-leng),iwork(1),leng)
-                call ucopy(id(last+1),id(last+1-leng),(ib-1-last))
+                call ucopy2(id(last+1),id(last+1-leng),(ib-1-last))
                 call ucopy(iwork(1),id(ib-leng),leng)
                 do j=icl,ncl-2
                   lencl(j)=lencl(j+1)
@@ -1865,5 +1865,22 @@ c
       DO I = 1, N
           B(I) = A(I)
       END DO
+      END
+*
+* ------------------------------------------------
+*
+      SUBROUTINE ucopy2(A, B, N)
+      INTEGER A(*),B(*)
+
+      IF (N.EQ.0) RETURN
+      IF (LOC(A).GT.LOC(B)) THEN
+          DO I = 1,N
+              B(I) = A(I)
+          END DO
+      ELSE
+          DO I = N,1,-1
+              B(I) = A(I)
+          END DO
+      END IF
       END
 
