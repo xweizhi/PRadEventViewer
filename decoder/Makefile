@@ -39,7 +39,7 @@ STRIP         =
 
 ####### Files
 
-SOURCES       = src/testIsland.cpp \
+SOURCES       = src/main.cpp \
 
 OBJECTS       = main.o \
 
@@ -60,8 +60,8 @@ clean:
 	-$(DEL_FILE) $(OBJECTS)
 	-$(DEL_FILE) $(TARGET)
 
-main.o: src/testIsland.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o src/testIsland.cpp
+main.o: src/main.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o src/main.cpp
 
 ####### Install
 
