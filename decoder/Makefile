@@ -41,7 +41,11 @@ STRIP         =
 
 SOURCES       = src/testIsland.cpp \
 
+<<<<<<< HEAD
 OBJECTS       = obj/testIsland.o \
+=======
+OBJECTS       = main.o \
+>>>>>>> upstream/master
 
 TARGET        = decoder
 
@@ -60,8 +64,13 @@ clean:
 	-$(DEL_FILE) $(OBJECTS)
 	-$(DEL_FILE) $(TARGET)
 
+<<<<<<< HEAD
 obj/testIsland.o: src/testIsland.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/testIsland.o src/testIsland.cpp
+=======
+main.o: src/main.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o src/main.cpp
+>>>>>>> upstream/master
 
 ####### Install
 

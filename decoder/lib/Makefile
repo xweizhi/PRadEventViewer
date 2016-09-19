@@ -7,13 +7,12 @@
 #############################################################################
 
 MAKEFILE      = Makefile
-CERN_ROOT = /site/cernlib/x86_64_rhel6/2005/
 PRAD_PATH     = ../..
 ####### Compiler, tools and options
 
 CC            = gcc
 CXX           = g++
-CXXFLAGS      = -shared -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -D_REENTRANT -fPIC $(DEFINES)
+CXXFLAGS      = -shared -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -Wno-unused-result -D_REENTRANT -fPIC $(DEFINES)
 INCPATH       = -I. -I$(PRAD_PATH)/include -I$(ROOTSYS)/include
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -32,15 +31,12 @@ TAR           = tar -cf
 COMPRESS      = gzip -9f
 LINK          = g++
 LFLAGS        = -shared -Wl,-O1 -Wl,-z,relro
-LIBS          = $(SUBLIBS) -L$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lGL -lpthread -lgfortran 
+LIBS          = $(SUBLIBS) -L$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lGL -lpthread -lgfortran  
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
 STRIP         = 
 
-#requirement for the fortran island code
-FORTRANLIBS = -L $(CERN_ROOT)/lib ${root_flags} -lgeant321 -lpawlib -llapack3 -lblas -lgraflib -lgrafX11 -lphtools -lpacklib -lmathlib -lkernlib -lX11 -lcrypt -ltcl -ltk -lstdc++
-LIBS += $(FORTRANLIBS)
 ####### Files
 
 SOURCES       = $(PRAD_PATH)/src/PRadDAQUnit.cpp \
@@ -53,7 +49,8 @@ SOURCES       = $(PRAD_PATH)/src/PRadDAQUnit.cpp \
                 $(PRAD_PATH)/src/ConfigParser.cpp \
                 $(PRAD_PATH)/src/PRadReconstructor.cpp \
                 $(PRAD_PATH)/src/PRadGEMSystem.cpp \
-                $(PRAD_PATH)/src/PRadIslandWrapper.cpp
+                $(PRAD_PATH)/src/PRadIslandWrapper.cpp \
+                $(PRAD_PATH)/src/island.F
 
 OBJECTS       = PRadDAQUnit.o \
                 PRadTDCGroup.o \
@@ -123,7 +120,7 @@ PRadIslandWrapper.o: $(PRAD_PATH)/src/PRadIslandWrapper.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadIslandWrapper.o $(PRAD_PATH)/src/PRadIslandWrapper.cpp
 
 island.o: $(PRAD_PATH)/src/island.F
-	@echo Compiling $<; gfortran -c -fPIC $(INCPATH) $(GLOB_DEFS) $<
+	@echo Compiling $<; gfortran -c -fPIC $(INCPATH) $<
 
 ####### Install
 

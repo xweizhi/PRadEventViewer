@@ -9,7 +9,6 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <cassert>
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
 #include "PRadDSTParser.h"
@@ -213,38 +212,7 @@ void PRadDataHandler::BuildChannelMap()
         tdcGroup->AddChannel(channel);
     }
 }
-//________________________________________________________________________________
-void PRadDataHandler::UpdateHyCalGain(const std::string path)
-{
-    ConfigParser c_parser;
 
-    if(!c_parser.OpenFile(path)) {
-        cerr << "Data Handler: Cannot open gain file "
-             << "\"" << path << "\"."
-             << endl;
-    }
-  
-    while(c_parser.ParseLine()){
-      if (c_parser.NbofElements() > 0){
-        int id = c_parser.TakeFirst().Int();
-        if (id == 0) continue;
-        string channelName;
-        if (id < 1000) { channelName = "G"; }
-        else {channelName = "W"; id -= 1000; }
-
-        channelName += to_string(id);
-        PRadDAQUnit *thisUnit = GetChannel(channelName);
-        if (thisUnit == nullptr || !thisUnit->IsHyCalModule()) continue;
-
-        double p0 = c_parser.TakeFirst().Double();
-        double p1 = c_parser.TakeFirst().Double()*1.e-3;
-        thisUnit->SetGainLinearity(p0, p1);
-        c_parser.TakeFirst(); 
-      }
-    }
-}
-
-//________________________________________________________________________________
 // erase the data container
 void PRadDataHandler::Clear()
 {
@@ -1152,12 +1120,12 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
     }
 
     string name;
-    double calFactor;
+    double calFactor, p0, p1;
     PRadDAQUnit *tmp;
 
     while(c_parser.ParseLine())
     {
-        if(c_parser.NbofElements() == 5) {
+        if(c_parser.NbofElements() >= 7) {
             vector<double> ref_gain;
             name = c_parser.TakeFirst();
             calFactor = c_parser.TakeFirst().Double();
@@ -1166,7 +1134,10 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
             ref_gain.push_back(c_parser.TakeFirst().Double()); // ref 2
             ref_gain.push_back(c_parser.TakeFirst().Double()); // ref 3
 
-            PRadDAQUnit::CalibrationConstant calConst(calFactor, ref_gain);
+            p0 = c_parser.TakeFirst().Double();
+            p1 = c_parser.TakeFirst().Double()*1.e-3;
+
+            PRadDAQUnit::CalibrationConstant calConst(calFactor, ref_gain, p0, p1);
 
             if((tmp = GetChannel(name)) != nullptr)
                 tmp->UpdateCalibrationConstant(calConst);

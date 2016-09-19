@@ -1856,3 +1856,31 @@ c
       Return
       End
 *
+* ------------------------------------------------
+*
+      SUBROUTINE ucopy(A, B, N)
+      INTEGER A(*),B(*)
+
+      IF (N.EQ.0) RETURN
+      DO I = 1, N
+          B(I) = A(I)
+      END DO
+      END
+*
+* ------------------------------------------------
+*
+      SUBROUTINE ucopy2(A, B, N)
+      INTEGER A(*),B(*)
+
+      IF (N.EQ.0) RETURN
+      IF (LOC(A).GT.LOC(B)) THEN
+          DO I = 1,N
+              B(I) = A(I)
+          END DO
+      ELSE
+          DO I = N,1,-1
+              B(I) = A(I)
+          END DO
+      END IF
+      END
+
