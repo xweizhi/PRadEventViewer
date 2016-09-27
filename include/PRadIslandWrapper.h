@@ -39,7 +39,7 @@ class PRadDataHandler;
 #define GLASS_OFFSET_Y CRYS_SIZE_Y*CRYS_ROWS //Distance from center to glass by Y axis
 
 #define CRYS_ROWS 34
-#define GLASS_ROWS 30 
+#define GLASS_ROWS 30
 #define CRYS_SIZE_X 2.077   // real X-size of crystal
 #define CRYS_SIZE_Y 2.075   // real Y-size of crystal
 #define GLASS_SIZE 3.815    // real size of glass
@@ -85,7 +85,7 @@ typedef struct
     float e;   // Energy of ADC
 } hycalhit_t;
 
-extern "C"  
+extern "C"
 {
     void main_island_();
     extern struct
@@ -101,8 +101,8 @@ extern "C"
     extern struct
     {
         int icl_index[MAX_CC][200], icl_iener[MAX_CC][200];
-    } icl_common_;    
-    
+    } icl_common_;
+
     extern struct
     {
         float xsize, ysize, mine, maxe;
@@ -112,7 +112,7 @@ extern "C"
         float zhycal;
         int isect;
     } set_common_;
-    
+
     extern struct
     {
         int nadcgam;
@@ -122,7 +122,7 @@ extern "C"
             float fadcgam[50][11];
         } u;
     } adcgam_cbk_;
-    
+
     extern struct
     {
         float fa[100];

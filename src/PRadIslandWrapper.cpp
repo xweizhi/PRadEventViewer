@@ -21,17 +21,13 @@ void PRadIslandWrapper::InitTable()
         for(int i = 1; i <= MCOL; ++i)
             for(int j = 1; j <= MROW; ++j)
                 fModuleStatus[k][i-1][j-1] = 0;
-    //
     //  mark PWO hole:
-    //  
     fModuleStatus[0][17-1][17-1] = -1;
     fModuleStatus[0][17-1][18-1] = -1;
     fModuleStatus[0][18-1][17-1] = -1;
     fModuleStatus[0][18-1][18-1] = -1;
 
-    //
     //  mark dead channles:
-    //    
     for(int i=0; i<T_BLOCKS; i++)
     {
         int isector = fBlockINFO[i].sector;
@@ -43,7 +39,7 @@ void PRadIslandWrapper::InitTable()
                 int thisrow = fBlockINFO[i].row;
                 int thiscol = fBlockINFO[i].col;
                 fModuleStatus[isector][thiscol-1][thisrow-1] = 0; // HYCAL_STATUS[i];
-                if(thisid == 1835) 
+                if(thisid == 1835)
                     fModuleStatus[isector][thiscol-1][thisrow-1] = 1; // HYCAL_STATUS[i];
             }
         }
@@ -95,10 +91,10 @@ hycalcluster_t * PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
     Clear();
 
     //main function of the hycal reconstruction
-  
+
     //first load data to the hit array and ech array
     //the second array is used in the fortran island code
-  
+
     //if not physics event, don't reconstruct it
     if(!thisEvent.is_physics_event())
         return fHyCalCluster;
@@ -117,7 +113,6 @@ hycalcluster_t * PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
     GlueTransitionClusters();
 
     ClusterProcessing();
-  
 
     return &fHyCalCluster[0];
 }
@@ -202,7 +197,7 @@ void PRadIslandWrapper::CallIsland(int isect)
 
         if(e<fMinHitE)
             continue;
-  
+
         int column, row;
         if(id>1000) {
             column = (id-1001)%NCOL+1;
@@ -211,13 +206,13 @@ void PRadIslandWrapper::CallIsland(int isect)
             column = (id-1)%(NCOL+NROW)+1-coloffset;
             row    = (id-1)/(NCOL+NROW)+1-rowoffset;
         }
-   
+
         ECH(column,row) = int(e*1.e4+0.5);
         ich[column-1][row-1] = id;
     }
 
     main_island_();
-    
+
     for(int k = 0; k < adcgam_cbk_.nadcgam; ++k)
     {
         int n = fNHyCalClusters;
@@ -341,7 +336,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
 
     for(int i = 0; i < MAX_CLUSTERS; ++i)
         group_number[i] = 0;
-  
+
     for(int i = 0; i < fNHyCalClusters; ++i)
     {
         int idi = fHyCalCluster[i].id;
@@ -415,7 +410,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
         if(group_size[igr]<=0)
             continue;
         // sort in increasing cluster number order:
-    
+
         int list[MAX_CLUSTERS];
         for(int i = 0; i < group_size[igr]; ++i)
             list[i] = i;
@@ -447,7 +442,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
         }
     }
 
-    // apply energy nonlin corr.: 
+    // apply energy nonlin corr.:
     for(int i = 0; i < fNHyCalClusters; ++i)
     {
         float olde = fHyCalCluster[i].E;
@@ -456,7 +451,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
     }
 
     int ifdiscarded;
-  
+
     // discrard clusters merged with others:
     do
     {
@@ -660,7 +655,7 @@ float PRadIslandWrapper::EnergyCorrect (float c_energy, int /*central_id*/)
 
     //ecorr *= 1. - Nonlin_en2[central_id-1] * energy*1.e-3;
     //if(fabs(ecorr-1.) < 0.3) energy /= ecorr;
-  
+
     return energy;
 }
 //____________________________________________________________________________
