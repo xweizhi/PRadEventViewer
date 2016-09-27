@@ -1,8 +1,10 @@
 //c++
-#include <cassert>
 #include <cmath>
+#include <cstdio>
 //PRadEventViewer
 #include "PRadIslandWrapper.h"
+#include "PRadDataHandler.h"
+#include "PRadDAQUnit.h"
 
 PRadIslandWrapper::PRadIslandWrapper()
   : fHandler(nullptr), fMinHitE(5.e-3)
