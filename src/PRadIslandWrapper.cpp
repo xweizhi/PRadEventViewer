@@ -9,10 +9,9 @@
 #include <cstring>
 #include "PRadIslandWrapper.h"
 
-PRadIslandWrapper::PRadIslandWrapper(PRadDataHandler *h, const std::string &path)
+PRadIslandWrapper::PRadIslandWrapper(PRadDataHandler *h)
 : PRadReconstructor(h)
 {
-    Configurate(path);
 }
 //________________________________________________________________
 void PRadIslandWrapper::Configurate(const std::string &c_path)

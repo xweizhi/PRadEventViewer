@@ -130,7 +130,7 @@ extern "C"
 class PRadIslandWrapper : public PRadReconstructor
 {
 public:
-    PRadIslandWrapper(PRadDataHandler *h, const std::string &path = "config/island.conf");
+    PRadIslandWrapper(PRadDataHandler *h = nullptr);
     ~PRadIslandWrapper() {;}
 
     void SetHandler(PRadDataHandler* theHandler) { fHandler = theHandler; }

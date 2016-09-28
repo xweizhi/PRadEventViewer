@@ -118,6 +118,9 @@ public:
     void UpdateLiveTimeScaler(EventData &event);
     void UpdateOnlineInfo(EventData &event);
     void UpdateRunInfo(const RunInfo &ri) {runInfo = ri;};
+    void AddHyCalReconstructor(PRadReconstructor *r, const std::string &name, const std::string &c_path);
+    void SetHyCalReconstructor(const std::string &name);
+    void ListHyCalReconstructors();
 
     // show data
     int GetCurrentEventNb();
@@ -188,6 +191,7 @@ private:
     std::unordered_map< std::string, PRadDAQUnit* > map_name;
     std::unordered_map< std::string, PRadTDCGroup* > map_name_tdc;
     std::unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
+    std::unordered_map< std::string, PRadReconstructor *> hycal_recon_map;
 
     std::vector< PRadDAQUnit* > channelList;
     std::vector< PRadDAQUnit* > freeList; // channels that should be freed by handler

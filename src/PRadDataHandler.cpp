@@ -35,7 +35,8 @@ PRadDataHandler::PRadDataHandler()
 : parser(new PRadEvioParser(this)),
   dst_parser(new PRadDSTParser(this)),
   gem_srs(new PRadGEMSystem()),
-  totalE(0), onlineMode(false), replayMode(false), current_event(0)
+  hycal_recon(nullptr), totalE(0), onlineMode(false),
+  replayMode(false), current_event(0)
 {
     // total energy histogram
     energyHist = new TH1D("HyCal Energy", "Total Energy (MeV)", 2500, 0, 2500);
@@ -48,8 +49,6 @@ PRadDataHandler::PRadDataHandler()
     onlineInfo.add_trigger("LMS Alpha Source", 3);
     onlineInfo.add_trigger("Tagger Master OR", 4);
     onlineInfo.add_trigger("Scintillator", 5);
-
-    hycal_recon = new PRadIslandWrapper(this);
 }
 
 PRadDataHandler::~PRadDataHandler()
@@ -68,10 +67,15 @@ PRadDataHandler::~PRadDataHandler()
         delete tdc, tdc = nullptr;
     }
 
+    for(auto &it : hycal_recon_map)
+    {
+        if(it.second)
+            delete it.second, it.second = nullptr;
+    }
+
     delete parser;
     delete dst_parser;
     delete gem_srs;
-    delete hycal_recon;
 }
 
 void PRadDataHandler::ReadConfig(const string &path)
@@ -124,6 +128,18 @@ void PRadDataHandler::ReadConfig(const string &path)
             const string var1 = c_parser.TakeFirst().String();
             ExecuteConfigCommand(&PRadDataHandler::InitializeByData, var1, -1, 2);
         }
+        if((func_name.find("Island Configuration") != string::npos)) {
+            const string var1 = "Island";
+            const string var2 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::AddHyCalReconstructor,
+                                 (PRadReconstructor *) new PRadIslandWrapper(this),
+                                 var1,
+                                 var2);
+        }
+        if((func_name.find("HyCal Clustering Method") != string::npos)) {
+            const string var1 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::SetHyCalReconstructor, var1);
+        }
     }
 }
 
@@ -131,7 +147,7 @@ void PRadDataHandler::ReadConfig(const string &path)
 template<typename... Args>
 void PRadDataHandler::ExecuteConfigCommand(void (PRadDataHandler::*act)(Args...), Args&&... args)
 {
-    (this->*act)(std::forward<Args>(args)...);
+    (this->*act)(forward<Args>(args)...);
 }
 
 // decode event buffer
@@ -1020,7 +1036,7 @@ void PRadDataHandler::ReadChannelList(const string &path)
             geo.size_y = c_parser.TakeFirst().Double();
             geo.x = c_parser.TakeFirst().Double();
             geo.y = c_parser.TakeFirst().Double();
- 
+
             PRadDAQUnit *new_ch = new PRadDAQUnit(moduleName, daqAddr, tdcGroup, geo);
             AddChannel(new_ch);
         } else {
@@ -1363,6 +1379,53 @@ int PRadDataHandler::FindEventIndex(const int &ev)
     return result;
 }
 
+void PRadDataHandler::AddHyCalReconstructor(PRadReconstructor *r,
+                                            const string &name,
+                                            const string &c_path)
+{
+    r->SetHandler(this);
+    // automatically set the first method as the default one
+    if(hycal_recon_map.empty())
+        hycal_recon = r;
+
+    auto it = hycal_recon_map.find(name);
+    if(it != hycal_recon_map.end()) {
+        cout << "Data Handler Warning: Replace existing HyCal clustering method "
+             << name
+             << ", original method is deleted!"
+             << endl;
+
+        if(hycal_recon == it->second)
+            hycal_recon = r;
+
+        delete it->second, it->second = nullptr;
+    }
+
+    hycal_recon_map[name] = r;
+    r->Configurate(c_path);
+}
+
+void PRadDataHandler::SetHyCalReconstructor(const string &name)
+{
+    auto it = hycal_recon_map.find(name);
+    if(it != hycal_recon_map.end()) {
+        hycal_recon = it->second;
+    } else {
+        cerr << "Data Handler Error: Cannot find HyCal clustering method"
+             << name
+             << endl;
+    }
+}
+
+void PRadDataHandler::ListHyCalReconstructors()
+{
+    for(auto &it : hycal_recon_map)
+    {
+        if(it.second != nullptr)
+            cout << it.first << endl;
+    }
+}
+
 void PRadDataHandler::HyCalReconstruct(const int &event_index)
 {
     return HyCalReconstruct(GetEvent(event_index));
@@ -1370,13 +1433,17 @@ void PRadDataHandler::HyCalReconstruct(const int &event_index)
 
 void PRadDataHandler::HyCalReconstruct(EventData &event)
 {
-    return hycal_recon->Reconstruct(event);
+    if(hycal_recon)
+        return hycal_recon->Reconstruct(event);
 }
 
 HyCalHit *PRadDataHandler::GetHyCalCluster(int &size)
 {
-    size = hycal_recon->GetNClusters();
-    return hycal_recon->GetCluster();
+    if(hycal_recon) {
+        size = hycal_recon->GetNClusters();
+        return hycal_recon->GetCluster();
+    }
+    return nullptr;
 }
 
 void PRadDataHandler::Replay(const string &r_path, const int &split, const string &w_path)

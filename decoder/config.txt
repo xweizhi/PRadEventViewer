@@ -13,3 +13,6 @@ GEM Configuration: ../config/gem_map.cfg
 # initialize by data
 #Initialize File: /data/totape/prad_001498.evio.0
 
+# Setup HyCal Reconstruction
+Island Configuration: ../config/island.conf
+HyCal Clustering Method: Island
