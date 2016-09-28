@@ -16,6 +16,7 @@ TARGET = PRadEventViewer
 DEPENDPATH += 
 INCLUDEPATH += include \
                thirdparty/include \
+               $$(ET_INC) \
                $$(ROOTSYS)/include
 
 # Input
@@ -75,8 +76,9 @@ SOURCES += src/main.cpp \
            src/PRadIslandWrapper.cpp \
            src/PRadGEMSystem.cpp
 
-LIBS += -lexpat -lgfortran\
-        -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx -let \
+LIBS += -lexpat -lgfortran \
+        -L$$(ET_LIB) -let \
+        -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx \
         -L$$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist \
                           -lGraf -lGraf3d -lGpad -lTree \
                           -lPostscript -lMatrix -lPhysics \

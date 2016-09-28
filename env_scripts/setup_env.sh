@@ -10,8 +10,11 @@ else
     export THIRD_LIB=$PWD/thirdparty/lib
 fi
 
-export ET_LIB=/home/chao/PRad/coda/Linux-x86_64/lib
-export ET_INC=/home/chao/PRad/coda/Linux-x86_64/include
+#export ET_LIB=/home/chao/PRad/coda/Linux-x86_64/lib
+#export ET_INC=/home/chao/PRad/coda/Linux-x86_64/include
+
+export ET_LIB=$THIRD_LIB
+export ET_INC=$PWD/thirdparty/include
 
 export DEC_LIB=$PWD/decoder/lib
 
