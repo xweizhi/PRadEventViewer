@@ -19,42 +19,17 @@ void PRadIslandWrapper::Configurate(const std::string &c_path)
 {
     ReadConfigFile(c_path);
 
-    ConfigValue temp;
     std::string path;
 
-    temp = GetConfigValue("MIN_BLOCK_ENERGY");
-    if(temp.IsEmpty()) {
-        fMinHitE = 5.e-3;
-        printf("Cannot configurate minimum block energy, %f GeV is set as the default value.\n", fMinHitE);
-    } else {
-        fMinHitE = temp.Float();
-    }
+    fMinHitE = GetConfigValue("MIN_BLOCK_ENERGY", "0.005").Float();
 
-    temp = GetConfigValue("BLOCK_INFO_FILE");
-    if(temp.IsEmpty()) {
-        path = "config/blockinfo.dat";
-        printf("Path of block info file is not specified, load %s.\n", path.c_str());
-    } else {
-        path = temp;
-    }
+    path = GetConfigValue("BLOCK_INFO_FILE", "config/blockinfo.dat");
     LoadBlockInfo(path);
 
-    temp = GetConfigValue("CRYSTAL_PROFILE");
-    if(temp.IsEmpty()) {
-        path = "config/prof_pwo.dat";
-        printf("Path of crystal profile is not specified, load %s.\n", path.c_str());
-    } else {
-        path = temp;
-    }
+    path = GetConfigValue("CRYSTAL_PROFILE", "config/prof_pwo.dat");
     LoadCrystalProfile(path);
 
-    temp = GetConfigValue("LEADGLASS_PROFILE");
-    if(temp.IsEmpty()) {
-        path = "config/prof_lg.dat";
-        printf("Path of lead glass profile is not specified, load %s.\n", path.c_str());
-    } else {
-        path = temp;
-    }
+    path = GetConfigValue("LEADGLASS_PROFILE", "config/prof_lg.dat");
     LoadLeadGlassProfile(path);
 }
 //________________________________________________________________

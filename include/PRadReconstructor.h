@@ -21,7 +21,9 @@ public:
     virtual ~PRadReconstructor();
 
     void ReadConfigFile(const std::string &path);
-    ConfigValue GetConfigValue(const std::string &var_name);
+    ConfigValue GetConfigValue(const std::string &var_name,
+                               const std::string &def_value,
+                               bool verbose = true);
     void SetHandler(PRadDataHandler *h);
 
     // functions that to be overloaded

@@ -1,6 +1,6 @@
 //============================================================================//
-// PRad Cluster Reconstruction Class, different reconstruction methods can be //
-// implemented  according to pratical needs                                   //
+// PRad Cluster Reconstruction Method                                         //
+// Reconstruct the cluster within a square 5x5 area                           //
 //                                                                            //
 // Weizhi Xiong, Chao Peng                                                    //
 // 06/10/2016                                                                 //
@@ -9,7 +9,7 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
-#include "PRadReconstructor.h"
+#include "PRadSquareCluster.h"
 #include "PRadDataHandler.h"
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
@@ -17,83 +17,38 @@
 
 using namespace std;
 
-//____________________________________________________________
-PRadReconstructor::PRadReconstructor(PRadDataHandler *h)
-: fHandler(h), fIsland(new PRadIslandWrapper(h))
+PRadSquareCluster::PRadSquareCluster(PRadDataHandler *h)
+: PRadReconstructor(h)
 {
-    fMoliereCrystal = 20.5;
-    fMoliereLeadGlass = 38.2;
+    Configurate();
+}
+
+PRadSquareCluster::~PRadSquareCluster()
+{
+}
+
+PRadSquareCluster::Configurate(const string &c_path)
+{
+    ReadConfigFile(c_path);
+
+    fMoliereCrystal = GetConfigValue("MOLIERE_CRYSTAL", "20.5").Double();
+    fMoliereLeadGlass = GetConfigValue("MOLIERE_LEADGLASS", "38.2").Double();
     fMoliereRatio = fMoliereLeadGlass/fMoliereCrystal;
-    fBaseR = 60.;
-    fCorrectFactor = 1.;
-    fMaxNCluster = 10;
-    fMinClusterCenterE = 10.;
-    fMinClusterE = 50.;
-    fHighestModuleID = 0;
-    fIsland->Initialize();
+
+    fBaseR = GetConfigValue("CLUSTER_SEP_DISTANCE", "60.0").Double();
+    fMaxNCluster = GetConfigValue("MAX_N_CLUSTER", "10").Int();
+    fMinClusterCenterE = GetConfigValue("MIN_CLUSTER_CENTER_E", "10.0").Double();
+    fMinClusterE = GetConfigValue("MIN_CLUSTER_TOTAL_E", "50.0").Double();
 }
 
-//____________________________________________________________
-PRadReconstructor::~PRadReconstructor()
-{
-    delete fIsland;
-}
-
-//____________________________________________________________
-void PRadReconstructor::Clear()
-{
-    fHyCalHit.clear();
-    fClusterCenterID.clear();
-}
-
-//____________________________________________________________
-void PRadReconstructor::SetHandler(PRadDataHandler *h)
-{
-    fHandler = h;
-    fIsland->SetHandler(h);
-}
-
-//____________________________________________________________
-void PRadReconstructor::InitConfig(const string &path)
-{
-    ConfigParser c_parser(": ,\t"); // self-defined splitters
-
-    if(!c_parser.OpenFile(path)) {
-         cout << "Cannot open file " << path << endl;
-     }
-
-    unordered_map<string, float> variable_map;
-
-    while(c_parser.ParseLine())
-    {
-        if (c_parser.NbofElements() != 2)
-            continue;
-
-        string var_name = c_parser.TakeFirst();
-        ConfigValue var_value = c_parser.TakeFirst();
-        fConfigMap[var_name] = var_value;
-    }
-
-    fMaxNCluster = GetConfigValue("MAX_N_CLUSTER").Int();
-    fMinClusterCenterE = GetConfigValue("MIN_CLUSTER_CENTER_E").Double();
-    fMinClusterE = GetConfigValue("MIN_CLUSTER_E").Double();
-}
-
-ConfigValue PRadReconstructor::GetConfigValue(const string &name)
-{
-    auto it = fConfigMap.find(name);
-    if(it == fConfigMap.end())
-        return ConfigValue();
-    return it->second;
-}
 //________________________________________________________________
-vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(const int &event_index)
+vector<HyCalHit> &PRadSquareCluster::CoarseHyCalReconstruct(const int &event_index)
 {
     EventData &event = fHandler->GetEvent(event_index);
     return CoarseHyCalReconstruct(event);
 }
 
-vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(EventData &event)
+vector<HyCalHit> &PRadSquareCluster::CoarseHyCalReconstruct(EventData &event)
 {
     Clear(); // clear all the saved buffer before analyzing the next event
 
@@ -106,13 +61,13 @@ vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(EventData &event)
     return Reconstruct_fivebyfive();
 }
 
-vector<HyCalHit> &PRadReconstructor::IslandReconstruct(const int &event_index)
+vector<HyCalHit> &PRadSquareCluster::IslandReconstruct(const int &event_index)
 {
     EventData &event = fHandler->GetEvent(event_index);
     return IslandReconstruct(event);
 }
 
-vector<HyCalHit> &PRadReconstructor::IslandReconstruct(EventData &event)
+vector<HyCalHit> &PRadSquareCluster::IslandReconstruct(EventData &event)
 {
     Clear();
 
@@ -130,7 +85,7 @@ vector<HyCalHit> &PRadReconstructor::IslandReconstruct(EventData &event)
     return fHyCalHit;
 }
 
-vector<HyCalHit> &PRadReconstructor::Reconstruct_fivebyfive()
+vector<HyCalHit> &PRadSquareCluster::Reconstruct_fivebyfive()
 {
     double weightX = 0.;
     double weightY = 0.;
@@ -190,7 +145,7 @@ vector<HyCalHit> &PRadReconstructor::Reconstruct_fivebyfive()
     return fHyCalHit;
 }
 //____________________________________________________________
-unsigned short PRadReconstructor::getMaxEChannel()
+unsigned short PRadSquareCluster::getMaxEChannel()
 {
     double theMaxValue = 0;
     bool foundNewCenter = false;
@@ -239,12 +194,12 @@ unsigned short PRadReconstructor::getMaxEChannel()
     return theMaxChannelID;
 }
 //__________________________________________________________________________________________
-inline bool PRadReconstructor::useLogWeight(double /*x*/, double /*y*/)
+inline bool PRadSquareCluster::useLogWeight(double /*x*/, double /*y*/)
 {
     return true; //for now
 }
 //___________________________________________________________________________________________
-vector<unsigned short> PRadReconstructor::findCluster(unsigned short centerID, double &clusterEnergy)
+vector<unsigned short> PRadSquareCluster::findCluster(unsigned short centerID, double &clusterEnergy)
 {
     auto fModuleList = fHandler->GetChannelList();
     double clusterRadius = 0.;
@@ -274,24 +229,24 @@ vector<unsigned short> PRadReconstructor::findCluster(unsigned short centerID, d
     return collection;
 }
 //___________________________________________________________________________________________
-double PRadReconstructor::Distance(PRadDAQUnit *u1, PRadDAQUnit *u2)
+double PRadSquareCluster::Distance(PRadDAQUnit *u1, PRadDAQUnit *u2)
 {
     double x_dis = u1->GetX() - u2->GetX();
     double y_dis = u1->GetY() - u2->GetY();
     return sqrt( x_dis*x_dis + y_dis*y_dis);
 }
 //___________________________________________________________________________________________
-double PRadReconstructor::Distance(const double &x1, const double &y1, const double &x2, const double &y2)
+double PRadSquareCluster::Distance(const double &x1, const double &y1, const double &x2, const double &y2)
 {
     return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
 }
 //___________________________________________________________________________________________
-double PRadReconstructor::Distance(const double &x1, const double &y1, const double &x2, const double &y2, const double &z1, const double &z2)
+double PRadSquareCluster::Distance(const double &x1, const double &y1, const double &x2, const double &y2, const double &z1, const double &z2)
 {
     return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2) );
 }
 //___________________________________________________________________________________________
-double PRadReconstructor::Distance(const vector<double> &p1, const vector<double> &p2)
+double PRadSquareCluster::Distance(const vector<double> &p1, const vector<double> &p2)
 {
     if(p1.size() != p2.size()) {
         cerr << "Dimension is different, failed to calculate distance between two points!" << endl;
@@ -309,50 +264,27 @@ double PRadReconstructor::Distance(const vector<double> &p1, const vector<double
     return sqrt(quadratic_sum);
 }
 //________________________________________________________________________________________________
-vector<unsigned short> & PRadReconstructor::GetTimeForCluster(unsigned short channelID)
+vector<unsigned short> & PRadSquareCluster::GetTimeForCluster(unsigned short channelID)
 {
   PRadTDCGroup* thisGroup = fHandler->GetTDCGroup(fHandler->GetChannel(channelID)
                                                   ->GetTDCName());
   return thisGroup->GetTimeMeasure();
 }
 //________________________________________________________________________________________________
-unsigned short PRadReconstructor::FindClusterCenterModule(double x, double y)
+PRadDAQUnit *PRadSquareCluster::LocateModule(const double &x, const double &y)
 {
     auto fModuleList = fHandler->GetChannelList();
-    for (unsigned short i=0; i<fModuleList.size(); i++){
-       PRadDAQUnit::Geometry thisGeometry = fModuleList.at(i)->GetGeometry();
-       if ( fabs(x - thisGeometry.x) < thisGeometry.size_x/2. &&
-            fabs(y - thisGeometry.y) < thisGeometry.size_y/2. ) { return i; }
+
+    for(auto &module : fModuleList)
+    {
+        PRadDAQUnit::Geometry thisGeometry = module->GetGeometry();
+        if ( fabs(x - thisGeometry.x) < thisGeometry.size_x/2. &&
+             fabs(y - thisGeometry.y) < thisGeometry.size_y/2. )
+        {
+            return module;
+        }
     }
-    return 0xffff;
 
+    return nullptr;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

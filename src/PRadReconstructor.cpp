@@ -53,11 +53,20 @@ void PRadReconstructor::ReadConfigFile(const string &path)
     }
 }
 
-ConfigValue PRadReconstructor::GetConfigValue(const string &name)
+ConfigValue PRadReconstructor::GetConfigValue(const string &name,
+                                              const string &def_value,
+                                              bool verbose)
 {
     auto it = fConfigMap.find(name);
     if(it == fConfigMap.end())
-        return ConfigValue();
+    {
+        if(verbose)
+            cout << name
+                 << " not defined in configuration file, set to default value "
+                 << def_value
+                 << endl;
+        return ConfigValue(def_value);
+    }
     return it->second;
 }
 
