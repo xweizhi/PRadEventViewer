@@ -2,11 +2,7 @@
 #define PRAD_ISLAND_WRAPPER_H
 
 #include <string>
-#include "datastruct.h"
-#include "PRadEventStruct.h"
-
-//Forward declaration
-class PRadDataHandler;
+#include "PRadReconstructor.h"
 
 //this is a c++ wrapper around the primex island algorithm
 //used for HyCal cluster reconstruction
@@ -23,7 +19,6 @@ class PRadDataHandler;
 #define T_BLOCKS 2156
 
 #define MAX_HHITS 1728 // For Hycal
-#define MAX_CLUSTERS 250 // 1728/2 ?
 #define MAX_CC 60 // Maximum Cluster Cells per cluster
 
 #define nint_phot_cell  5
@@ -132,24 +127,21 @@ extern "C"
     #define FA(N) hbk_common_.fa[N-1]
 }
 
-class PRadIslandWrapper
+class PRadIslandWrapper : public PRadReconstructor
 {
 public:
-    PRadIslandWrapper(PRadDataHandler *h);
+    PRadIslandWrapper(PRadDataHandler *h, const std::string &path = "config/island.conf");
     ~PRadIslandWrapper() {;}
 
     void SetHandler(PRadDataHandler* theHandler) { fHandler = theHandler; }
-    void Initialize(const std::string &block_info = "config/blockinfo.dat",
-                    const std::string &pwo_profile = "config/prof_pwo.dat",
-                    const std::string &lg_profile = "config/prof_lg.dat");
+    void Configurate(const std::string &c_path);
     void LoadBlockInfo(const std::string &path);
     void LoadCrystalProfile(const std::string &path);
     void LoadLeadGlassProfile(const std::string &path);
-    HyCalHit *GetHyCalCluster(EventData& thisEvent);
-    int GetNHyCalClusters() { return fNHyCalClusters; }
+    void Reconstruct(EventData &event);
+    void Clear();
 
 protected:
-    void Clear();
     void LoadModuleData(EventData& thisEvent);
     void CallIsland(int isect);
     void GlueTransitionClusters();
@@ -161,13 +153,11 @@ protected:
     PRadDataHandler* fHandler;
     float fMinHitE;
 
-    HyCalHit fHyCalCluster[MAX_CLUSTERS];
     blockINFO_t fBlockINFO[T_BLOCKS];
     int fModuleStatus[MSECT][MCOL][MROW];
-    int fNHyCalClusters;
     int fNClusterBlocks;
     cluster_block_t fClusterBlock[T_BLOCKS];
-    cluster_t fClusterStorage[MAX_CLUSTERS];
+    cluster_t fClusterStorage[MAX_HCLUSTERS];
     int ich[MCOL][MROW];
 };
 

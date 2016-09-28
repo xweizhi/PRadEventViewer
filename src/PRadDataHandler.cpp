@@ -13,6 +13,7 @@
 #include "PRadEvioParser.h"
 #include "PRadDSTParser.h"
 #include "PRadReconstructor.h"
+#include "PRadIslandWrapper.h"
 #include "PRadGEMSystem.h"
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
@@ -31,8 +32,9 @@
 using namespace std;
 
 PRadDataHandler::PRadDataHandler()
-: parser(new PRadEvioParser(this)), dst_parser(new PRadDSTParser(this)),
-  gem_srs(new PRadGEMSystem()), hycal_recon(new PRadReconstructor(this)),
+: parser(new PRadEvioParser(this)),
+  dst_parser(new PRadDSTParser(this)),
+  gem_srs(new PRadGEMSystem()),
   totalE(0), onlineMode(false), replayMode(false), current_event(0)
 {
     // total energy histogram
@@ -46,6 +48,8 @@ PRadDataHandler::PRadDataHandler()
     onlineInfo.add_trigger("LMS Alpha Source", 3);
     onlineInfo.add_trigger("Tagger Master OR", 4);
     onlineInfo.add_trigger("Scintillator", 5);
+
+    hycal_recon = new PRadIslandWrapper(this);
 }
 
 PRadDataHandler::~PRadDataHandler()
@@ -1359,14 +1363,20 @@ int PRadDataHandler::FindEventIndex(const int &ev)
     return result;
 }
 
-vector<HyCalHit> &PRadDataHandler::GetHyCalCluster(const int &event_index)
+void PRadDataHandler::HyCalReconstruct(const int &event_index)
 {
-    return hycal_recon->CoarseHyCalReconstruct(event_index);
+    return HyCalReconstruct(GetEvent(event_index));
 }
 
-vector<HyCalHit> &PRadDataHandler::GetHyCalCluster(EventData &event)
+void PRadDataHandler::HyCalReconstruct(EventData &event)
 {
-    return hycal_recon->CoarseHyCalReconstruct(event);
+    return hycal_recon->Reconstruct(event);
+}
+
+HyCalHit *PRadDataHandler::GetHyCalCluster(int &size)
+{
+    size = hycal_recon->GetNClusters();
+    return hycal_recon->GetCluster();
 }
 
 void PRadDataHandler::Replay(const string &r_path, const int &split, const string &w_path)

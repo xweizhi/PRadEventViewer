@@ -8,22 +8,54 @@
 #include <cstdio>
 #include <cstring>
 #include "PRadIslandWrapper.h"
-#include "PRadDataHandler.h"
-#include "PRadDAQUnit.h"
 
-PRadIslandWrapper::PRadIslandWrapper(PRadDataHandler *h)
-: fHandler(h)
+PRadIslandWrapper::PRadIslandWrapper(PRadDataHandler *h, const std::string &path)
+: PRadReconstructor(h)
 {
-    fMinHitE = 5.e-3;
+    Configurate(path);
 }
 //________________________________________________________________
-void PRadIslandWrapper::Initialize(const std::string &block_info,
-                                   const std::string &pwo_profile,
-                                   const std::string &lg_profile)
+void PRadIslandWrapper::Configurate(const std::string &c_path)
 {
-    LoadBlockInfo(block_info);
-    LoadCrystalProfile(pwo_profile);
-    LoadLeadGlassProfile(lg_profile);
+    ReadConfigFile(c_path);
+
+    ConfigValue temp;
+    std::string path;
+
+    temp = GetConfigValue("MIN_BLOCK_ENERGY");
+    if(temp.IsEmpty()) {
+        fMinHitE = 5.e-3;
+        printf("Cannot configurate minimum block energy, %f GeV is set as the default value.\n", fMinHitE);
+    } else {
+        fMinHitE = temp.Float();
+    }
+
+    temp = GetConfigValue("BLOCK_INFO_FILE");
+    if(temp.IsEmpty()) {
+        path = "config/blockinfo.dat";
+        printf("Path of block info file is not specified, load %s.\n", path.c_str());
+    } else {
+        path = temp;
+    }
+    LoadBlockInfo(path);
+
+    temp = GetConfigValue("CRYSTAL_PROFILE");
+    if(temp.IsEmpty()) {
+        path = "config/prof_pwo.dat";
+        printf("Path of crystal profile is not specified, load %s.\n", path.c_str());
+    } else {
+        path = temp;
+    }
+    LoadCrystalProfile(path);
+
+    temp = GetConfigValue("LEADGLASS_PROFILE");
+    if(temp.IsEmpty()) {
+        path = "config/prof_lg.dat";
+        printf("Path of lead glass profile is not specified, load %s.\n", path.c_str());
+    } else {
+        path = temp;
+    }
+    LoadLeadGlassProfile(path);
 }
 //________________________________________________________________
 void PRadIslandWrapper::LoadCrystalProfile(const std::string &path)
@@ -118,7 +150,7 @@ void PRadIslandWrapper::Clear()
     fNClusterBlocks = 0;
 }
 //_______________________________________________________________
-HyCalHit *PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
+void PRadIslandWrapper::Reconstruct(EventData &event)
 {
     //clear and get ready for the new event
     Clear();
@@ -129,10 +161,10 @@ HyCalHit *PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
     //the second array is used in the fortran island code
 
     //if not physics event, don't reconstruct it
-    if(!thisEvent.is_physics_event())
-        return fHyCalCluster;
+    if(!event.is_physics_event())
+        return;
 
-    LoadModuleData(thisEvent);
+    LoadModuleData(event);
 
     //call island reconstruction of each sectors
     //HyCal has 5 sectors, 4 for lead glass one for crystal
@@ -146,14 +178,12 @@ HyCalHit *PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
     GlueTransitionClusters();
 
     ClusterProcessing();
-
-    return fHyCalCluster;
 }
 //_______________________________________________________________
-void PRadIslandWrapper::LoadModuleData(EventData& thisEvent)
+void PRadIslandWrapper::LoadModuleData(EventData& event)
 {
     //load data to hycalhit array and ech array
-    fHandler->ChooseEvent(thisEvent);
+    fHandler->ChooseEvent(event);
     std::vector<PRadDAQUnit*> moduleList = fHandler->GetChannelList();
 
     for(unsigned int i = 0; i < moduleList.size(); ++i)
@@ -250,7 +280,7 @@ void PRadIslandWrapper::CallIsland(int isect)
     {
         int n = fNHyCalClusters;
 
-        if(fNHyCalClusters == MAX_CLUSTERS)
+        if(fNHyCalClusters == MAX_HCLUSTERS)
         {
             printf("max number of clusters reached\n");
             return;
@@ -357,10 +387,10 @@ void PRadIslandWrapper::GlueTransitionClusters()
 {
 
     // find adjacent clusters and glue
-    int ngroup = 0, group_number[MAX_CLUSTERS], group_size[MAX_CLUSTERS],
-        group_member_list[MAX_CLUSTERS][MAX_CLUSTERS];
+    int ngroup = 0, group_number[MAX_HCLUSTERS], group_size[MAX_HCLUSTERS],
+        group_member_list[MAX_HCLUSTERS][MAX_HCLUSTERS];
 
-    for(int i = 0; i < MAX_CLUSTERS; ++i)
+    for(int i = 0; i < MAX_HCLUSTERS; ++i)
         group_number[i] = 0;
 
     for(int i = 0; i < fNHyCalClusters; ++i)
@@ -437,7 +467,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
             continue;
         // sort in increasing cluster number order:
 
-        int list[MAX_CLUSTERS];
+        int list[MAX_HCLUSTERS];
         for(int i = 0; i < group_size[igr]; ++i)
             list[i] = i;
 

@@ -160,8 +160,9 @@ public:
     void CorrectGainFactor(const int &ref = 2);
     void RefillEnergyHist();
     int FindEventIndex(const int &event_number);
-    std::vector<HyCalHit> &GetHyCalCluster(const int &event_index);
-    std::vector<HyCalHit> &GetHyCalCluster(EventData &event);
+    void HyCalReconstruct(const int &event_index);
+    void HyCalReconstruct(EventData &event);
+    HyCalHit *GetHyCalCluster(int &size);
 
 
     // other functions
