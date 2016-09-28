@@ -48,6 +48,11 @@ void PRadIslandWrapper::InitTable()
             }
         }
     }
+
+    // init profile table
+    char config_path[64];
+    strcpy(config_path, fConfigPath.c_str());
+    load_profile_(config_path, strlen(config_path));
 }
 //________________________________________________________________
 void PRadIslandWrapper::InitConstants()
@@ -57,8 +62,12 @@ void PRadIslandWrapper::InitConstants()
     int ival;
     union {int i; float f;} ieu;
 
-    std::string block_info = fConfigPath + "blockinfo.dat";
+    std::string block_info = fConfigPath + "/blockinfo.dat";
     fp = fopen(block_info.c_str(), "r");
+    if(!fp) {
+        printf("cannot open config file %s\n",block_info.c_str());
+        exit(1);
+    }
     for(int i = 0; i < T_BLOCKS; ++i)
     {
         if(fread(&ival, sizeof(ival), 1, fp))
@@ -220,10 +229,7 @@ void PRadIslandWrapper::CallIsland(int isect)
         ich[column-1][row-1] = id;
     }
 
-    // main island read profile every time, too much redundant work!
-    char config_path[64];
-    strcpy(config_path, fConfigPath.c_str());
-    main_island_(config_path, strlen(config_path));
+    main_island_();
 
     for(int k = 0; k < adcgam_cbk_.nadcgam; ++k)
     {

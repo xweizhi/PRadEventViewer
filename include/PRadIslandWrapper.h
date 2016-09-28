@@ -87,7 +87,8 @@ typedef struct
 
 extern "C"
 {
-    void main_island_(char* config_dir, int str_len);
+    void load_profile_(char* config_dir, int str_len);
+    void main_island_();
     extern struct
     {
         int ech[MROW][MCOL];
