@@ -1,12 +1,12 @@
 #ifndef PRAD_ISLAND_WRAPPER_H
 #define PRAD_ISLAND_WRAPPER_H
 
+#include <string>
 #include "datastruct.h"
 #include "PRadEventStruct.h"
+
 //Forward declaration
 class PRadDataHandler;
-//ROOT
-
 
 //this is a c++ wrapper around the primex island algorithm
 //used for HyCal cluster reconstruction
@@ -65,7 +65,7 @@ typedef struct
 
 typedef struct
 {
-    int type;           // cluster types: 0,1,2,3,4;-1
+    int type;         // cluster types: 0,1,2,3,4;-1
     int nhits;          // Number of hits in cluster
     int id;             // Cluster's central cell's ID
     float E;            // Cluster's energy (GeV)
@@ -87,7 +87,7 @@ typedef struct
 
 extern "C"
 {
-    void main_island_();
+    void main_island_(char* config_dir, int str_len);
     extern struct
     {
         int ech[MROW][MCOL];
@@ -149,7 +149,7 @@ extern "C"
 class PRadIslandWrapper
 {
 public:
-    PRadIslandWrapper();
+    PRadIslandWrapper(PRadDataHandler *h, const std::string &config_path = "config");
     ~PRadIslandWrapper() {;}
 
     void SetHandler(PRadDataHandler* theHandler) { fHandler = theHandler; }
@@ -169,6 +169,7 @@ protected:
     float EnergyCorrect (float c_energy, int central_id);
 
     PRadDataHandler* fHandler;
+    std::string fConfigPath;
     float fMinHitE;
 
     blockINFO_t fBlockINFO[T_BLOCKS];

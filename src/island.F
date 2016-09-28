@@ -2,8 +2,13 @@
 #define MAX_CC 60
 #define test_p
 *
-      subroutine main_island
+      subroutine main_island(cstr, cstr_len)
+     &bind(C, name = "main_island_")
+      use, intrinsic :: ISO_C_BINDING
       implicit none
+      integer(C_INT), intent(IN), VALUE :: cstr_len
+      character(len=1, kind=C_CHAR), dimension(64), intent(IN) :: cstr
+      character(len=cstr_len) config_dir
 #include "cphoto.inc"
 #include "adcgam_bk.inc"
 *
@@ -27,10 +32,15 @@
 *
       integer blklen
 *
+      if(cstr_len < 1) return
+      do i = 1,cstr_len
+          config_dir(i:i) = cstr(i)
+      enddo
+      print *, 'path is ', config_dir
       if(first) then
         first = .false.
 *
-        open(22,file='../config/prof_pwo.dat',
+        open(22,file=config_dir//'/prof_pwo.dat',
      &          form='formatted', status='old')
         do i1 = 0, 500
         do i2 = 0, i1
@@ -43,7 +53,7 @@
         enddo
         enddo
         close(22)
-        open(22,file='../config/prof_lg.dat',
+        open(22,file=config_dir//'/prof_lg.dat',
      &          form='formatted', status='old')
         do i1 = 0, 500
         do i2 = 0, i1

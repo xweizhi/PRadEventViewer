@@ -9,6 +9,7 @@
 
 class PRadDataHandler;
 class PRadDAQUnit;
+class PRadIslandWrapper;
 
 class PRadReconstructor
 {
@@ -19,9 +20,11 @@ public:
     void InitConfig(const std::string &path);
     ConfigValue GetConfigValue(const std::string &var_name);
     void Clear();
-    void SetHandler(PRadDataHandler *h) {fHandler = h;};
+    void SetHandler(PRadDataHandler *h);
     std::vector<HyCalHit> &CoarseHyCalReconstruct(const int &event_index = -1);
     std::vector<HyCalHit> &CoarseHyCalReconstruct(EventData &event);
+    std::vector<HyCalHit> &IslandReconstruct(const int &event_index = -1);
+    std::vector<HyCalHit> &IslandReconstruct(EventData &event);
     unsigned short GetHighestModuleID() { return fHighestModuleID; }
     unsigned short FindClusterCenterModule (double x, double y);
     std::vector<HyCalHit> &Reconstruct_fivebyfive();
@@ -35,6 +38,7 @@ protected:
     std::vector<unsigned short> &GetTimeForCluster(unsigned short channelID);
 
     PRadDataHandler *fHandler;
+    PRadIslandWrapper *fIsland;
     std::vector<unsigned short> fClusterCenterID;
     std::vector<HyCalHit> fHyCalHit;
     std::vector<float>* fGEM1XHit;

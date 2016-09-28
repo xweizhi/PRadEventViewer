@@ -1,16 +1,20 @@
-//c++
+//============================================================================//
+// A C++ wrapper for island reconstruction method                             //
+//                                                                            //
+// Weizhi Xiong, Chao Peng                                                    //
+// 09/28/2016                                                                 //
+//============================================================================//
 #include <cmath>
 #include <cstdio>
-//PRadEventViewer
+#include <cstring>
 #include "PRadIslandWrapper.h"
 #include "PRadDataHandler.h"
 #include "PRadDAQUnit.h"
 
-PRadIslandWrapper::PRadIslandWrapper()
-: fHandler(nullptr), fMinHitE(5.e-3)
+PRadIslandWrapper::PRadIslandWrapper(PRadDataHandler *h, const std::string &config_path)
+: fHandler(h), fConfigPath(config_path), fMinHitE(5.e-3)
 {
     InitTable();
-    InitConstants();
 }
 //________________________________________________________________
 void PRadIslandWrapper::InitTable()
@@ -28,7 +32,7 @@ void PRadIslandWrapper::InitTable()
     fModuleStatus[0][18-1][18-1] = -1;
 
     //  mark dead channles:
-    for(int i=0; i<T_BLOCKS; i++)
+    for(int i = 0; i < T_BLOCKS; ++i)
     {
         int isector = fBlockINFO[i].sector;
         if(isector >=0 && isector <= 4)
@@ -53,28 +57,33 @@ void PRadIslandWrapper::InitConstants()
     int ival;
     union {int i; float f;} ieu;
 
-    fp = fopen("../config/blockinfo.dat", "r");
-    for(int i=0; i < T_BLOCKS; ++i)
+    std::string block_info = fConfigPath + "blockinfo.dat";
+    fp = fopen(block_info.c_str(), "r");
+    for(int i = 0; i < T_BLOCKS; ++i)
     {
-        fread(&ival, sizeof(ival), 1, fp);
-        fBlockINFO[i].id = ival;
+        if(fread(&ival, sizeof(ival), 1, fp))
+            fBlockINFO[i].id = ival;
 
-        fread(&ival, sizeof(ival), 1, fp);
-        ieu.i = ival;
-        fBlockINFO[i].x = ieu.f;
+        if(fread(&ival, sizeof(ival), 1, fp))
+        {
+            ieu.i = ival;
+            fBlockINFO[i].x = ieu.f;
+        }
 
-        fread(&ival, sizeof(ival), 1, fp);
-        ieu.i = ival;
-        fBlockINFO[i].y = ieu.f;
+        if(fread(&ival, sizeof(ival), 1, fp))
+        {
+            ieu.i = ival;
+            fBlockINFO[i].y = ieu.f;
+        }
 
-        fread(&ival, sizeof(ival), 1, fp);
-        fBlockINFO[i].sector = ival;
+        if(fread(&ival, sizeof(ival), 1, fp))
+            fBlockINFO[i].sector = ival;
 
-        fread(&ival, sizeof(ival), 1, fp);
-        fBlockINFO[i].row = ival;
+        if(fread(&ival, sizeof(ival), 1, fp))
+            fBlockINFO[i].row = ival;
 
-        fread(&ival, sizeof(ival), 1, fp);
-        fBlockINFO[i].col = ival;
+        if(fread(&ival, sizeof(ival), 1, fp))
+            fBlockINFO[i].col = ival;
     }
     fclose(fp);
 }
@@ -85,7 +94,7 @@ void PRadIslandWrapper::Clear()
     fNHyCalHits = 0;
 }
 //_______________________________________________________________
-hycalcluster_t * PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
+hycalcluster_t *PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
 {
     //clear and get ready for the new event
     Clear();
@@ -104,7 +113,7 @@ hycalcluster_t * PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
     //call island reconstruction of each sectors
     //HyCal has 5 sectors, 4 for lead glass one for crystal
 
-    for(int i=0; i < MSECT; i++)
+    for(int i = 0; i < MSECT; ++i)
     {
         CallIsland(i);
     }
@@ -114,7 +123,7 @@ hycalcluster_t * PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
 
     ClusterProcessing();
 
-    return &fHyCalCluster[0];
+    return fHyCalCluster;
 }
 //_______________________________________________________________
 void PRadIslandWrapper::LoadModuleData(EventData& thisEvent)
@@ -123,7 +132,7 @@ void PRadIslandWrapper::LoadModuleData(EventData& thisEvent)
     fHandler->ChooseEvent(thisEvent);
     std::vector<PRadDAQUnit*> moduleList = fHandler->GetChannelList();
 
-    for(unsigned int i=0; i < moduleList.size(); i++)
+    for(unsigned int i = 0; i < moduleList.size(); ++i)
     {
         PRadDAQUnit* thisModule = moduleList.at(i);
         if(!thisModule->IsHyCalModule())
@@ -188,18 +197,18 @@ void PRadIslandWrapper::CallIsland(int isect)
         exit(1);
     }
 
-    for(int i=0; i<fNHyCalHits; i++)
+    for(int i = 0; i < fNHyCalHits; ++i)
     {
         int id  = fHyCalHit[i].id;
         if(fBlockINFO[id-1].sector != isect)
             continue;
         float e = fHyCalHit[i].e;
 
-        if(e<fMinHitE)
+        if(e < fMinHitE)
             continue;
 
         int column, row;
-        if(id>1000) {
+        if(id > 1000) {
             column = (id-1001)%NCOL+1;
             row    = (id-1001)/NROW+1;
         } else {
@@ -211,7 +220,10 @@ void PRadIslandWrapper::CallIsland(int isect)
         ich[column-1][row-1] = id;
     }
 
-    main_island_();
+    // main island read profile every time, too much redundant work!
+    char config_path[64];
+    strcpy(config_path, fConfigPath.c_str());
+    main_island_(config_path, strlen(config_path));
 
     for(int k = 0; k < adcgam_cbk_.nadcgam; ++k)
     {
@@ -278,13 +290,13 @@ void PRadIslandWrapper::CallIsland(int isect)
 	            ycell += yc;
             }
 
-            if(ecell>ecellmax)
+            if(ecell > ecellmax)
             {
 	            ecellmax = ecell;
 	            idmax = id;
             }
 
-            if(ecell>0.)
+            if(ecell > 0.)
             {
 	            W  = 4.2 + log(ecell/e);
 	            if(W > 0)
@@ -712,15 +724,15 @@ void PRadIslandWrapper::ClusterProcessing()
 
         ist = type;
 
-        if(status>2)
+        if(status > 2)
             ist += 20; // glued
         fHyCalCluster[i].status = ist;
 
         double se = (idmax>1000) ? sqrt(0.9*0.9*e*e+2.5*2.5*e+1.0) : sqrt(2.3*2.3*e*e+5.4*5.4*e);
         se /= 100.;
-        if(itp%10==1) {
+        if(itp%10 == 1) {
             se *= 1.5;
-        } else if(itp%10==2) {
+        } else if(itp%10 == 2) {
             if(itp>10)
                 se *= 0.8;
             else

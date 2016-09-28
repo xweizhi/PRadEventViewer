@@ -32,7 +32,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     // here shows an example how to read DST file while not saving all the events
     // in memory
-    dst_parser->OpenInput("prad_1287.dst");
+    dst_parser->OpenInput("/work/hallb/prad/replay/prad_001287.dst");
 
     int count = 0;
 

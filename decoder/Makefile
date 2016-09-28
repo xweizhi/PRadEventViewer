@@ -51,7 +51,7 @@ OBJECTS_DIR   = obj
 first: all
 ####### Build rules
 
-$(TARGET):  $(OBJECTS)  
+$(TARGET):  $(OBJECTS)
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
 all: Makefile $(TARGET)
@@ -60,7 +60,7 @@ clean:
 	-$(DEL_FILE) $(OBJECTS)
 	-$(DEL_FILE) $(TARGET)
 
-main.o: src/main.cpp 
+main.o: src/main.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o src/main.cpp
 
 ####### Install

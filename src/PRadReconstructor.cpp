@@ -1,7 +1,8 @@
 //============================================================================//
-// PRad Cluster Reconstruction                                                //
+// PRad Cluster Reconstruction Class, different reconstruction methods can be //
+// implemented  according to pratical needs                                   //
 //                                                                            //
-// Weizhi Xiong                                                               //
+// Weizhi Xiong, Chao Peng                                                    //
 // 06/10/2016                                                                 //
 //============================================================================//
 
@@ -12,12 +13,13 @@
 #include "PRadDataHandler.h"
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
+#include "PRadIslandWrapper.h"
 
 using namespace std;
 
 //____________________________________________________________
 PRadReconstructor::PRadReconstructor(PRadDataHandler *h)
-: fHandler(h)
+: fHandler(h), fIsland(new PRadIslandWrapper(h))
 {
     fMoliereCrystal = 20.5;
     fMoliereLeadGlass = 38.2;
@@ -30,9 +32,10 @@ PRadReconstructor::PRadReconstructor(PRadDataHandler *h)
     fHighestModuleID = 0;
 }
 
+//____________________________________________________________
 PRadReconstructor::~PRadReconstructor()
 {
-    // save for future use
+    delete fIsland;
 }
 
 //____________________________________________________________
@@ -41,6 +44,14 @@ void PRadReconstructor::Clear()
     fHyCalHit.clear();
     fClusterCenterID.clear();
 }
+
+//____________________________________________________________
+void PRadReconstructor::SetHandler(PRadDataHandler *h)
+{
+    fHandler = h;
+    fIsland->SetHandler(h);
+}
+
 //____________________________________________________________
 void PRadReconstructor::InitConfig(const string &path)
 {
@@ -92,6 +103,27 @@ vector<HyCalHit> &PRadReconstructor::CoarseHyCalReconstruct(EventData &event)
 
     fHandler->ChooseEvent(event);
     return Reconstruct_fivebyfive();
+}
+
+vector<HyCalHit> &PRadReconstructor::IslandReconstruct(const int &event_index)
+{
+    EventData &event = fHandler->GetEvent(event_index);
+    return IslandReconstruct(event);
+}
+
+vector<HyCalHit> &PRadReconstructor::IslandReconstruct(EventData &event)
+{
+    Clear();
+
+    hycalcluster_t *hclusters = fIsland->GetHyCalCluster(event);
+    int NC = fIsland->GetNHyCalClusters();
+
+    for(int i = 0; i < NC; ++i)
+    {
+        fHyCalHit.emplace_back(hclusters[i].x1, hclusters[i].y1, hclusters[i].E);
+    }
+
+    return fHyCalHit;
 }
 
 vector<HyCalHit> &PRadReconstructor::Reconstruct_fivebyfive()
@@ -148,8 +180,7 @@ vector<HyCalHit> &PRadReconstructor::Reconstruct_fivebyfive()
 
         double hitX = weightX/totalWeight;
         double hitY = weightY/totalWeight;
-
-        fHyCalHit.push_back(HyCalHit(hitX, hitY, clusterEnergy, clusterTime));
+        fHyCalHit.emplace_back(hitX, hitY, clusterEnergy, clusterTime);
     }
 
     return fHyCalHit;
