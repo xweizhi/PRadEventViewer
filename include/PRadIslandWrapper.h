@@ -150,7 +150,6 @@ protected:
     void MergeClusters(int i, int j);
     float EnergyCorrect (float c_energy, int central_id);
 
-    PRadDataHandler* fHandler;
     float fMinHitE;
 
     blockINFO_t fBlockINFO[T_BLOCKS];
