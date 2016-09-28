@@ -367,13 +367,15 @@ struct HyCalHit
     {
         clear_time();
     }
-    HyCalHit(const double &cx, const double &cy, const double &cE)
+
+    HyCalHit(const float &cx, const float &cy, const float &cE)
     : type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
       y_log(0), chi2(0), sigma_E(0)
     {
         clear_time();
     }
-    HyCalHit(const double &cx, const double &cy, const double &cE, const std::vector<unsigned short> &t)
+
+    HyCalHit(const float &cx, const float &cy, const float &cE, const std::vector<unsigned short> &t)
     : type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
       y_log(0), chi2(0), sigma_E(0)
     {
@@ -383,6 +385,14 @@ struct HyCalHit
             if(i >= TIME_MEASURE_SIZE) break;
             time[i] = t[i];
         }
+    }
+
+    HyCalHit(const short &t, const short &s, const short &n,
+             const float &cx, const float &cy, const float &cE, const float &ch)
+    : type(t), status(s), nblocks(n), cid(0), E(cE), x(cx), y(cy), x_log(0),
+      y_log(0), chi2(ch), sigma_E(0)
+    {
+        clear_time();
     }
     void clear_time()
     {

@@ -30,6 +30,7 @@ PRadReconstructor::PRadReconstructor(PRadDataHandler *h)
     fMinClusterCenterE = 10.;
     fMinClusterE = 50.;
     fHighestModuleID = 0;
+    fIsland->Initialize();
 }
 
 //____________________________________________________________
@@ -115,12 +116,15 @@ vector<HyCalHit> &PRadReconstructor::IslandReconstruct(EventData &event)
 {
     Clear();
 
-    hycalcluster_t *hclusters = fIsland->GetHyCalCluster(event);
-    int NC = fIsland->GetNHyCalClusters();
+    HyCalHit* Hits = fIsland->GetHyCalCluster(event);
+    int NHits = fIsland->GetNHyCalClusters();
 
-    for(int i = 0; i < NC; ++i)
+    for(int i = 0; i < NHits; ++i)
     {
-        fHyCalHit.emplace_back(hclusters[i].x1, hclusters[i].y1, hclusters[i].E);
+        Hits[i].E *= 1e3; // back to MeV
+        Hits[i].x *= -1;    // coordinate change to be consistent
+        Hits[i].x_log *= -1; // coordinate change to be consistent
+        fHyCalHit.push_back(Hits[i]);
     }
 
     return fHyCalHit;

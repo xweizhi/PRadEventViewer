@@ -65,29 +65,14 @@ typedef struct
 
 typedef struct
 {
-    int type;         // cluster types: 0,1,2,3,4;-1
-    int nhits;          // Number of hits in cluster
-    int id;             // Cluster's central cell's ID
-    float E;            // Cluster's energy (GeV)
-    float time;         // Cluster's time (ns)
-    float x;            // Cluster's x-position (cm)
-    float y;            // Cluster's y-position (cm)
-    float chi2;         // Cluster's profile fit to single shower profile
-    float x1;           // Cluster's x1-position (cm)
-    float y1;           // Cluster's y1-position (cm)
-    float sigma_E;
-    int status;
-} hycalcluster_t;
-
-typedef struct
-{
     int  id;   // ID of ADC
     float e;   // Energy of ADC
-} hycalhit_t;
+} cluster_block_t;
 
 extern "C"
 {
-    void load_profile_(char* config_dir, int str_len);
+    void load_pwo_prof_(char* config_dir, int str_len);
+    void load_lg_prof_(char* config_dir, int str_len);
     void main_island_();
     extern struct
     {
@@ -150,16 +135,20 @@ extern "C"
 class PRadIslandWrapper
 {
 public:
-    PRadIslandWrapper(PRadDataHandler *h, const std::string &config_path = "config");
+    PRadIslandWrapper(PRadDataHandler *h);
     ~PRadIslandWrapper() {;}
 
     void SetHandler(PRadDataHandler* theHandler) { fHandler = theHandler; }
-    hycalcluster_t* GetHyCalCluster(EventData& thisEvent);
+    void Initialize(const std::string &block_info = "config/blockinfo.dat",
+                    const std::string &pwo_profile = "config/prof_pwo.dat",
+                    const std::string &lg_profile = "config/prof_lg.dat");
+    void LoadBlockInfo(const std::string &path);
+    void LoadCrystalProfile(const std::string &path);
+    void LoadLeadGlassProfile(const std::string &path);
+    HyCalHit *GetHyCalCluster(EventData& thisEvent);
     int GetNHyCalClusters() { return fNHyCalClusters; }
 
 protected:
-    void InitTable();
-    void InitConstants();
     void Clear();
     void LoadModuleData(EventData& thisEvent);
     void CallIsland(int isect);
@@ -170,15 +159,14 @@ protected:
     float EnergyCorrect (float c_energy, int central_id);
 
     PRadDataHandler* fHandler;
-    std::string fConfigPath;
     float fMinHitE;
 
+    HyCalHit fHyCalCluster[MAX_CLUSTERS];
     blockINFO_t fBlockINFO[T_BLOCKS];
     int fModuleStatus[MSECT][MCOL][MROW];
-    int fNHyCalHits;
     int fNHyCalClusters;
-    hycalhit_t fHyCalHit[T_BLOCKS];
-    hycalcluster_t fHyCalCluster[MAX_CLUSTERS];
+    int fNClusterBlocks;
+    cluster_block_t fClusterBlock[T_BLOCKS];
     cluster_t fClusterStorage[MAX_CLUSTERS];
     int ich[MCOL][MROW];
 };

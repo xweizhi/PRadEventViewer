@@ -2,12 +2,12 @@
 #define MAX_CC 60
 #define test_p
 *
-      subroutine load_profile(cstr, cstr_len)
-     &bind(C, name = "load_profile_")
+      subroutine load_pwo_prof(cstr, cstr_len)
+     &bind(C, name = "load_pwo_prof_")
       use, intrinsic :: ISO_C_BINDING
       implicit none
       integer(C_INT), intent(IN), VALUE :: cstr_len
-      character(len=1, kind=C_CHAR), dimension(64), intent(IN) :: cstr
+      character(len=1, kind=C_CHAR), dimension(256), intent(IN) :: cstr
       character(len=cstr_len) config_dir
 *
       real acell, ad2c
@@ -17,40 +17,64 @@
       real fcell_hyc, fd2c
 *
       if(cstr_len < 1) return
+*
       do i = 1,cstr_len
-          config_dir(i:i) = cstr(i)
+        config_dir(i:i) = cstr(i)
       enddo
 *
-      open(22,file=config_dir//'/prof_pwo.dat',
-     &     form='formatted', status='old')
+      open(22, file=config_dir, form='formatted', status='old')
+*
       do i1 = 0, 500
         do i2 = 0, i1
           read(22,'(i3,1x,i3,2(1x,e20.10))')
      &      id1, id2, fcell_hyc, fd2c
 
-            acell(0,i1,i2) = fcell_hyc
-            acell(0,i2,i1) = fcell_hyc
-             ad2c(0,i2,i1) = fd2c
-             ad2c(0,i1,i2) = fd2c
+          acell(0,i1,i2) = fcell_hyc
+          acell(0,i2,i1) = fcell_hyc
+          ad2c(0,i2,i1) = fd2c
+          ad2c(0,i1,i2) = fd2c
         enddo
       enddo
+*
       close(22)
+      return
+      end
 
-      open(22,file=config_dir//'/prof_lg.dat',
-     &     form='formatted', status='old')
+      subroutine load_lg_prof(cstr, cstr_len)
+     &bind(C, name = "load_lg_prof_")
+      use, intrinsic :: ISO_C_BINDING
+      implicit none
+      integer(C_INT), intent(IN), VALUE :: cstr_len
+      character(len=1, kind=C_CHAR), dimension(256), intent(IN) :: cstr
+      character(len=cstr_len) config_dir
+*
+      real acell, ad2c
+      common/profile_com/ acell(0:1,0:500,0:500), ad2c(0:1,0:500,0:500)
+*
+      integer i, i1, i2, id1, id2
+      real fcell_hyc, fd2c
+*
+      if(cstr_len < 1) return
+*
+      do i = 1,cstr_len
+        config_dir(i:i) = cstr(i)
+      enddo
+
+      open(22,file=config_dir, form='formatted', status='old')
+*
       do i1 = 0, 500
         do i2 = 0, i1
           read(22,'(i3,1x,i3,2(1x,e20.10))')
      &      id1, id2, fcell_hyc, fd2c
 
-            acell(1,i1,i2) = fcell_hyc
-            acell(1,i2,i1) = fcell_hyc
-            ad2c(1,i2,i1) = fd2c
-            ad2c(1,i1,i2) = fd2c
+          acell(1,i1,i2) = fcell_hyc
+          acell(1,i2,i1) = fcell_hyc
+          ad2c(1,i2,i1) = fd2c
+          ad2c(1,i1,i2) = fd2c
         enddo
       enddo
-      close(22)
 *
+      close(22)
       return
       end
 

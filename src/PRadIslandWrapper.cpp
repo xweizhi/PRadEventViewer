@@ -11,16 +11,78 @@
 #include "PRadDataHandler.h"
 #include "PRadDAQUnit.h"
 
-PRadIslandWrapper::PRadIslandWrapper(PRadDataHandler *h, const std::string &config_path)
-: fHandler(h), fConfigPath(config_path), fMinHitE(5.e-3)
+PRadIslandWrapper::PRadIslandWrapper(PRadDataHandler *h)
+: fHandler(h)
 {
-    InitTable();
+    fMinHitE = 5.e-3;
 }
 //________________________________________________________________
-void PRadIslandWrapper::InitTable()
+void PRadIslandWrapper::Initialize(const std::string &block_info,
+                                   const std::string &pwo_profile,
+                                   const std::string &lg_profile)
 {
-    InitConstants();
+    LoadBlockInfo(block_info);
+    LoadCrystalProfile(pwo_profile);
+    LoadLeadGlassProfile(lg_profile);
+}
+//________________________________________________________________
+void PRadIslandWrapper::LoadCrystalProfile(const std::string &path)
+{
+    char c_path[256];
+    strcpy(c_path, path.c_str());
+    load_pwo_prof_(c_path, strlen(c_path));
+}
+//________________________________________________________________
+void PRadIslandWrapper::LoadLeadGlassProfile(const std::string &path)
+{
+    char c_path[256];
+    strcpy(c_path, path.c_str());
+    load_lg_prof_(c_path, strlen(c_path));
+}
+//________________________________________________________________
+void PRadIslandWrapper::LoadBlockInfo(const std::string &path)
+{
+    //load module info to the fBlockINFO array
+    FILE *fp;
+    int ival;
+    union {int i; float f;} ieu;
 
+    fp = fopen(path.c_str(), "r");
+    if(!fp) {
+        printf("cannot open config file %s\n", path.c_str());
+        exit(1);
+    }
+
+    for(int i = 0; i < T_BLOCKS; ++i)
+    {
+        if(fread(&ival, sizeof(ival), 1, fp))
+            fBlockINFO[i].id = ival;
+
+        if(fread(&ival, sizeof(ival), 1, fp))
+        {
+            ieu.i = ival;
+            fBlockINFO[i].x = ieu.f;
+        }
+
+        if(fread(&ival, sizeof(ival), 1, fp))
+        {
+            ieu.i = ival;
+            fBlockINFO[i].y = ieu.f;
+        }
+
+        if(fread(&ival, sizeof(ival), 1, fp))
+            fBlockINFO[i].sector = ival;
+
+        if(fread(&ival, sizeof(ival), 1, fp))
+            fBlockINFO[i].row = ival;
+
+        if(fread(&ival, sizeof(ival), 1, fp))
+            fBlockINFO[i].col = ival;
+    }
+
+    fclose(fp);
+
+    // initialize module table
     for(int k = 0; k <= 4; ++k)
         for(int i = 1; i <= MCOL; ++i)
             for(int j = 1; j <= MROW; ++j)
@@ -48,62 +110,15 @@ void PRadIslandWrapper::InitTable()
             }
         }
     }
-
-    // init profile table
-    char config_path[64];
-    strcpy(config_path, fConfigPath.c_str());
-    load_profile_(config_path, strlen(config_path));
-}
-//________________________________________________________________
-void PRadIslandWrapper::InitConstants()
-{
-    //load module info to the fBlockINFO array
-    FILE *fp;
-    int ival;
-    union {int i; float f;} ieu;
-
-    std::string block_info = fConfigPath + "/blockinfo.dat";
-    fp = fopen(block_info.c_str(), "r");
-    if(!fp) {
-        printf("cannot open config file %s\n",block_info.c_str());
-        exit(1);
-    }
-    for(int i = 0; i < T_BLOCKS; ++i)
-    {
-        if(fread(&ival, sizeof(ival), 1, fp))
-            fBlockINFO[i].id = ival;
-
-        if(fread(&ival, sizeof(ival), 1, fp))
-        {
-            ieu.i = ival;
-            fBlockINFO[i].x = ieu.f;
-        }
-
-        if(fread(&ival, sizeof(ival), 1, fp))
-        {
-            ieu.i = ival;
-            fBlockINFO[i].y = ieu.f;
-        }
-
-        if(fread(&ival, sizeof(ival), 1, fp))
-            fBlockINFO[i].sector = ival;
-
-        if(fread(&ival, sizeof(ival), 1, fp))
-            fBlockINFO[i].row = ival;
-
-        if(fread(&ival, sizeof(ival), 1, fp))
-            fBlockINFO[i].col = ival;
-    }
-    fclose(fp);
 }
 //______________________________________________________________
 void PRadIslandWrapper::Clear()
 {
     fNHyCalClusters = 0;
-    fNHyCalHits = 0;
+    fNClusterBlocks = 0;
 }
 //_______________________________________________________________
-hycalcluster_t *PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
+HyCalHit *PRadIslandWrapper::GetHyCalCluster(EventData& thisEvent)
 {
     //clear and get ready for the new event
     Clear();
@@ -149,9 +164,9 @@ void PRadIslandWrapper::LoadModuleData(EventData& thisEvent)
         if(thisModule->GetEnergy()*1e-3 < fMinHitE)
             continue;
 
-        fHyCalHit[fNHyCalHits].e = thisModule->GetEnergy()*1e-3; //to GeV
-        fHyCalHit[fNHyCalHits].id = thisModule->GetPrimexID();
-        fNHyCalHits++;
+        fClusterBlock[fNClusterBlocks].e = thisModule->GetEnergy()*1e-3; //to GeV
+        fClusterBlock[fNClusterBlocks].id = thisModule->GetPrimexID();
+        fNClusterBlocks++;
     }
 }
 //________________________________________________________________
@@ -206,12 +221,12 @@ void PRadIslandWrapper::CallIsland(int isect)
         exit(1);
     }
 
-    for(int i = 0; i < fNHyCalHits; ++i)
+    for(int i = 0; i < fNClusterBlocks; ++i)
     {
-        int id  = fHyCalHit[i].id;
+        int id  = fClusterBlock[i].id;
         if(fBlockINFO[id-1].sector != isect)
             continue;
-        float e = fHyCalHit[i].e;
+        float e = fClusterBlock[i].e;
 
         if(e < fMinHitE)
             continue;
@@ -264,13 +279,11 @@ void PRadIslandWrapper::CallIsland(int isect)
         }
 
         fHyCalCluster[n].type     = type;
-        fHyCalCluster[n].nhits    = dime;
+        fHyCalCluster[n].nblocks  = dime;
         fHyCalCluster[n].E        = e;
-        fHyCalCluster[n].time     = 0.0;
         fHyCalCluster[n].x        = x;        // biased, unaligned
         fHyCalCluster[n].y        = y;
         fHyCalCluster[n].chi2     = chi2;
-        fHyCalCluster[n].sigma_E  = 0.0;
         fHyCalCluster[n].status   = status;
 
         float ecellmax = -1.; int idmax = -1;
@@ -292,25 +305,25 @@ void PRadIslandWrapper::CallIsland(int isect)
 
             if(type%10 == 1 || type%10 == 2)
             {
-	            xcell += xc;
-	            ycell += yc;
+	        xcell += xc;
+	        ycell += yc;
             }
 
             if(ecell > ecellmax)
             {
-	            ecellmax = ecell;
-	            idmax = id;
+	        ecellmax = ecell;
+	        idmax = id;
             }
 
             if(ecell > 0.)
             {
-	            W  = 4.2 + log(ecell/e);
-	            if(W > 0)
+	        W  = 4.2 + log(ecell/e);
+	        if(W > 0)
                 {
-	                sW += W;
-	                xpos += xcell*W;
-	                ypos += ycell*W;
-	            }
+	            sW += W;
+	            xpos += xcell*W;
+	            ypos += ycell*W;
+	        }
             }
 
             fClusterStorage[n].E[j]  = ecell;
@@ -322,25 +335,20 @@ void PRadIslandWrapper::CallIsland(int isect)
         fHyCalCluster[n].sigma_E    = ecellmax;  // use it temproraly
 
         if(sW) {
-            fHyCalCluster[n].x1    = xpos/sW;
-            fHyCalCluster[n].y1    = ypos/sW;
+            fHyCalCluster[n].x_log = xpos/sW;
+            fHyCalCluster[n].y_log = ypos/sW;
         } else {
             printf("WRN bad cluster log. coord , center id = %i %f\n", idmax, fHyCalCluster[n].E);
-            fHyCalCluster[n].x1    = 0.;
-            fHyCalCluster[n].y1    = 0.;
+            fHyCalCluster[n].x_log = 0.;
+            fHyCalCluster[n].y_log = 0.;
         }
 
-        fHyCalCluster[n].id      = idmax;
+        fHyCalCluster[n].cid = idmax;
 
         for(int j = dime; j < MAX_CC; ++j)  // zero the rest
             fClusterStorage[n].id[j] = 0;
 
         fNHyCalClusters += 1;
-        if(fNHyCalClusters == MAX_CLUSTERS)
-        {
-            printf("max number of clusters reached\n");
-            return;
-        }
     }
 }
 
@@ -357,13 +365,13 @@ void PRadIslandWrapper::GlueTransitionClusters()
 
     for(int i = 0; i < fNHyCalClusters; ++i)
     {
-        int idi = fHyCalCluster[i].id;
+        int idi = fHyCalCluster[i].cid;
         //float xi = fBlockINFO[idi-1].x;
         //float yi = fBlockINFO[idi-1].y;
 
         for(int j = i+1; j < fNHyCalClusters; ++j)
         {
-            int idj = fHyCalCluster[j].id;
+            int idj = fHyCalCluster[j].cid;
             if(fBlockINFO[idi-1].sector == fBlockINFO[idj-1].sector)
                  continue;
             //float xj = fBlockINFO[idj-1].x;
@@ -443,13 +451,13 @@ void PRadIslandWrapper::GlueTransitionClusters()
                 }
 
         int i0 = group_member_list[igr][list[0]];
-        if(fHyCalCluster[i0].status==-1)
+        if(fHyCalCluster[i0].status == -1)
             continue;
 
         for(int k = 1; k < group_size[igr]; ++k)
         {
             int k0 = group_member_list[igr][list[k]];
-            if(fHyCalCluster[k0].status==-1)
+            if(fHyCalCluster[k0].status == -1)
             {
                 printf("glue island warning neg. status\n");
                 continue;
@@ -464,7 +472,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
     for(int i = 0; i < fNHyCalClusters; ++i)
     {
         float olde = fHyCalCluster[i].E;
-        int central_id = fHyCalCluster[i].id;
+        int central_id = fHyCalCluster[i].cid;
         fHyCalCluster[i].E = EnergyCorrect(olde, central_id);
     }
 
@@ -479,7 +487,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
             if(fHyCalCluster[i].status == -1 ||
                fHyCalCluster[i].E       < SET_EMIN ||
                fHyCalCluster[i].E       > SET_EMAX ||
-               fHyCalCluster[i].nhits   < SET_HMIN ||
+               fHyCalCluster[i].nblocks < SET_HMIN ||
                fHyCalCluster[i].sigma_E < SET_MINM)
             {
                 fNHyCalClusters -= 1;
@@ -487,7 +495,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
 
                 if(nrest)
                 {
-                    memmove((&fHyCalCluster[0]+i), (&fHyCalCluster[0]+i+1), nrest*sizeof(hycalcluster_t));
+                    memmove((&fHyCalCluster[0]+i), (&fHyCalCluster[0]+i+1), nrest*sizeof(HyCalHit));
                     memmove((&fClusterStorage[0]+i), (&fClusterStorage[0]+i+1), nrest*sizeof(cluster_t));
                     ifdiscarded = 1;
                 }
@@ -501,7 +509,7 @@ int  PRadIslandWrapper::ClustersMinDist(int i,int j)
 {
     // min distance between two clusters cells cut
     double mindist = 1.e6, mindx = 1.e6, mindy = 1.e6, dx, dy, sx1, sy1, sx2, sy2;
-    int dime1 = fHyCalCluster[i].nhits, dime2 = fHyCalCluster[j].nhits;
+    int dime1 = fHyCalCluster[i].nblocks, dime2 = fHyCalCluster[j].nblocks;
 
     for(int k1 = 0; k1 < (dime1>MAX_CC ? MAX_CC : dime1); ++k1)
     {
@@ -545,20 +553,20 @@ void PRadIslandWrapper::MergeClusters(int i, int j)
     // ith cluster gona stay; jth cluster gona be discarded
     // leave cluster with greater energy deposition in central cell, discard the second one:
     int i1 = (fHyCalCluster[i].sigma_E > fHyCalCluster[j].sigma_E) ? i : j;
-    int dime1 = fHyCalCluster[i].nhits, dime2 = fHyCalCluster[j].nhits;
+    int dime1 = fHyCalCluster[i].nblocks, dime2 = fHyCalCluster[j].nblocks;
     //int type1 = fHyCalCluster[i].type, type2 = fHyCalCluster[j].type;
     float e = fHyCalCluster[i].E + fHyCalCluster[j].E;
 
-    fHyCalCluster[i].id      = fHyCalCluster[i1].id;
+    fHyCalCluster[i].cid     = fHyCalCluster[i1].cid;
     fHyCalCluster[i].sigma_E = fHyCalCluster[i1].sigma_E;
     fHyCalCluster[i].x       = fHyCalCluster[i1].x;
     fHyCalCluster[i].y       = fHyCalCluster[i1].y;
     fHyCalCluster[i].chi2    = (fHyCalCluster[i].chi2*dime1 + fHyCalCluster[j].chi2*dime2)/(dime1+dime2);
 
-    if(fHyCalCluster[i].status>=2)
+    if(fHyCalCluster[i].status >= 2)
         fHyCalCluster[i].status += 1; // glued
 
-    fHyCalCluster[i].nhits   = dime1+dime2;
+    fHyCalCluster[i].nblocks = dime1+dime2;
     fHyCalCluster[i].E       = e;
     fHyCalCluster[i].type    = fHyCalCluster[i1].type;
 
@@ -595,7 +603,7 @@ void PRadIslandWrapper::MergeClusters(int i, int j)
         float ecell = fClusterStorage[i].E[k1];
         float xcell = fClusterStorage[i].x[k1];
         float ycell = fClusterStorage[i].y[k1];
-        if(ecell>0.)
+        if(ecell > 0.)
         {
             W  = 4.2 + log(ecell/e);
             if(W > 0)
@@ -613,7 +621,7 @@ void PRadIslandWrapper::MergeClusters(int i, int j)
         float xcell = fClusterStorage[j].x[k2];
         float ycell = fClusterStorage[j].y[k2];
 
-        if(ecell>0.)
+        if(ecell > 0.)
         {
             W  = 4.2 + log(ecell/e);
             if(W > 0)
@@ -626,18 +634,18 @@ void PRadIslandWrapper::MergeClusters(int i, int j)
     }
 
     if(sW) {
-        float dx = fHyCalCluster[i1].x1;
-        float dy = fHyCalCluster[i1].y1;
-        fHyCalCluster[i].x1 = xpos/sW;
-        fHyCalCluster[i].y1 = ypos/sW;
-        dx = fHyCalCluster[i1].x1 - dx;
-        dy = fHyCalCluster[i1].y1 - dy;
+        float dx = fHyCalCluster[i1].x_log;
+        float dy = fHyCalCluster[i1].y_log;
+        fHyCalCluster[i].x_log = xpos/sW;
+        fHyCalCluster[i].y_log = ypos/sW;
+        dx = fHyCalCluster[i1].x_log - dx;
+        dy = fHyCalCluster[i1].y_log - dy;
         fHyCalCluster[i].x += dx;      // shift x0,y0 for glued cluster by x1,y1 shift values
         fHyCalCluster[i].y += dy;
     } else {
         printf("WRN bad cluster log. coord\n");
-        fHyCalCluster[i].x1 = 0.;
-        fHyCalCluster[i].y1 = 0.;
+        fHyCalCluster[i].x_log = 0.;
+        fHyCalCluster[i].y_log = 0.;
     }
 
     // update cluster_storage
@@ -661,7 +669,7 @@ void PRadIslandWrapper::MergeClusters(int i, int j)
         ++kk;
     }
 
-    fHyCalCluster[i].nhits = kk;
+    fHyCalCluster[i].nblocks = kk;
 }
 //____________________________________________________________________________
 float PRadIslandWrapper::EnergyCorrect (float c_energy, int /*central_id*/)
@@ -684,7 +692,7 @@ void PRadIslandWrapper::ClusterProcessing()
     for(int i = 0; i < fNHyCalClusters; ++i)
     {
         float e   = fHyCalCluster[i].E;
-        int idmax = fHyCalCluster[i].id;
+        int idmax = fHyCalCluster[i].cid;
 
         // apply 1st approx. non-lin. corr. (was obtained for PWO):
         e *= 1. + 200.*pi/pow((pi+e),7.5);
@@ -696,7 +704,7 @@ void PRadIslandWrapper::ClusterProcessing()
         //coord_align(i, e, idmax);
         int status = fHyCalCluster[i].status;
         int type   = fHyCalCluster[i].type;
-        int dime   = fHyCalCluster[i].nhits;
+        int dime   = fHyCalCluster[i].nblocks;
 
         if(status < 0)
         {
