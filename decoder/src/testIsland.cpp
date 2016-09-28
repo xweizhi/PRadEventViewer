@@ -19,7 +19,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 {
   PRadDataHandler *handler = new PRadDataHandler();
   PRadDSTParser *dst_parser = new PRadDSTParser(handler);
-  
+
   handler->ReadConfig("config.txt");
 
   //handler->UpdateHyCalGain("../config/gainfunc_round7.dat");
@@ -49,7 +49,7 @@ int main(int /*argc*/, char * /*argv*/ [])
   t->Branch("HyCalHitNModule", &clusterNHit[0], "HyCalHitNModule[nHyCalHit]/I");
   t->Branch("HyCalHitStatus", &clusterStatus[0], "HyCalHitStatus[nHyCalHit]/I");
   t->Branch("HyCalHitType", &clusterType[0], "HyCalHitType[nHyCalHit]/I");
-  
+
 
   //-------------------------------------//
 
@@ -60,15 +60,15 @@ int main(int /*argc*/, char * /*argv*/ [])
     auto event = dst_parser->GetEvent();
     if (! (event.trigger == PHYS_LeadGlassSum || event.trigger == PHYS_TotalSum)) continue;
     if (count%10000 == 0) cout<<"----------event "<<count<<"-------------"<<endl;
-    if (count > 1000000) break; 
+    if (count > 1000000) break;
     count++;
 
+    handler->HyCalReconstruct();
     HyCalHit *clusterArray = handler->GetHyCalCluster(clusterN);
 
     Ebeam = handler->GetEPICSValue("MBSY2C_energy", eventNumber);
     totalE = 0.;
-    eventNumber = handler->GetCurrentEventNb(); 
-    
+    eventNumber = handler->GetCurrentEventNb();
 
     for (int i=0; i<clusterN ; i++){
       HyCalHit *thisCluster = &clusterArray[i];
@@ -85,7 +85,6 @@ int main(int /*argc*/, char * /*argv*/ [])
     t->Fill();
     if (count == -1) break;
 
-    
   } else if(dst_parser->EventType() == PRad_DST_Epics){
       // save epics into handler, otherwise get epicsvalue won't work
       handler->GetEPICSData().push_back(dst_parser->GetEPICSEvent());
@@ -99,5 +98,5 @@ int main(int /*argc*/, char * /*argv*/ [])
   t->Write();
   f->Close();
 
-  return 0; 
+  return 0;
 }
