@@ -132,7 +132,7 @@ void PRadDataHandler::ReadConfig(const string &path)
         if((func_name.find("Island Cluster Configuration") != string::npos)) {
             const string var1 = "Island";
             const string var2 = c_parser.TakeFirst().String();
-            ExecuteConfigCommand(&PRadDataHandler::AddHyCalReconstructor,
+            ExecuteConfigCommand(&PRadDataHandler::AddHyCalClusterMethod,
                                  (PRadReconstructor *) new PRadIslandCluster(),
                                  var1,
                                  var2);
@@ -140,14 +140,14 @@ void PRadDataHandler::ReadConfig(const string &path)
         if((func_name.find("Square Cluster Configuration") != string::npos)) {
             const string var1 = "Square";
             const string var2 = c_parser.TakeFirst().String();
-            ExecuteConfigCommand(&PRadDataHandler::AddHyCalReconstructor,
+            ExecuteConfigCommand(&PRadDataHandler::AddHyCalClusterMethod,
                                  (PRadReconstructor *) new PRadSquareCluster(),
                                  var1,
                                  var2);
         }
         if((func_name.find("HyCal Clustering Method") != string::npos)) {
             const string var1 = c_parser.TakeFirst().String();
-            ExecuteConfigCommand(&PRadDataHandler::SetHyCalReconstructor, var1);
+            ExecuteConfigCommand(&PRadDataHandler::SetHyCalClusterMethod, var1);
         }
     }
 }
@@ -1388,7 +1388,7 @@ int PRadDataHandler::FindEventIndex(const int &ev)
     return result;
 }
 
-void PRadDataHandler::AddHyCalReconstructor(PRadReconstructor *r,
+void PRadDataHandler::AddHyCalClusterMethod(PRadReconstructor *r,
                                             const string &name,
                                             const string &c_path)
 {
@@ -1414,7 +1414,7 @@ void PRadDataHandler::AddHyCalReconstructor(PRadReconstructor *r,
     r->Configurate(c_path);
 }
 
-void PRadDataHandler::SetHyCalReconstructor(const string &name)
+void PRadDataHandler::SetHyCalClusterMethod(const string &name)
 {
     auto it = hycal_recon_map.find(name);
     if(it != hycal_recon_map.end()) {
@@ -1426,7 +1426,7 @@ void PRadDataHandler::SetHyCalReconstructor(const string &name)
     }
 }
 
-void PRadDataHandler::ListHyCalReconstructors()
+void PRadDataHandler::ListHyCalClusterMethods()
 {
     for(auto &it : hycal_recon_map)
     {
@@ -1453,6 +1453,19 @@ HyCalHit *PRadDataHandler::GetHyCalCluster(int &size)
         return hycal_recon->GetCluster();
     }
     return nullptr;
+}
+
+// a slower version, it re-packs the hycalhits into a vector and return it
+vector<HyCalHit> PRadDataHandler::GetHyCalCluster()
+{
+    vector<HyCalHit> hits;
+    if(hycal_recon) {
+        HyCalHit* hitp = hycal_recon->GetCluster();
+        int Nhits = hycal_recon->GetNClusters();
+        for(int i = 0; i < Nhits; ++i)
+            hits.push_back(hitp[i]);
+    }
+    return hits;
 }
 
 void PRadDataHandler::Replay(const string &r_path, const int &split, const string &w_path)

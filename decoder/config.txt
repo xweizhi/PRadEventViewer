@@ -16,4 +16,4 @@ GEM Configuration: config/gem_map.cfg
 # Setup HyCal Reconstruction
 Island Cluster Configuration: config/island.conf
 Square Cluster Configuration: config/square.conf
-HyCal Clustering Method: Square
+HyCal Clustering Method: Island

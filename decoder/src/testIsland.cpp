@@ -4,8 +4,6 @@
 #include "PRadBenchMark.h"
 #include "PRadDAQUnit.h"
 #include "PRadGEMSystem.h"
-#include "PRadIslandCluster.h"
-#include "PRadSquareCluster.h"
 #include "TFile.h"
 #include "TTree.h"
 #include <iostream>

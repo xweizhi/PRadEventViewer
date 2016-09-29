@@ -12,6 +12,9 @@ PRAD_PATH     = ..
 
 CC            = gcc
 CXX           = g++
+FORTRAN       = gfortran
+FFLAGS	      = -fPIC
+CXXFLAGS_LIBS = -shared -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -Wno-unused-result -D_REENTRANT -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -D_REENTRANT -fPIC $(DEFINES)
 INCPATH       = -I. -I$(PRAD_PATH)/include -I$(PRAD_PATH)/thirdparty/include -I$(ROOTSYS)/include
 DEL_FILE      = rm -f
@@ -30,38 +33,89 @@ MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
 LINK          = g++
+LFLAGS_LIBS   = -shared -Wl,-O1 -Wl,-z,relro
 LFLAGS        = -Wl,-O1 -Wl,-z,relro
-LIBS          = $(SUBLIBS) -L$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lpthread -Llib -lPRadDecoder -lexpat
+LIBS          = $(SUBLIBS) -L$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui -lSpectrum -lpthread -Llib -lexpat -lgfortran
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
 STRIP         = 
 
-####### Files
+####### Targets
 
-SOURCES       = src/testIsland.cpp \
-
-OBJECTS       = testIsland.o \
-
-TARGET        = decoder
-
+SOURCES       = $(PRAD_PATH)/src/PRadDAQUnit.cpp \
+                $(PRAD_PATH)/src/PRadTDCGroup.cpp \
+                $(PRAD_PATH)/src/PRadEvioParser.cpp \
+                $(PRAD_PATH)/src/PRadDSTParser.cpp \
+                $(PRAD_PATH)/src/PRadDataHandler.cpp \
+                $(PRAD_PATH)/src/PRadException.cpp \
+                $(PRAD_PATH)/src/PRadBenchMark.cpp \
+                $(PRAD_PATH)/src/ConfigParser.cpp \
+                $(PRAD_PATH)/src/PRadReconstructor.cpp \
+                $(PRAD_PATH)/src/PRadGEMSystem.cpp \
+                $(PRAD_PATH)/src/PRadIslandCluster.cpp \
+                $(PRAD_PATH)/src/PRadSquareCluster.cpp \
+                $(PRAD_PATH)/src/island.F
 
 OBJECTS_DIR   = obj
 
+OBJECTS       = $(OBJECTS_DIR)/PRadDAQUnit.o \
+                $(OBJECTS_DIR)/PRadTDCGroup.o \
+                $(OBJECTS_DIR)/PRadEvioParser.o \
+                $(OBJECTS_DIR)/PRadDSTParser.o \
+                $(OBJECTS_DIR)/PRadDataHandler.o \
+                $(OBJECTS_DIR)/PRadException.o \
+                $(OBJECTS_DIR)/PRadBenchMark.o \
+                $(OBJECTS_DIR)/ConfigParser.o \
+                $(OBJECTS_DIR)/PRadReconstructor.o \
+                $(OBJECTS_DIR)/PRadGEMSystem.o \
+                $(OBJECTS_DIR)/PRadIslandCluster.o \
+                $(OBJECTS_DIR)/PRadSquareCluster.o \
+                $(OBJECTS_DIR)/island.o
+
+T_LIBS_DIR    = lib
+
+TARGET_LIBS   = libPRadDecoder.so
+
+BUILD_LIBS    = -L$(T_LIBS_DIR) -lPRadDecoder
+
+TARGET	      = testIsland testEPICS replay
+
 first: all
+
+all: Makefile $(TARGET_LIBS) $(TARGET)
+
+example: Makefile $(TARGET)
+
+libs: Makefile $(TARGET_LIBS)
 ####### Build rules
 
-$(TARGET):  $(OBJECTS)
-	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
+$(TARGET_LIBS):  $(OBJECTS)
+	$(LINK) $(LFLAGS_LIBS) -o $(T_LIBS_DIR)/$(TARGET_LIBS) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
-all: Makefile $(TARGET)
+$(TARGET):
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $@.o src/$@.cpp
+	$(LINK) $(LFLAGS) -o $@ $@.o $(OBJCOMP) $(LIBS) $(BUILD_LIBS)
+	$(DEL_FILE) $@.o
 
-clean:
-	-$(DEL_FILE) $(OBJECTS)
-	-$(DEL_FILE) $(TARGET)
 
-testIsland.o: src/testIsland.cpp
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o testIsland.o src/testIsland.cpp
+clean: cleanobj cleanexe cleanlib
+
+cleanobj:
+	$(DEL_FILE) *.o $(OBJECTS_DIR)/*.o
+
+cleanexe:
+	$(DEL_FILE) $(TARGET)
+
+cleanlib:
+	$(DEL_FILE) $(T_LIBS_DIR)/$(TARGET_LIBS)
+
+$(OBJECTS_DIR)/%.o: $(PRAD_PATH)/src/%.cpp
+	$(CXX) -c $(CXXFLAGS_LIBS) $(INCPATH) -o $@ $<
+
+$(OBJECTS_DIR)/island.o: $(PRAD_PATH)/src/island.F
+	$(FORTRAN) -c $(FFLAGS) $(INCPATH) -o $@ $<
+
 
 ####### Install
 

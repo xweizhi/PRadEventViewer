@@ -118,9 +118,9 @@ public:
     void UpdateLiveTimeScaler(EventData &event);
     void UpdateOnlineInfo(EventData &event);
     void UpdateRunInfo(const RunInfo &ri) {runInfo = ri;};
-    void AddHyCalReconstructor(PRadReconstructor *r, const std::string &name, const std::string &c_path);
-    void SetHyCalReconstructor(const std::string &name);
-    void ListHyCalReconstructors();
+    void AddHyCalClusterMethod(PRadReconstructor *r, const std::string &name, const std::string &c_path);
+    void SetHyCalClusterMethod(const std::string &name);
+    void ListHyCalClusterMethods();
 
     // show data
     int GetCurrentEventNb();
@@ -166,6 +166,7 @@ public:
     void HyCalReconstruct(const int &event_index);
     void HyCalReconstruct(EventData &event);
     HyCalHit *GetHyCalCluster(int &size);
+    std::vector<HyCalHit> GetHyCalCluster();
 
 
     // other functions
