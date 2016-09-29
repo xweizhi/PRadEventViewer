@@ -4,7 +4,8 @@
 #include "PRadBenchMark.h"
 #include "PRadDAQUnit.h"
 #include "PRadGEMSystem.h"
-#include "PRadIslandWrapper.h"
+#include "PRadIslandCluster.h"
+#include "PRadSquareCluster.h"
 #include "TFile.h"
 #include "TTree.h"
 #include <iostream>
@@ -60,10 +61,10 @@ int main(int /*argc*/, char * /*argv*/ [])
     auto event = dst_parser->GetEvent();
     if (! (event.trigger == PHYS_LeadGlassSum || event.trigger == PHYS_TotalSum)) continue;
     if (count%10000 == 0) cout<<"----------event "<<count<<"-------------"<<endl;
-    if (count > 1000000) break;
+    if (count > 100000) break;
     count++;
 
-    handler->HyCalReconstruct();
+    handler->HyCalReconstruct(event);
     HyCalHit *clusterArray = handler->GetHyCalCluster(clusterN);
 
     Ebeam = handler->GetEPICSValue("MBSY2C_energy", eventNumber);

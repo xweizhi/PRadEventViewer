@@ -39,9 +39,9 @@ STRIP         =
 
 ####### Files
 
-SOURCES       = src/main.cpp \
+SOURCES       = src/testIsland.cpp \
 
-OBJECTS       = main.o \
+OBJECTS       = testIsland.o \
 
 TARGET        = decoder
 
@@ -60,8 +60,8 @@ clean:
 	-$(DEL_FILE) $(OBJECTS)
 	-$(DEL_FILE) $(TARGET)
 
-main.o: src/main.cpp
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o src/main.cpp
+testIsland.o: src/testIsland.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o testIsland.o src/testIsland.cpp
 
 ####### Install
 

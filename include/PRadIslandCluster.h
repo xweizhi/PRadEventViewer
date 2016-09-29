@@ -149,6 +149,7 @@ protected:
     int ClustersMinDist(int i,int j);
     void MergeClusters(int i, int j);
     float EnergyCorrect (float c_energy, int central_id);
+    void FinalProcessing();
 
     float fMinHitE;
 

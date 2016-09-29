@@ -152,6 +152,8 @@ void PRadIslandCluster::Reconstruct(EventData &event)
     GlueTransitionClusters();
 
     ClusterProcessing();
+
+    FinalProcessing();
 }
 //_______________________________________________________________
 void PRadIslandCluster::LoadModuleData(EventData& event)
@@ -757,5 +759,25 @@ void PRadIslandCluster::ClusterProcessing()
                 se *=1.25;
         }
         fHyCalCluster[i].sigma_E = se;
+    }
+}
+//____________________________________________________________________________
+void PRadIslandCluster::FinalProcessing()
+{
+    // old PrimEx island output is in GeV and cm
+    // the x axis is also reverted comparing to our convention
+    // here transform the PrimEx unit convention to ours
+    for(int i = 0; i < fNHyCalClusters; ++i)
+    {
+        fHyCalCluster[i].E *= 1000.; // GeV to MeV
+        fHyCalCluster[i].sigma_E *= 1000.; // GeV to MeV
+        fHyCalCluster[i].x *= 10.; // cm to mm
+        fHyCalCluster[i].y *= 10.; // cm to mm
+        fHyCalCluster[i].x_log *= 10.; // cm to mm
+        fHyCalCluster[i].y_log *= 10.; // cm to mm
+
+        PRadDAQUnit *module = fHandler->GetChannel(PRadDAQUnit::NameFromPrimExID(fHyCalCluster[i].cid));
+        PRadTDCGroup *tdc = fHandler->GetTDCGroup(module->GetTDCName());
+        fHyCalCluster[i].set_time(tdc->GetTimeMeasure());
     }
 }
