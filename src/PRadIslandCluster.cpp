@@ -771,9 +771,9 @@ void PRadIslandCluster::FinalProcessing()
     {
         fHyCalCluster[i].E *= 1000.; // GeV to MeV
         fHyCalCluster[i].sigma_E *= 1000.; // GeV to MeV
-        fHyCalCluster[i].x *= 10.; // cm to mm
+        fHyCalCluster[i].x *= -10.; // cm to mm
         fHyCalCluster[i].y *= 10.; // cm to mm
-        fHyCalCluster[i].x_log *= 10.; // cm to mm
+        fHyCalCluster[i].x_log *= -10.; // cm to mm
         fHyCalCluster[i].y_log *= 10.; // cm to mm
 
         PRadDAQUnit *module = fHandler->GetChannel(PRadDAQUnit::NameFromPrimExID(fHyCalCluster[i].cid));
