@@ -1,5 +1,5 @@
-#ifndef PRAD_ISLAND_WRAPPER_H
-#define PRAD_ISLAND_WRAPPER_H
+#ifndef PRAD_ISLAND_CLUSTER_H
+#define PRAD_ISLAND_CLUSTER_H
 
 #include <string>
 #include "PRadReconstructor.h"
@@ -127,11 +127,11 @@ extern "C"
     #define FA(N) hbk_common_.fa[N-1]
 }
 
-class PRadIslandWrapper : public PRadReconstructor
+class PRadIslandCluster : public PRadReconstructor
 {
 public:
-    PRadIslandWrapper(PRadDataHandler *h = nullptr);
-    ~PRadIslandWrapper() {;}
+    PRadIslandCluster(PRadDataHandler *h = nullptr);
+    virtual ~PRadIslandCluster() {;}
 
     void SetHandler(PRadDataHandler* theHandler) { fHandler = theHandler; }
     void Configurate(const std::string &c_path);

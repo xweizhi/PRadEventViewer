@@ -379,12 +379,7 @@ struct HyCalHit
     : type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
       y_log(0), chi2(0), sigma_E(0)
     {
-        clear_time();
-        for(size_t i = 0; i < t.size(); ++i)
-        {
-            if(i >= TIME_MEASURE_SIZE) break;
-            time[i] = t[i];
-        }
+        set_time(t);
     }
 
     HyCalHit(const short &t, const short &s, const short &n,
@@ -398,6 +393,16 @@ struct HyCalHit
     {
         for(int i = 0; i < TIME_MEASURE_SIZE; ++i)
             time[i] = 0;
+    }
+    void set_time(const std::vector<unsigned short> &t)
+    {
+        for(int i = 0; i < TIME_MEASURE_SIZE; ++i)
+        {
+            if(i < (int)t.size())
+                time[i] = t[i];
+            else
+                time[i] = 0;
+        }
     }
 };
 

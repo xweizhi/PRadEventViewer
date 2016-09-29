@@ -7,14 +7,14 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include "PRadIslandWrapper.h"
+#include "PRadIslandCluster.h"
 
-PRadIslandWrapper::PRadIslandWrapper(PRadDataHandler *h)
+PRadIslandCluster::PRadIslandCluster(PRadDataHandler *h)
 : PRadReconstructor(h)
 {
 }
 //________________________________________________________________
-void PRadIslandWrapper::Configurate(const std::string &c_path)
+void PRadIslandCluster::Configurate(const std::string &c_path)
 {
     ReadConfigFile(c_path);
 
@@ -32,21 +32,21 @@ void PRadIslandWrapper::Configurate(const std::string &c_path)
     LoadLeadGlassProfile(path);
 }
 //________________________________________________________________
-void PRadIslandWrapper::LoadCrystalProfile(const std::string &path)
+void PRadIslandCluster::LoadCrystalProfile(const std::string &path)
 {
     char c_path[256];
     strcpy(c_path, path.c_str());
     load_pwo_prof_(c_path, strlen(c_path));
 }
 //________________________________________________________________
-void PRadIslandWrapper::LoadLeadGlassProfile(const std::string &path)
+void PRadIslandCluster::LoadLeadGlassProfile(const std::string &path)
 {
     char c_path[256];
     strcpy(c_path, path.c_str());
     load_lg_prof_(c_path, strlen(c_path));
 }
 //________________________________________________________________
-void PRadIslandWrapper::LoadBlockInfo(const std::string &path)
+void PRadIslandCluster::LoadBlockInfo(const std::string &path)
 {
     //load module info to the fBlockINFO array
     FILE *fp;
@@ -118,13 +118,13 @@ void PRadIslandWrapper::LoadBlockInfo(const std::string &path)
     }
 }
 //______________________________________________________________
-void PRadIslandWrapper::Clear()
+void PRadIslandCluster::Clear()
 {
     fNHyCalClusters = 0;
     fNClusterBlocks = 0;
 }
 //_______________________________________________________________
-void PRadIslandWrapper::Reconstruct(EventData &event)
+void PRadIslandCluster::Reconstruct(EventData &event)
 {
     //clear and get ready for the new event
     Clear();
@@ -154,7 +154,7 @@ void PRadIslandWrapper::Reconstruct(EventData &event)
     ClusterProcessing();
 }
 //_______________________________________________________________
-void PRadIslandWrapper::LoadModuleData(EventData& event)
+void PRadIslandCluster::LoadModuleData(EventData& event)
 {
     //load data to hycalhit array and ech array
     fHandler->ChooseEvent(event);
@@ -174,7 +174,7 @@ void PRadIslandWrapper::LoadModuleData(EventData& event)
     }
 }
 //________________________________________________________________
-void PRadIslandWrapper::CallIsland(int isect)
+void PRadIslandCluster::CallIsland(int isect)
 {
     //float xsize, ysize;
     SET_EMIN  = 0.05;   // banks->CONFIG->config->CLUSTER_ENERGY_MIN;
@@ -357,7 +357,7 @@ void PRadIslandWrapper::CallIsland(int isect)
 }
 
 //_____________________________________________________________________________
-void PRadIslandWrapper::GlueTransitionClusters()
+void PRadIslandCluster::GlueTransitionClusters()
 {
 
     // find adjacent clusters and glue
@@ -509,7 +509,7 @@ void PRadIslandWrapper::GlueTransitionClusters()
 
 }
 //________________________________________________________________________
-int  PRadIslandWrapper::ClustersMinDist(int i,int j)
+int  PRadIslandCluster::ClustersMinDist(int i,int j)
 {
     // min distance between two clusters cells cut
     double mindist = 1.e6, mindx = 1.e6, mindy = 1.e6, dx, dy, sx1, sy1, sx2, sy2;
@@ -552,7 +552,7 @@ int  PRadIslandWrapper::ClustersMinDist(int i,int j)
     return (mindx>1.1 || mindy>1.1);
 }
 //____________________________________________________________________________
-void PRadIslandWrapper::MergeClusters(int i, int j)
+void PRadIslandCluster::MergeClusters(int i, int j)
 {
     // ith cluster gona stay; jth cluster gona be discarded
     // leave cluster with greater energy deposition in central cell, discard the second one:
@@ -676,7 +676,7 @@ void PRadIslandWrapper::MergeClusters(int i, int j)
     fHyCalCluster[i].nblocks = kk;
 }
 //____________________________________________________________________________
-float PRadIslandWrapper::EnergyCorrect (float c_energy, int /*central_id*/)
+float PRadIslandCluster::EnergyCorrect (float c_energy, int /*central_id*/)
 {
     float energy = c_energy;
     //float fr = (central_id < 999) ? 0.062 : 0.042;
@@ -689,7 +689,7 @@ float PRadIslandWrapper::EnergyCorrect (float c_energy, int /*central_id*/)
     return energy;
 }
 //____________________________________________________________________________
-void PRadIslandWrapper::ClusterProcessing()
+void PRadIslandCluster::ClusterProcessing()
 {
     float pi = 3.1415926535;
     //  final cluster processing (add status and energy resolution sigma_E):

@@ -49,7 +49,8 @@ SOURCES       = $(PRAD_PATH)/src/PRadDAQUnit.cpp \
                 $(PRAD_PATH)/src/ConfigParser.cpp \
                 $(PRAD_PATH)/src/PRadReconstructor.cpp \
                 $(PRAD_PATH)/src/PRadGEMSystem.cpp \
-                $(PRAD_PATH)/src/PRadIslandWrapper.cpp \
+                $(PRAD_PATH)/src/PRadIslandCluster.cpp \
+                $(PRAD_PATH)/src/PRadSquareCluster.cpp \
                 $(PRAD_PATH)/src/island.F
 
 OBJECTS       = PRadDAQUnit.o \
@@ -62,7 +63,8 @@ OBJECTS       = PRadDAQUnit.o \
                 ConfigParser.o \
                 PRadReconstructor.o \
                 PRadGEMSystem.o \
-                PRadIslandWrapper.o \
+                PRadIslandCluster.o \
+                PRadSquareCluster.o \
                 island.o
 
 TARGET        = libPRadDecoder.so
@@ -116,8 +118,11 @@ PRadReconstructor.o: $(PRAD_PATH)/src/PRadReconstructor.cpp
 PRadGEMSystem.o: $(PRAD_PATH)/src/PRadGEMSystem.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadGEMSystem.o $(PRAD_PATH)/src/PRadGEMSystem.cpp
 
-PRadIslandWrapper.o: $(PRAD_PATH)/src/PRadIslandWrapper.cpp
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadIslandWrapper.o $(PRAD_PATH)/src/PRadIslandWrapper.cpp
+PRadIslandCluster.o: $(PRAD_PATH)/src/PRadIslandCluster.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadIslandCluster.o $(PRAD_PATH)/src/PRadIslandCluster.cpp
+
+PRadSquareCluster.o: $(PRAD_PATH)/src/PRadSquareCluster.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o PRadSquareCluster.o $(PRAD_PATH)/src/PRadSquareCluster.cpp
 
 island.o: $(PRAD_PATH)/src/island.F
 	@echo Compiling $<; gfortran -c -fPIC $(INCPATH) $<

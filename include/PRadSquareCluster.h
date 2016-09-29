@@ -6,7 +6,7 @@
 class PRadSquareCluster : public PRadReconstructor
 {
 public:
-    PRadSquareCluster(PRadDataHandler *h = nullptr, const std::string &path = "config/square.conf");
+    PRadSquareCluster(PRadDataHandler *h = nullptr);
     virtual ~PRadSquareCluster();
 
     void Configurate(const std::string &path);
@@ -20,7 +20,7 @@ protected:
     //void HyCalCoorToLab(float* x, float *y);
     bool useLogWeight(double x, double y);
     std::vector<unsigned short> findCluster(unsigned short cneterID, double &clusterEnergy);
-    std::vector<unsigned short> &GetTimeForCluster(unsigned short channelID);
+    std::vector<unsigned short> &GetTimeForCluster(PRadDAQUnit *module);
 
     //for parameter from reconstruction data base
     int fMaxNCluster;
@@ -30,6 +30,7 @@ protected:
     double fMoliereLeadGlass;
     double fMoliereRatio;
     double fBaseR;
+    std::vector<unsigned short> fClusterCenterID;
 
 public:
     static double Distance(PRadDAQUnit *u1, PRadDAQUnit *u2);

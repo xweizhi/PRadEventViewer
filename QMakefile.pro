@@ -45,7 +45,8 @@ HEADERS += include/PRadEventViewer.h \
            include/ConfigParser.h \
            include/PRadBenchMark.h \
            include/PRadReconstructor.h \
-           include/PRadIslandWrapper.h \
+           include/PRadSquareCluster.h \
+           include/PRadIslandCluster.h \
            include/PRadGEMSystem.h
 
 SOURCES += src/main.cpp \
@@ -73,7 +74,8 @@ SOURCES += src/main.cpp \
            src/ConfigParser.cpp \
            src/PRadBenchMark.cpp \
            src/PRadReconstructor.cpp \
-           src/PRadIslandWrapper.cpp \
+           src/PRadSquareCluster.cpp \
+           src/PRadIslandCluster.cpp \
            src/PRadGEMSystem.cpp
 
 LIBS += -lexpat -lgfortran \

@@ -13,7 +13,8 @@
 #include "PRadEvioParser.h"
 #include "PRadDSTParser.h"
 #include "PRadReconstructor.h"
-#include "PRadIslandWrapper.h"
+#include "PRadSquareCluster.h"
+#include "PRadIslandCluster.h"
 #include "PRadGEMSystem.h"
 #include "PRadDAQUnit.h"
 #include "PRadTDCGroup.h"
@@ -128,11 +129,19 @@ void PRadDataHandler::ReadConfig(const string &path)
             const string var1 = c_parser.TakeFirst().String();
             ExecuteConfigCommand(&PRadDataHandler::InitializeByData, var1, -1, 2);
         }
-        if((func_name.find("Island Configuration") != string::npos)) {
+        if((func_name.find("Island Cluster Configuration") != string::npos)) {
             const string var1 = "Island";
             const string var2 = c_parser.TakeFirst().String();
             ExecuteConfigCommand(&PRadDataHandler::AddHyCalReconstructor,
-                                 (PRadReconstructor *) new PRadIslandWrapper(this),
+                                 (PRadReconstructor *) new PRadIslandCluster(),
+                                 var1,
+                                 var2);
+        }
+        if((func_name.find("Square Cluster Configuration") != string::npos)) {
+            const string var1 = "Square";
+            const string var2 = c_parser.TakeFirst().String();
+            ExecuteConfigCommand(&PRadDataHandler::AddHyCalReconstructor,
+                                 (PRadReconstructor *) new PRadSquareCluster(),
                                  var1,
                                  var2);
         }
