@@ -15,9 +15,7 @@ public:
     virtual ~PRadDSTParser();
 
     void OpenOutput(const std::string &path, std::ios::openmode mode = std::ios::out | std::ios::binary);
-    void OpenInput(const std::string &path, std::ios::openmode mode = std::ios::out | std::ios::binary);
-    void WriteToDST(const std::string &path, std::ios::openmode mode = std::ios::out | std::ios::binary);
-    void ReadFromDST(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
+    void OpenInput(const std::string &path, std::ios::openmode mode = std::ios::in | std::ios::binary);
     void CloseOutput();
     void CloseInput();
     void SetMode(const uint32_t &bit) {update_mode = bit;};
