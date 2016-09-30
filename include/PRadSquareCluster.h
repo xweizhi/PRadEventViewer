@@ -22,14 +22,14 @@ protected:
     std::vector<unsigned short> findCluster(unsigned short cneterID, double &clusterEnergy);
     std::vector<unsigned short> &GetTimeForCluster(PRadDAQUnit *module);
 
-    //for parameter from reconstruction data base
-    int fMaxNCluster;
+    // parameters for reconstruction
     double fMinClusterCenterE;
     double fMinClusterE;
     double fMoliereCrystal;
     double fMoliereLeadGlass;
     double fMoliereRatio;
     double fBaseR;
+    double fLogWeightThres;
     std::vector<unsigned short> fClusterCenterID;
 
 public:

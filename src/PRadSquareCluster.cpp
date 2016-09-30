@@ -33,6 +33,8 @@ void PRadSquareCluster::Configurate(const string &c_path)
     fBaseR = GetConfigValue("CLUSTER_SEP_DISTANCE", "60.0").Double();
     fMinClusterCenterE = GetConfigValue("MIN_CLUSTER_CENTER_E", "10.0").Double();
     fMinClusterE = GetConfigValue("MIN_CLUSTER_TOTAL_E", "50.0").Double();
+
+    fLogWeightThres = GetConfigValue("LOG_WEIGHT_TREHSHOLD", "4.6").Double();
 }
 
 void PRadSquareCluster::Clear()
@@ -85,12 +87,11 @@ void PRadSquareCluster::Reconstruct(EventData &event)
             double thisY = thisModule->GetY();
 
             double weight = thisModule->GetEnergy()/clusterEnergy;
-            double weight_log = 4.6 + log(weight);
+            weightX += weight*thisX;
+            weightY += weight*thisY;
+            totalWeight += weight;
 
-            if (weight > 0.) {
-                weightX += weight*thisX;
-                weightY += weight*thisY;
-                totalWeight += weight;
+            if (double weight_log = fLogWeightThres + log(weight) > 0.) {
                 weightX_log += weight_log*thisX;
                 weightY_log += weight_log*thisY;
                 totalWeight_log += weight_log;
