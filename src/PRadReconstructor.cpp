@@ -70,7 +70,7 @@ ConfigValue PRadReconstructor::GetConfigValue(const string &name,
     return it->second;
 }
 
-void PRadReconstructor::Configurate(const string & /*path*/)
+void PRadReconstructor::Configure(const string & /*path*/)
 {
     // to be implemented by methods
 }

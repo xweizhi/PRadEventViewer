@@ -1411,7 +1411,7 @@ void PRadDataHandler::AddHyCalClusterMethod(PRadReconstructor *r,
     }
 
     hycal_recon_map[name] = r;
-    r->Configurate(c_path);
+    r->Configure(c_path);
 }
 
 void PRadDataHandler::SetHyCalClusterMethod(const string &name)

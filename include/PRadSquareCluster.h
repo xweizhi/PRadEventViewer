@@ -9,7 +9,7 @@ public:
     PRadSquareCluster(PRadDataHandler *h = nullptr);
     virtual ~PRadSquareCluster();
 
-    void Configurate(const std::string &path);
+    void Configure(const std::string &path);
     void Clear();
     void Reconstruct(EventData &event);
     PRadDAQUnit *LocateModule(const double &x, const double &y);

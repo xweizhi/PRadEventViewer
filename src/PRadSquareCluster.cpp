@@ -22,7 +22,7 @@ PRadSquareCluster::~PRadSquareCluster()
 {
 }
 
-void PRadSquareCluster::Configurate(const string &c_path)
+void PRadSquareCluster::Configure(const string &c_path)
 {
     ReadConfigFile(c_path);
 

@@ -14,7 +14,7 @@ PRadIslandCluster::PRadIslandCluster(PRadDataHandler *h)
 {
 }
 //________________________________________________________________
-void PRadIslandCluster::Configurate(const std::string &c_path)
+void PRadIslandCluster::Configure(const std::string &c_path)
 {
     ReadConfigFile(c_path);
 

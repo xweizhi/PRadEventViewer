@@ -134,7 +134,7 @@ public:
     virtual ~PRadIslandCluster() {;}
 
     void SetHandler(PRadDataHandler* theHandler) { fHandler = theHandler; }
-    void Configurate(const std::string &c_path);
+    void Configure(const std::string &c_path);
     void LoadBlockInfo(const std::string &path);
     void LoadCrystalProfile(const std::string &path);
     void LoadLeadGlassProfile(const std::string &path);

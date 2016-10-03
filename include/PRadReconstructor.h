@@ -27,7 +27,7 @@ public:
     void SetHandler(PRadDataHandler *h);
 
     // functions that to be overloaded
-    virtual void Configurate(const std::string &path);
+    virtual void Configure(const std::string &path);
     virtual void Clear();
     virtual void Reconstruct(EventData &event);
     virtual int GetNClusters() {return fNHyCalClusters;};
