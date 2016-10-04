@@ -67,7 +67,7 @@ int main(int /*argc*/, char * /*argv*/ [])
     cout << "Pedestal for W1115: mean " << pars1.at(1)
          << ", sigma " << pars1.at(2) << endl;
     cout << "LMS for W1115: mean " << pars1.at(1)
-         << ", sigma " << pars1.at(2) << endl;
+         << ", sigma " << pars2.at(2) << endl;
 
     cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;
     cout << "Read " << handler->GetEventCount() << " events and "

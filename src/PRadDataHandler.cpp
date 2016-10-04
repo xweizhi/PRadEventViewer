@@ -847,7 +847,7 @@ throw(PRadException)
     {
         result.push_back(myfit->GetParameter(i));
         if(verbose)
-            cout << "Parameter " << i << myfit->GetParameter(i) << endl;
+            cout << "Parameter " << i << ", " << myfit->GetParameter(i) << endl;
     }
 
     delete fit;

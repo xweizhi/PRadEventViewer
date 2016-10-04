@@ -1,8 +1,8 @@
 //============================================================================//
-// Start Qt and root applications                                             //
+// An example showing how to get the EPICS information from data files        //
 //                                                                            //
 // Chao Peng                                                                  //
-// 02/27/2016                                                                 //
+// 10/04/2016                                                                 //
 //============================================================================//
 
 #include "PRadDataHandler.h"
