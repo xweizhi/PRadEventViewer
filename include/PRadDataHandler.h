@@ -153,11 +153,12 @@ public:
     void InitializeByData(const std::string &path = "", int run = -1, int ref = 2);
     void ResetChannelHists();
     void SaveHistograms(const std::string &path);
-    void FitHistogram(const std::string &channel,
-                      const std::string &hist_name,
-                      const std::string &fit_func,
-                      const double &range_min,
-                      const double &range_max) throw(PRadException);
+    std::vector<double> FitHistogram(const std::string &channel,
+                                     const std::string &hist_name,
+                                     const std::string &fit_func,
+                                     const double &range_min,
+                                     const double &range_max,
+                                     const bool &verbose = false) throw(PRadException);
     void FitPedestal();
     void ReadGainFactor(const std::string &path, const int &ref = 2);
     void CorrectGainFactor(const int &ref = 2);

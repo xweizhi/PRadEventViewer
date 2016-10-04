@@ -79,7 +79,7 @@ TARGET_LIBS   = libPRadDecoder.so
 
 BUILD_LIBS    = -L$(T_LIBS_DIR) -lPRadDecoder
 
-TARGET	      = testIsland testEPICS replay
+TARGET        = testIsland testEPICS testLMS replay
 
 first: all
 
@@ -124,5 +124,4 @@ install:   FORCE
 uninstall:   FORCE
 
 FORCE:
-
 

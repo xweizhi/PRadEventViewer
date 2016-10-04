@@ -803,11 +803,13 @@ EPICSData &PRadDataHandler::GetEPICSEvent(const unsigned int &index)
     }
 }
 
-void PRadDataHandler::FitHistogram(const string &channel,
-                                   const string &hist_name,
-                                   const string &fit_function,
-                                   const double &range_min,
-                                   const double &range_max) throw(PRadException)
+vector<double> PRadDataHandler::FitHistogram(const string &channel,
+                                             const string &hist_name,
+                                             const string &fit_function,
+                                             const double &range_min,
+                                             const double &range_max,
+                                             const bool &verbose)
+throw(PRadException)
 {
     // If the user didn't dismiss the dialog, do something with the fields
     PRadDAQUnit *ch = GetChannel(channel);
@@ -833,15 +835,24 @@ void PRadDataHandler::FitHistogram(const string &channel,
 
     TF1 *myfit = (TF1*) hist->GetFunction("newfit");
 
-    // print out result
-    cout << "Fit histogram " << hist->GetTitle() << endl;
+    // pack parameters, print out result if verbose is true
+    vector<double> result;
+
+    if(verbose)
+        cout << "Fit histogram " << hist->GetTitle()
+             << " with expression " << myfit->GetFormula()->GetExpFormula().Data()
+             << endl;
+
     for(int i = 0; i < myfit->GetNpar(); ++i)
     {
-        cout << "Parameter " << i+1 << ": " << myfit->GetParameter(i+1) << endl;
+        result.push_back(myfit->GetParameter(i));
+        if(verbose)
+            cout << "Parameter " << i << myfit->GetParameter(i) << endl;
     }
-    cout << endl;
 
     delete fit;
+
+    return result;
 }
 
 void PRadDataHandler::FitPedestal()
