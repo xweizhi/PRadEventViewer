@@ -41,81 +41,84 @@ RANLIB        =
 SED           = sed
 STRIP         = 
 
-####### Targets
+####### Targets, add new objects here
 
-SOURCES       = $(PRAD_PATH)/src/PRadDAQUnit.cpp \
-                $(PRAD_PATH)/src/PRadTDCGroup.cpp \
-                $(PRAD_PATH)/src/PRadEvioParser.cpp \
-                $(PRAD_PATH)/src/PRadDSTParser.cpp \
-                $(PRAD_PATH)/src/PRadDataHandler.cpp \
-                $(PRAD_PATH)/src/PRadException.cpp \
-                $(PRAD_PATH)/src/PRadBenchMark.cpp \
-                $(PRAD_PATH)/src/ConfigParser.cpp \
-                $(PRAD_PATH)/src/PRadReconstructor.cpp \
-                $(PRAD_PATH)/src/PRadGEMSystem.cpp \
-                $(PRAD_PATH)/src/PRadIslandCluster.cpp \
-                $(PRAD_PATH)/src/PRadSquareCluster.cpp \
-                $(PRAD_PATH)/src/island.F
-
-OBJECTS_DIR   = obj
-
-OBJECTS       = $(OBJECTS_DIR)/PRadDAQUnit.o \
-                $(OBJECTS_DIR)/PRadTDCGroup.o \
-                $(OBJECTS_DIR)/PRadEvioParser.o \
-                $(OBJECTS_DIR)/PRadDSTParser.o \
-                $(OBJECTS_DIR)/PRadDataHandler.o \
-                $(OBJECTS_DIR)/PRadException.o \
-                $(OBJECTS_DIR)/PRadBenchMark.o \
-                $(OBJECTS_DIR)/ConfigParser.o \
-                $(OBJECTS_DIR)/PRadReconstructor.o \
-                $(OBJECTS_DIR)/PRadGEMSystem.o \
-                $(OBJECTS_DIR)/PRadIslandCluster.o \
-                $(OBJECTS_DIR)/PRadSquareCluster.o \
-                $(OBJECTS_DIR)/island.o
-
+# lib PRadDecoder
 T_LIBS_DIR    = lib
-
 TARGET_LIBS   = libPRadDecoder.so
 
-BUILD_LIBS    = -L$(T_LIBS_DIR) -lPRadDecoder
+LIB_SRC_DIR   = $(PRAD_PATH)/src
 
-TARGET        = testIsland testEPICS testLMS replay
+LIB_OBJ_DIR   = $(T_LIBS_DIR)/obj
+
+LIB_OBJECTS   = $(LIB_OBJ_DIR)/PRadDAQUnit.o \
+                $(LIB_OBJ_DIR)/PRadTDCGroup.o \
+                $(LIB_OBJ_DIR)/PRadEvioParser.o \
+                $(LIB_OBJ_DIR)/PRadDSTParser.o \
+                $(LIB_OBJ_DIR)/PRadDataHandler.o \
+                $(LIB_OBJ_DIR)/PRadException.o \
+                $(LIB_OBJ_DIR)/PRadBenchMark.o \
+                $(LIB_OBJ_DIR)/ConfigParser.o \
+                $(LIB_OBJ_DIR)/PRadReconstructor.o \
+                $(LIB_OBJ_DIR)/PRadGEMSystem.o \
+                $(LIB_OBJ_DIR)/PRadIslandCluster.o \
+                $(LIB_OBJ_DIR)/PRadSquareCluster.o \
+                $(LIB_OBJ_DIR)/island.o
+
+
+# examples
+TARGET        = testIsland \
+                testEPICS \
+                testLMS \
+                replay
+
+EXE_SRC_DIR   = src
+
+EXE_OBJ_DIR   = obj
+
+OBJECTS       = $(EXE_OBJ_DIR)/testIsland.o \
+                $(EXE_OBJ_DIR)/testEPICS.o \
+                $(EXE_OBJ_DIR)/testLMS.o \
+                $(EXE_OBJ_DIR)/replay.o
+
+EXE_LIBS      = -L$(T_LIBS_DIR) -lPRadDecoder
 
 first: all
 
-all: Makefile $(TARGET_LIBS) $(TARGET)
+all: lib exe
 
-example: Makefile $(TARGET)
+lib: Makefile $(TARGET_LIBS)
 
-libs: Makefile $(TARGET_LIBS)
+exe: Makefile $(TARGET)
+
 ####### Build rules
 
-$(TARGET_LIBS):  $(OBJECTS)
-	$(LINK) $(LFLAGS_LIBS) -o $(T_LIBS_DIR)/$(TARGET_LIBS) $(OBJECTS) $(OBJCOMP) $(LIBS)
+$(TARGET_LIBS):  $(LIB_OBJECTS)
+	$(LINK) $(LFLAGS_LIBS) -o $(T_LIBS_DIR)/$(TARGET_LIBS) $(LIB_OBJECTS) $(OBJCOMP) $(LIBS)
 
-$(TARGET):
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $@.o src/$@.cpp
-	$(LINK) $(LFLAGS) -o $@ $@.o $(OBJCOMP) $(LIBS) $(BUILD_LIBS)
-	$(DEL_FILE) $@.o
+$(TARGET): $(OBJECTS)
+	$(LINK) $(LFLAGS) -o $@ $(EXE_OBJ_DIR)/$@.o $(OBJCOMP) $(LIBS) $(EXE_LIBS)
 
+$(EXE_OBJ_DIR)/%.o: $(EXE_SRC_DIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $@ $<
 
+$(LIB_OBJ_DIR)/%.o: $(LIB_SRC_DIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS_LIBS) $(INCPATH) -o $@ $<
+
+$(LIB_OBJ_DIR)/island.o: $(LIB_SRC_DIR)/island.F
+	$(FORTRAN) -c $(FFLAGS) $(INCPATH) -o $@ $<
+
+####### Clean
 clean: cleanobj cleanexe cleanlib
 
 cleanobj:
-	$(DEL_FILE) *.o $(OBJECTS_DIR)/*.o
+	$(DEL_FILE) $(LIB_OBJ_DIR)/*.o $(EXE_OBJ_DIR)/*.o
 
 cleanexe:
 	$(DEL_FILE) $(TARGET)
 
 cleanlib:
 	$(DEL_FILE) $(T_LIBS_DIR)/$(TARGET_LIBS)
-
-$(OBJECTS_DIR)/%.o: $(PRAD_PATH)/src/%.cpp
-	$(CXX) -c $(CXXFLAGS_LIBS) $(INCPATH) -o $@ $<
-
-$(OBJECTS_DIR)/island.o: $(PRAD_PATH)/src/island.F
-	$(FORTRAN) -c $(FFLAGS) $(INCPATH) -o $@ $<
-
 
 ####### Install
 

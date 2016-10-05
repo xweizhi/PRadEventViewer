@@ -1,0 +1,15 @@
+Makefile instruction
+
+make lib, make libPRadDecoder.so in lib/
+
+make exe, make examples, source files are in src/
+
+make, make both lib and exe
+
+make cleanobj, remove objects
+
+make cleanexe, remove example executables
+
+make cleanlib, remove libPRadDecoder.so
+
+make clean, remove all the above things
