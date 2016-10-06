@@ -47,8 +47,9 @@ void PRadReconstructor::ReadConfigFile(const string &path)
         if (c_parser.NbofElements() != 2)
             continue;
 
-        string var_name = c_parser.TakeFirst();
-        ConfigValue var_value = c_parser.TakeFirst();
+        string var_name;
+        ConfigValue var_value;
+        c_parser >> var_name >> var_value;
         fConfigMap[var_name] = var_value;
     }
 }

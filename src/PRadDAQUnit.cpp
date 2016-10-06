@@ -121,16 +121,14 @@ void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 // universe calibration code, can be implemented by derivative class
 double PRadDAQUnit::Calibration(const unsigned short &adcVal)
 {
-    return ((double)adcVal - pedestal.mean)*cal_const.factor;
-    /*double g1 = cal_const.GetReferenceGain(2);
-    double g2 = cal_const.base_factor*g1/cal_const.factor;
-    double trueADC = (double)adcVal*g1/g2;
+    double sub_adc = (double)adcVal - pedestal.mean;
 
-    if (g1 ==0 || g2 == 0){
-      return (double) adcVal*cal_const.factor;
-    }
+    if(sub_adc < 0.)
+        return 0.;
 
-    return (double)trueADC*gainP0 / (1. - (double)trueADC*gainP1);*/
+    double energy = sub_adc*cal_const.factor;
+
+    return energy;
 }
 
 // erase current data

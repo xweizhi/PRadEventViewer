@@ -14,9 +14,9 @@ class HyCalModule : public QGraphicsItem, public PRadDAQUnit
 {
 public:
     HyCalModule(PRadEventViewer* const p,
-                const QString &rid,
+                const std::string &rid,
                 const ChannelAddress &daqAddr,
-                const QString &tdc,
+                const std::string &tdc,
                 const PRadDAQUnit::Geometry &geo);
     virtual ~HyCalModule();
 

@@ -82,12 +82,14 @@ enum PRadBankID
 
 struct ChannelAddress
 {
-    size_t crate;
-    size_t slot;
-    size_t channel;
+    unsigned int crate;
+    unsigned int slot;
+    unsigned int channel;
 
     ChannelAddress() {};
-    ChannelAddress(const size_t &c, const size_t &s, const size_t &ch)
+    ChannelAddress(const unsigned int &c,
+                   const unsigned int &s,
+                   const unsigned int &ch)
     : crate(c), slot(s), channel(ch)
     {};
 

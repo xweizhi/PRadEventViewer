@@ -435,11 +435,10 @@ void PRadEventViewer::readModuleList()
         exit(1);
     }
 
-    QString moduleName;
-    ChannelAddress daqAddr;
-    ChannelAddress hvAddr;
-    QString tdcGroup;
-    PRadDAQUnit::Geometry geometry;
+    string moduleName;
+    string tdcGroup;
+    unsigned int crate, slot, channel, type;
+    double size_x, size_y, x, y;
 
     // some info that is not read from list
     // initialize first
@@ -447,24 +446,20 @@ void PRadEventViewer::readModuleList()
     while (c_parser.ParseLine())
     {
         if(c_parser.NbofElements() == 13) {
-            moduleName = QString::fromStdString(c_parser.TakeFirst());
-            daqAddr.crate = c_parser.TakeFirst().ULong();
-            daqAddr.slot = c_parser.TakeFirst().ULong();
-            daqAddr.channel = c_parser.TakeFirst().ULong();
-            tdcGroup = QString::fromStdString(c_parser.TakeFirst());
+            c_parser >> moduleName // module name
+                     >> crate >> slot >> channel // daq settings
+                     >> tdcGroup // tdc group name
+                     >> type >> size_x >> size_y >> x >> y; // geometry
+            
+            ChannelAddress daqAddr(crate, slot, channel);
+            PRadDAQUnit::Geometry geo(PRadDAQUnit::ChannelType(type), size_x, size_y, x, y);
 
-            geometry.type = PRadDAQUnit::ChannelType(c_parser.TakeFirst().Int());
-            geometry.size_x = c_parser.TakeFirst().Double();
-            geometry.size_y = c_parser.TakeFirst().Double();
-            geometry.x = c_parser.TakeFirst().Double();
-            geometry.y = c_parser.TakeFirst().Double();
+            HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, geo);
 
-            hvAddr.crate = c_parser.TakeFirst().ULong();
-            hvAddr.slot = c_parser.TakeFirst().ULong();
-            hvAddr.channel = c_parser.TakeFirst().ULong();
-
-            HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, geometry);
+            c_parser >> crate >> slot >> channel; // hv settings
+            ChannelAddress hvAddr(crate, slot, channel);
             newModule->UpdateHVSetup(hvAddr);
+
             HyCal->addModule(newModule);
             handler->RegisterChannel(newModule);
         } else {
@@ -1079,8 +1074,9 @@ void PRadEventViewer::readCustomValue(const QString &filepath)
             continue;
 
         if(c_parser.NbofElements() == 2) {
-            std::string name = c_parser.TakeFirst();
-            double value = c_parser.TakeFirst().Double();
+            std::string name;
+            double value;
+            c_parser >> name >> value;
             HyCalModule *module = dynamic_cast<HyCalModule*>(handler->GetChannel(name));
             if(module != nullptr) {
                 module->UpdateCustomValue(value);

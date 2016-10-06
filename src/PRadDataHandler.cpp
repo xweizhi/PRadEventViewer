@@ -1003,18 +1003,14 @@ void PRadDataHandler::ReadTDCList(const string &path)
              << endl;
     }
 
-    string name;
-    ChannelAddress addr;
-
     while (c_parser.ParseLine())
     {
        if(c_parser.NbofElements() == 4) {
-            name = c_parser.TakeFirst();
-            addr.crate = c_parser.TakeFirst().ULong();
-            addr.slot = c_parser.TakeFirst().ULong();
-            addr.channel = c_parser.TakeFirst().ULong();
+            string name;
+            unsigned short crate, slot, channel;
+            c_parser >> name >> crate >> slot >> channel;
 
-            AddTDCGroup(new PRadTDCGroup(name, addr));
+            AddTDCGroup(new PRadTDCGroup(name, ChannelAddress(crate, slot, channel)));
         } else {
             cout << "Unrecognized input format in tdc group list file, skipped one line!"
                  << endl;
@@ -1036,28 +1032,20 @@ void PRadDataHandler::ReadChannelList(const string &path)
         return;
     }
 
-    string moduleName;
-    ChannelAddress daqAddr;
-    string tdcGroup;
-    PRadDAQUnit::Geometry geo;
-
+    string moduleName, tdcGroup;
+    unsigned int crate, slot, channel, type;
+    double size_x, size_y, x, y;
     // some info that is not read from list
     while (c_parser.ParseLine())
     {
         if(c_parser.NbofElements() >= 10) {
-            moduleName = c_parser.TakeFirst();
-            daqAddr.crate = c_parser.TakeFirst().ULong();
-            daqAddr.slot = c_parser.TakeFirst().ULong();
-            daqAddr.channel = c_parser.TakeFirst().ULong();
-            tdcGroup = c_parser.TakeFirst();
+            c_parser >> moduleName >> crate >> slot >> channel >> tdcGroup
+                     >> type >> size_x >> size_y >> x >> y;
 
-            geo.type = PRadDAQUnit::ChannelType(c_parser.TakeFirst().Int());
-            geo.size_x = c_parser.TakeFirst().Double();
-            geo.size_y = c_parser.TakeFirst().Double();
-            geo.x = c_parser.TakeFirst().Double();
-            geo.y = c_parser.TakeFirst().Double();
-
-            PRadDAQUnit *new_ch = new PRadDAQUnit(moduleName, daqAddr, tdcGroup, geo);
+            PRadDAQUnit *new_ch = new PRadDAQUnit(moduleName,
+                                                  ChannelAddress(crate, slot, channel),
+                                                  tdcGroup,
+                                                  PRadDAQUnit::Geometry(PRadDAQUnit::ChannelType(type), size_x, size_y, x, y));
             AddChannel(new_ch);
         } else {
             cout << "Unrecognized input format in channel list file, skipped one line!"
@@ -1119,19 +1107,15 @@ void PRadDataHandler::ReadPedestalFile(const string &path)
     }
 
     double val, sigma;
-    ChannelAddress daqInfo;
+    unsigned int crate, slot, channel;
     PRadDAQUnit *tmp;
 
     while(c_parser.ParseLine())
     {
         if(c_parser.NbofElements() == 5) {
-            daqInfo.crate = c_parser.TakeFirst().ULong();
-            daqInfo.slot = c_parser.TakeFirst().ULong();
-            daqInfo.channel = c_parser.TakeFirst().ULong();
-            val = c_parser.TakeFirst().Double();
-            sigma = c_parser.TakeFirst().Double();
+            c_parser >> crate >> slot >> channel >> val >> sigma;
 
-            if((tmp = GetChannel(daqInfo)) != nullptr)
+            if((tmp = GetChannel(ChannelAddress(crate, slot, channel))) != nullptr)
                 tmp->UpdatePedestal(val, sigma);
         } else {
             cout << "Unrecognized input format in pedestal data file, skipped one line!"
@@ -1160,22 +1144,14 @@ void PRadDataHandler::ReadCalibrationFile(const string &path)
     }
 
     string name;
-    double calFactor, p0, p1;
+    double calFactor, ref1, ref2, ref3, p0, p1;
     PRadDAQUnit *tmp;
 
     while(c_parser.ParseLine())
     {
         if(c_parser.NbofElements() >= 7) {
             vector<double> ref_gain;
-            name = c_parser.TakeFirst();
-            calFactor = c_parser.TakeFirst().Double();
-
-            ref_gain.push_back(c_parser.TakeFirst().Double()); // ref 1
-            ref_gain.push_back(c_parser.TakeFirst().Double()); // ref 2
-            ref_gain.push_back(c_parser.TakeFirst().Double()); // ref 3
-
-            p0 = c_parser.TakeFirst().Double();
-            p1 = c_parser.TakeFirst().Double()*1.e-3;
+            c_parser >> name >> calFactor >> ref1 >> ref2 >> ref3 >> p0 >> p1;
 
             PRadDAQUnit::CalibrationConstant calConst(calFactor, ref_gain, p0, p1);
 
@@ -1216,10 +1192,7 @@ void PRadDataHandler::ReadGainFactor(const string &path, const int &ref)
     while(c_parser.ParseLine())
     {
         if(c_parser.NbofElements() == 2) {
-            name = c_parser.TakeFirst();
-            ref_gain[0] = c_parser.TakeFirst().Double();
-            ref_gain[1] = c_parser.TakeFirst().Double();
-            ref_gain[2] = c_parser.TakeFirst().Double();
+            c_parser >> name >> ref_gain[0] >> ref_gain[1] >> ref_gain[2];
 
             if((tmp = GetChannel(name)) != nullptr)
                 tmp->GainCorrection(ref_gain[ref-1], ref); //TODO we only use reference 2 for now

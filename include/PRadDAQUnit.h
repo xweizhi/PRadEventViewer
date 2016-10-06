@@ -62,8 +62,8 @@ public:
         {};
         CalibrationConstant(const double &calf,
                             const std::vector<double> &gain,
-                            const double &pp0,
-                            const double &pp1)
+                            const double &pp0 = 0.,
+                            const double &pp1 = 0.)
         : factor(calf), base_factor(calf), base_gain(gain), p0(pp0), p1(pp1)
         {};
 

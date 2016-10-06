@@ -61,22 +61,19 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
     while(c_parser.ParseLine())
     {
         string type = c_parser.TakeFirst();
+
         if(type == "DET") {
-            string readout = c_parser.TakeFirst();
-            string detector_type = c_parser.TakeFirst();
-            string name = c_parser.TakeFirst();
+            string readout, detector_type, name;
+            c_parser >> readout >> detector_type >> name;
             PRadGEMDET *new_det = new PRadGEMDET(readout, detector_type, name);
 
             if(readout == "CARTESIAN") {
-                string plane_x = c_parser.TakeFirst();
-                float size_x = c_parser.TakeFirst().Double();
-                int connect_x = c_parser.TakeFirst().Int();
-                int orient_x = c_parser.TakeFirst().Int();
+                string plane_x, plane_y;
+                float size_x, size_y;
+                int connect_x, connect_y, orient_x, orient_y;
 
-                string plane_y = c_parser.TakeFirst();
-                float size_y = c_parser.TakeFirst().Float();
-                int connect_y = c_parser.TakeFirst().Int();
-                int orient_y = c_parser.TakeFirst().Int();
+                c_parser >> plane_x >> size_x >> connect_x >> orient_x
+                         >> plane_y >> size_y >> connect_y >> orient_y;
 
                 new_det->AddPlane(PRadGEMDET::Plane_X, PRadGEMDET::Plane(plane_x, size_x, connect_x, orient_x));
                 new_det->AddPlane(PRadGEMDET::Plane_Y, PRadGEMDET::Plane(plane_y, size_y, connect_y, orient_y));
@@ -87,19 +84,19 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
                 delete new_det;
             }
         } else if(type == "FEC") {
-            int fec_id = c_parser.TakeFirst().Int();
-            string fec_ip = c_parser.TakeFirst();
+            int fec_id;
+            string fec_ip;
+
+            c_parser >> fec_id >> fec_ip;
 
             PRadGEMFEC *new_fec = new PRadGEMFEC(fec_id, fec_ip);
             RegisterFEC(new_fec);
         } else if(type == "APV") {
-            int fec_id = c_parser.TakeFirst().Int();
-            int adc_ch = c_parser.TakeFirst().Int();
-            string det_plane = c_parser.TakeFirst();
-            int orient = c_parser.TakeFirst().Int();
-            int index = c_parser.TakeFirst().Int();
-            unsigned short header = c_parser.TakeFirst().UShort();
-            string status = c_parser.TakeFirst();
+            string det_plane, status;
+            int fec_id, adc_ch, orient, index;
+            unsigned short header;
+
+            c_parser >> fec_id >> adc_ch >> det_plane >> orient >> index >> header >> status;
 
             PRadGEMAPV *new_apv = new PRadGEMAPV(det_plane, fec_id, adc_ch, orient, index, header, status);
 
@@ -128,7 +125,7 @@ void PRadGEMSystem::SortFECList()
 void PRadGEMSystem::LoadPedestal(const string &path)
 {
     ConfigParser c_parser;
-    c_parser.SetSplitters(",:");
+    c_parser.SetSplitters(",: \t");
 
     if(!c_parser.OpenFile(path)) {
         throw PRadException("GEM System", "cannot open configuration file " + path);
@@ -139,14 +136,13 @@ void PRadGEMSystem::LoadPedestal(const string &path)
     while(c_parser.ParseLine())
     {
         ConfigValue first = c_parser.TakeFirst();
-        if(first == "FEC") {
-            int fec = c_parser.TakeFirst().Int();
-            string second = c_parser.TakeFirst();
-            int adc = c_parser.TakeFirst().Int();
+        if(first == "APV") { // a new APV
+            int fec, adc;
+            c_parser >> fec >> adc;
             apv = GetAPV(fec, adc);
-        } else {
-            float offset = c_parser.TakeFirst().Float();
-            float noise = c_parser.TakeFirst().Float();
+        } else { // different adc channel in this APV
+            float offset, noise;
+            c_parser >> offset >> noise;
             if(apv)
                 apv->UpdatePedestal(PRadGEMAPV::Pedestal(offset, noise), first.Int());
         }
@@ -899,7 +895,7 @@ int PRadGEMAPV::MapStrip(const int &ch)
 
 void PRadGEMAPV::PrintOutPedestal(ofstream &out)
 {
-    out << "APV address: "
+    out << "APV "
         << setw(12) << fec_id
         << setw(12) << adc_ch
         << endl;
