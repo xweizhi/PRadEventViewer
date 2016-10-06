@@ -840,7 +840,7 @@ throw(PRadException)
 
     if(verbose)
         cout << "Fit histogram " << hist->GetTitle()
-             << " with expression " << myfit->GetFormula()->GetExpFormula().Data()
+             //<< " with expression " << myfit->GetFormula()->GetExpFormula().Data()
              << endl;
 
     for(int i = 0; i < myfit->GetNpar(); ++i)
