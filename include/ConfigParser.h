@@ -42,9 +42,7 @@ class ConfigValue
 public:
     std::string _value;
 
-    ConfigValue()
-    : _value("0")
-    {};
+    ConfigValue() {};
 
     ConfigValue(const std::string &value);
     ConfigValue(const int &value);
@@ -89,6 +87,7 @@ public:
     long double LongDouble();
     const char *c_str();
     std::string String() {return _value;};
+    bool IsEmpty() {return _value.empty();};
 
     operator std::string() const
     {

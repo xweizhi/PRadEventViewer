@@ -1,8 +1,9 @@
 //============================================================================//
-// Start Qt and root applications                                             //
+// An application of replay raw data file and save the replayed data into DST //
+// file. This is the 1st-level replay, it only discards the pedestal data     //
 //                                                                            //
 // Chao Peng                                                                  //
-// 02/27/2016                                                                 //
+// 10/04/2016                                                                 //
 //============================================================================//
 
 #include "PRadDataHandler.h"
@@ -21,6 +22,7 @@ int main(int argc, char * argv[])
     char *ptr;
     string output, input;
 
+    // -i input_file -o output_file
     for(int i = 1; i < argc; ++i)
     {
         ptr = argv[i];

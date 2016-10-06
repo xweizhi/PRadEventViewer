@@ -182,4 +182,13 @@ double PRadDAQUnit::GetEnergy()
     return Calibration(adc_value);
 }
 
+std::string PRadDAQUnit::NameFromPrimExID(int pid)
+{
+    std::string name;
+    if(pid < 1000)
+        name = "G" + std::to_string(pid);
+    else
+        name = "W" + std::to_string(pid-1000);
 
+    return name;
+}

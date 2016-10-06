@@ -1,8 +1,8 @@
 //============================================================================//
-// Start Qt and root applications                                             //
+// An example showing how to get the EPICS information from data files        //
 //                                                                            //
 // Chao Peng                                                                  //
-// 02/27/2016                                                                 //
+// 10/04/2016                                                                 //
 //============================================================================//
 
 #include "PRadDataHandler.h"
@@ -25,6 +25,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     // read configuration files
     handler->ReadConfig("config.txt");
+    handler->SetHyCalClusterMethod("Square");
 
     PRadBenchMark timer;
 //    handler->ReadFromDST("test.dst");
@@ -32,7 +33,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     // here shows an example how to read DST file while not saving all the events
     // in memory
-    dst_parser->OpenInput("prad_1287.dst");
+    dst_parser->OpenInput("/work/hallb/prad/replay/prad_001287.dst");
 
     int count = 0;
 
@@ -50,9 +51,13 @@ int main(int /*argc*/, char * /*argv*/ [])
             cout << event.event_number << "  ";
             cout << event.gem_data.size() << "  ";
             cout << handler->GetEPICSValue("MBSY2C_energy", event) << endl;
-            for(auto &hit : handler->GetHyCalCluster(event))
+            handler->HyCalReconstruct(event);
+            int Nhits;
+            HyCalHit *hit = handler->GetHyCalCluster(Nhits);
+
+            for(int i = 0; i < Nhits; ++i)
             {
-                cout << hit.E << "  " << hit.x << "  " << hit.y << endl;
+                cout << hit[i].E << "  " << hit[i].x << "  " << hit[i].y << endl;
             }
         } else if(dst_parser->EventType() == PRad_DST_Epics) {
             // save epics into handler, otherwise get epicsvalue won't work
@@ -73,4 +78,3 @@ int main(int /*argc*/, char * /*argv*/ [])
     //handler->PrintOutEPICS();
     return 0;
 }
-

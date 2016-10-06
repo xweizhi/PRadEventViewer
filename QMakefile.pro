@@ -45,6 +45,8 @@ HEADERS += include/PRadEventViewer.h \
            include/ConfigParser.h \
            include/PRadBenchMark.h \
            include/PRadReconstructor.h \
+           include/PRadSquareCluster.h \
+           include/PRadIslandCluster.h \
            include/PRadGEMSystem.h
 
 SOURCES += src/main.cpp \
@@ -72,12 +74,23 @@ SOURCES += src/main.cpp \
            src/ConfigParser.cpp \
            src/PRadBenchMark.cpp \
            src/PRadReconstructor.cpp \
+           src/PRadSquareCluster.cpp \
+           src/PRadIslandCluster.cpp \
            src/PRadGEMSystem.cpp
 
-LIBS += -lexpat \
-        -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx \
+LIBS += -lexpat -lgfortran \
         -L$$(ET_LIB) -let \
+        -L$$(THIRD_LIB) -lcaenhvwrapper -levio -levioxx \
         -L$$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist \
                           -lGraf -lGraf3d -lGpad -lTree \
                           -lPostscript -lMatrix -lPhysics \
                           -lMathCore -lThread -lGui -lSpectrum
+
+# other compilers
+FORTRAN_SOURCES += src/island.F
+fortran.output = $${OBJECTS_DIR}/${QMAKE_FILE_BASE}.o
+fortran.commands = gfortran -c ${QMAKE_FILE_NAME} -Iinclude -o ${QMAKE_FILE_OUT}
+fortran.input = FORTRAN_SOURCES
+QMAKE_EXTRA_COMPILERS += fortran
+
+

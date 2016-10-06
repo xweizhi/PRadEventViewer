@@ -133,6 +133,7 @@ public:
     int GetPrimexID() { return primexID; }
     virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
     virtual unsigned short Sparsification(const unsigned short &adcVal);
+    static std::string NameFromPrimExID(int pid);
 
     template<typename T>
     void FillHist(const T& t, const size_t &pos)

@@ -249,11 +249,6 @@ void PRadETChannel::Configuration::SetPort(unsigned short val)
     et_open_config_setport(config, val);
 }
 
-void PRadETChannel::Configuration::SetMultiPort(unsigned short val)
-{
-    et_open_config_setmultiport(config, val);
-}
-
 void PRadETChannel::Configuration::SetServerPort(unsigned short val)
 {
     et_open_config_setserverport(config, val);

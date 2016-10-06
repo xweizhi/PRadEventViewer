@@ -118,6 +118,9 @@ public:
     void UpdateLiveTimeScaler(EventData &event);
     void UpdateOnlineInfo(EventData &event);
     void UpdateRunInfo(const RunInfo &ri) {runInfo = ri;};
+    void AddHyCalClusterMethod(PRadReconstructor *r, const std::string &name, const std::string &c_path);
+    void SetHyCalClusterMethod(const std::string &name);
+    void ListHyCalClusterMethods();
 
     // show data
     int GetCurrentEventNb();
@@ -150,18 +153,21 @@ public:
     void InitializeByData(const std::string &path = "", int run = -1, int ref = 2);
     void ResetChannelHists();
     void SaveHistograms(const std::string &path);
-    void FitHistogram(const std::string &channel,
-                      const std::string &hist_name,
-                      const std::string &fit_func,
-                      const double &range_min,
-                      const double &range_max) throw(PRadException);
+    std::vector<double> FitHistogram(const std::string &channel,
+                                     const std::string &hist_name,
+                                     const std::string &fit_func,
+                                     const double &range_min,
+                                     const double &range_max,
+                                     const bool &verbose = false) throw(PRadException);
     void FitPedestal();
     void ReadGainFactor(const std::string &path, const int &ref = 2);
     void CorrectGainFactor(const int &ref = 2);
     void RefillEnergyHist();
     int FindEventIndex(const int &event_number);
-    std::vector<HyCalHit> &GetHyCalCluster(const int &event_index);
-    std::vector<HyCalHit> &GetHyCalCluster(EventData &event);
+    void HyCalReconstruct(const int &event_index);
+    void HyCalReconstruct(EventData &event);
+    HyCalHit *GetHyCalCluster(int &size);
+    std::vector<HyCalHit> GetHyCalCluster();
 
 
     // other functions
@@ -187,6 +193,7 @@ private:
     std::unordered_map< std::string, PRadDAQUnit* > map_name;
     std::unordered_map< std::string, PRadTDCGroup* > map_name_tdc;
     std::unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
+    std::unordered_map< std::string, PRadReconstructor *> hycal_recon_map;
 
     std::vector< PRadDAQUnit* > channelList;
     std::vector< PRadDAQUnit* > freeList; // channels that should be freed by handler

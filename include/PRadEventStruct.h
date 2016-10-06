@@ -347,16 +347,63 @@ struct EventData
 
 struct HyCalHit
 {
-    double x;
-    double y;
-    double E;
-    std::vector<unsigned short> time;
+#define TIME_MEASURE_SIZE 3
+    short type;         // Cluster types: 0,1,2,3,4;-1
+    short status;       // Energy Correction Status
+    short nblocks;      // Number of blocks in a cluster
+    short cid;          // Cluster's central cell ID
+    float E;            // Cluster's energy (MeV)
+    float x;            // Cluster's x-position (mm)
+    float y;            // Cluster's y-position (mm)
+    float x_log;        // x reconstruct with log scale (mm)
+    float y_log;        // y reconstruct with log scale (mm)
+    float chi2;         // chi2 comparing to shower profile
+    float sigma_E;
+    unsigned short time[TIME_MEASURE_SIZE];      // time information from central TDC group
 
-    HyCalHit() : x(0), y(0), E(0)
-    {};
-    HyCalHit(const double &cx, const double &cy, const double &cE, const std::vector<unsigned short> &t)
-    : x(cx), y(cy), E(cE), time(t)
-    {};
+    HyCalHit()
+    : type(0), status(0), nblocks(0), cid(0), E(0), x(0), y(0), x_log(0),
+      y_log(0), chi2(0), sigma_E(0)
+    {
+        clear_time();
+    }
+
+    HyCalHit(const float &cx, const float &cy, const float &cE)
+    : type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
+      y_log(0), chi2(0), sigma_E(0)
+    {
+        clear_time();
+    }
+
+    HyCalHit(const float &cx, const float &cy, const float &cE, const std::vector<unsigned short> &t)
+    : type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
+      y_log(0), chi2(0), sigma_E(0)
+    {
+        set_time(t);
+    }
+
+    HyCalHit(const short &t, const short &s, const short &n,
+             const float &cx, const float &cy, const float &cE, const float &ch)
+    : type(t), status(s), nblocks(n), cid(0), E(cE), x(cx), y(cy), x_log(0),
+      y_log(0), chi2(ch), sigma_E(0)
+    {
+        clear_time();
+    }
+    void clear_time()
+    {
+        for(int i = 0; i < TIME_MEASURE_SIZE; ++i)
+            time[i] = 0;
+    }
+    void set_time(const std::vector<unsigned short> &t)
+    {
+        for(int i = 0; i < TIME_MEASURE_SIZE; ++i)
+        {
+            if(i < (int)t.size())
+                time[i] = t[i];
+            else
+                time[i] = 0;
+        }
+    }
 };
 
 // DST file related info

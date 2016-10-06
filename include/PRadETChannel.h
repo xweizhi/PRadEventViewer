@@ -30,7 +30,6 @@ public:
         void SetCast(int val);
         void SetTTL(int val);
         void SetPort(unsigned short val);
-        void SetMultiPort(unsigned short val);
         void SetServerPort(unsigned short val);
         void AddBroadCast(const char *val);
         void RemoveBroadCast(const char *val);

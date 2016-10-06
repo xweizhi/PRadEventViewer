@@ -2,6 +2,82 @@
 #define MAX_CC 60
 #define test_p
 *
+      subroutine load_pwo_prof(cstr, cstr_len)
+     &bind(C, name = "load_pwo_prof_")
+      use, intrinsic :: ISO_C_BINDING
+      implicit none
+      integer(C_INT), intent(IN), VALUE :: cstr_len
+      character(len=1, kind=C_CHAR), dimension(256), intent(IN) :: cstr
+      character(len=cstr_len) config_dir
+*
+      real acell, ad2c
+      common/profile_com/ acell(0:1,0:500,0:500), ad2c(0:1,0:500,0:500)
+*
+      integer i, i1, i2, id1, id2
+      real fcell_hyc, fd2c
+*
+      if(cstr_len < 1) return
+*
+      do i = 1,cstr_len
+        config_dir(i:i) = cstr(i)
+      enddo
+*
+      open(22, file=config_dir, form='formatted', status='old')
+*
+      do i1 = 0, 500
+        do i2 = 0, i1
+          read(22,'(i3,1x,i3,2(1x,e20.10))')
+     &      id1, id2, fcell_hyc, fd2c
+
+          acell(0,i1,i2) = fcell_hyc
+          acell(0,i2,i1) = fcell_hyc
+          ad2c(0,i2,i1) = fd2c
+          ad2c(0,i1,i2) = fd2c
+        enddo
+      enddo
+*
+      close(22)
+      return
+      end
+
+      subroutine load_lg_prof(cstr, cstr_len)
+     &bind(C, name = "load_lg_prof_")
+      use, intrinsic :: ISO_C_BINDING
+      implicit none
+      integer(C_INT), intent(IN), VALUE :: cstr_len
+      character(len=1, kind=C_CHAR), dimension(256), intent(IN) :: cstr
+      character(len=cstr_len) config_dir
+*
+      real acell, ad2c
+      common/profile_com/ acell(0:1,0:500,0:500), ad2c(0:1,0:500,0:500)
+*
+      integer i, i1, i2, id1, id2
+      real fcell_hyc, fd2c
+*
+      if(cstr_len < 1) return
+*
+      do i = 1,cstr_len
+        config_dir(i:i) = cstr(i)
+      enddo
+
+      open(22,file=config_dir, form='formatted', status='old')
+*
+      do i1 = 0, 500
+        do i2 = 0, i1
+          read(22,'(i3,1x,i3,2(1x,e20.10))')
+     &      id1, id2, fcell_hyc, fd2c
+
+          acell(1,i1,i2) = fcell_hyc
+          acell(1,i2,i1) = fcell_hyc
+          ad2c(1,i2,i1) = fd2c
+          ad2c(1,i1,i2) = fd2c
+        enddo
+      enddo
+*
+      close(22)
+      return
+      end
+
       subroutine main_island
       implicit none
 #include "cphoto.inc"
@@ -19,45 +95,7 @@
       real acell, ad2c
       common/profile_com/ acell(0:1,0:500,0:500), ad2c(0:1,0:500,0:500)
 *
-      integer i1, i2, id1, id2
-      real fcell_hyc, fd2c
-      logical first
-      data first /.true./
-      save first
-*
       integer blklen
-*
-      if(first) then
-        first = .false.
-*
-        open(22,file='../config/prof_pwo.dat',
-     &          form='formatted', status='old')
-        do i1 = 0, 500
-        do i2 = 0, i1
-          read(22,'(i3,1x,i3,2(1x,e20.10))')
-     &      id1, id2, fcell_hyc, fd2c
-          acell(0,i1,i2) = fcell_hyc
-          acell(0,i2,i1) = fcell_hyc
-           ad2c(0,i2,i1) = fd2c
-           ad2c(0,i1,i2) = fd2c
-        enddo
-        enddo
-        close(22)
-        open(22,file='../config/prof_lg.dat',
-     &          form='formatted', status='old')
-        do i1 = 0, 500
-        do i2 = 0, i1
-          read(22,'(i3,1x,i3,2(1x,e20.10))')
-     &      id1, id2, fcell_hyc, fd2c
-          acell(1,i1,i2) = fcell_hyc
-          acell(1,i2,i1) = fcell_hyc
-           ad2c(1,i2,i1) = fd2c
-           ad2c(1,i1,i2) = fd2c
-        enddo
-        enddo
-        close(22)
-*
-      endif
 *
       nadcgam = 0
 *

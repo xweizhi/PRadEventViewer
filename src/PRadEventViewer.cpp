@@ -1249,19 +1249,20 @@ void PRadEventViewer::fitHistogram()
     if (dialog.exec() == QDialog::Accepted) {
         // If the user didn't dismiss the dialog, do something with the fields
         try {
-            handler->FitHistogram(fields.at(0)->text().toStdString(),
-                                  fields.at(1)->text().toStdString(),
-                                  fields.at(2)->text().toStdString(),
-                                  fields.at(3)->text().toDouble(),
-                                  fields.at(4)->text().toDouble());
+            auto pars = handler->FitHistogram(fields.at(0)->text().toStdString(),
+                                              fields.at(1)->text().toStdString(),
+                                              fields.at(2)->text().toStdString(),
+                                              fields.at(3)->text().toDouble(),
+                                              fields.at(4)->text().toDouble(),
+                                              true);
 
-            UpdateHistCanvas(); 
+            UpdateHistCanvas();
 
         } catch (PRadException e) {
             QMessageBox::critical(this,
                                   QString::fromStdString(e.FailureType()),
                                   QString::fromStdString(e.FailureDesc()));
- 
+
         }
     }
 }
