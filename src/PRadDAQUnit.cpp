@@ -110,11 +110,7 @@ void PRadDAQUnit::UpdatePedestal(const Pedestal &p)
 {
     pedestal = p;
 
-<<<<<<< HEAD
-    sparsify = (unsigned short)(pedestal.mean  + 5.*pedestal.sigma + 0.5); // round
-=======
     sparsify = (unsigned short)(pedestal.mean + 5.*pedestal.sigma + 0.5); // round
->>>>>>> upstream/master
 }
 
 void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
@@ -125,11 +121,7 @@ void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 // universe calibration code, can be implemented by derivative class
 double PRadDAQUnit::Calibration(const unsigned short &adcVal)
 {
-<<<<<<< HEAD
-    return (double) (adcVal - pedestal.mean)*cal_const.factor;
-=======
     return ((double)adcVal - pedestal.mean)*cal_const.factor;
->>>>>>> upstream/master
     /*double g1 = cal_const.GetReferenceGain(2);
     double g2 = cal_const.base_factor*g1/cal_const.factor;
     double trueADC = (double)adcVal*g1/g2;
@@ -170,11 +162,7 @@ unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal)
 
 double PRadDAQUnit::GetEnergy(const unsigned short &adcVal)
 {
-<<<<<<< HEAD
-  return Calibration(adcVal);
-=======
     return Calibration(adcVal);
->>>>>>> upstream/master
 }
 
 double PRadDAQUnit::GetEnergy()
