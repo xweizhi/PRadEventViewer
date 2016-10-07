@@ -5,12 +5,12 @@
 greaterThan(4, QT_MAJOR_VERSION):
     QT += widgets concurrent
 
-# initialize config
-COMPONENTS = 
-
 ######################################################################
 # optional components
 ######################################################################
+
+# empty components
+COMPONENTS = 
 
 # enable online mode, it requires Event Transfer,
 # it is the monitoring process from CODA group
@@ -25,6 +25,10 @@ COMPONENTS += STANDARD_EVIO
 
 ######################################################################
 # optional components end
+######################################################################
+
+######################################################################
+# general config for qmake
 ######################################################################
 
 CONFIG += c++11
@@ -95,6 +99,10 @@ LIBS += -lexpat -lgfortran \
                           -lMathCore -lThread -lGui -lSpectrum
 
 ######################################################################
+# general config end
+######################################################################
+
+######################################################################
 # other compilers
 ######################################################################
 
@@ -108,9 +116,8 @@ QMAKE_EXTRA_COMPILERS += fortran
 # other compilers end
 ######################################################################
 
-
 ######################################################################
-# implement self-defined config
+# implement self-defined components
 ######################################################################
 contains(COMPONENTS, ONLINE_MODE) {
     DEFINES += USE_ONLINE_MODE
@@ -142,6 +149,6 @@ contains(COMPONENTS, STANDARD_EVIO) {
     LIBS += -L$$(THIRD_LIB) -levio -levioxx
 }
 ######################################################################
-# self-defined config end
+# self-defined components end
 ######################################################################
 
