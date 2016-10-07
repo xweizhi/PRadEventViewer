@@ -9,13 +9,12 @@
 #include <string>
 #include "HyCalModule.h"
 #include "PRadEventViewer.h"
-#include "PRadHVSystem.h"
-
 #if QT_VERSION >= 0x500000
 #include <QtWidgets>
 #else
 #include <QtGui>
 #endif
+
 
 HyCalModule::HyCalModule(PRadEventViewer* const p,
                          const std::string &rid,

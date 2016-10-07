@@ -61,7 +61,7 @@ void PRadEvioParser::ReadEvioFile(const char *filepath, const int &evt, const bo
         try {
             count += getEvioBlock(evio_in, buffer);
         } catch (PRadException &e) {
-            cerr << e.FailureType() << ": " 
+            cerr << e.FailureType() << ": "
                  << e.FailureDesc() << endl;
             cerr << "Abort reading from file " << filepath << endl;
             break;
