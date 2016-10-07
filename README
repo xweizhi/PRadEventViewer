@@ -1,84 +1,36 @@
 PRadEventViewer is a C++ program developed for PRad experiment, the main purpose
 is to monitor online data. The program can also be used for offline analysis.
 
-Compile:
-    Make sure all the dependencies are installed, and change the environment
-    variables according to your working environment in setup_env.sh.
-    Run "qmake/qmake-qt4" to generate the make file,
-    then "make" to compile this program
+Make sure all the dependencies are installed, and change the environment
+variables according to your working environment, there are some examples in
+env_scripts/
+
+Qt progject file is named as QMakefile.pro, in that file you can disable or
+enable some optional components, such as online monitoring mode, high voltage
+control and standard evio file reading.
+
+Run "qmake" to generate the Makefile,
+then "make" to compile this program
 
 Depandencies:
-    Qt
+    Qt (required)
         The basis of GUI, compatibility with version 4.6 - 5.6 is tested.
 
-    root
+    root (required)
         Dealing with histograms, fittings in the program, compatible with
         version 5.34 - 6.06.
 
-    evio (https://coda.jlab.org/drupal/content/event-io-evio)
+    evio (optional)
+        https://coda.jlab.org/drupal/content/event-io-evio
         Event file io control, compatible with 4.4.6 or the library from
         CODA 2.6.2 - CODA 3.02.
 
-    et (https://coda.jlab.org/drupal/content/event-transfer-et)
+    et (optional)
+        https://coda.jlab.org/drupal/content/event-transfer-et
         Event transport package, tool to grab online data , compatible with 15.1
         or the library from CODA 2.6.2 - CODA 3.02.
 
-Source files:
-    main.cpp
-        Main function to execute the program, Qt and root application are both
-        created here to support the dependent features.
-
-    PRadEventViewer.cpp
-        Derived from QMainWindow, the main class to implement the functionalities
-        of this program, contains all the graphical elements and UI settings.
-
-    PRadLogBox.cpp
-        Derived from QTextEdit, it redirects stdout and stderr to log files, and
-        monitor the file changes, display their latest inputs.
-
-    Spectrum.cpp
-        Derived from QGraphicItem, a class to handle the color.
-
-    SpectrumSettingPanel.cpp
-        Derived from QDialog, provide a setting panel to change spectrum settings.
-
-    HyCalView.cpp
-        Derived from QGraphicView, a class to contain all HyCal modules.
-
-    HyCalScene.cpp
-        Derived from QGraphicsScene, to implement self-defined selection behavior.
-
-    HyCalModule.cpp
-        Derived from QGraphicItem, a class for individual HyCal module, contains
-        all the information needed for a specific HyCal module (id, geometry,
-        DAQ configuration, pedestal, calibration information, and so on).
-
-    PRadDataHandler.cpp
-        A class to handle the data from file/ET and store the information of the
-        read events.
-
-    PRadETChannel.cpp
-        A C++ wrapper class for the ET C library.
-
-    ETSettingPanel.cpp
-        Derived from QDialog, provide a setting panel to change ET settings.
-
-    PRadHVChannel.cpp
-        A C++ wrapper class for the CAEN HV library.
-
-    PRadEvioParser.cpp
-        The class to decode evio data files, it depends on evio C++ libraries.
-
-    PRadException.cpp
-        Exception class to be used by this program.
-
-    PRadHistCanvas.cpp
-        A class to handle root canvas and histogram manipulation, a timer is used
-        to process root inner loop.
-
-    HtmlDelegate.cpp
-        Derived from QStyledItemDelegate, it supports the rich text format in GUI.
-
-    QRootCanvas.cpp
-        A Class provided by Bertrand at root forum, it embeds a root canvas in a
-        Qt widget, thus can be used in Qt program.
+    CAENHVWrapper (optional)
+        http://www.caen.it/jsp/Template2/CaenProd.jsp?parent=42&idmod=835#
+        CAEN HV control library, wrapped by this program to control PRad High
+        Voltage System.
