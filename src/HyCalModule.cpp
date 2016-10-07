@@ -64,7 +64,7 @@ QRectF HyCalModule::boundingRect() const
 }
 
 // how to paint this item
-void HyCalModule::paint(QPainter *painter, 
+void HyCalModule::paint(QPainter *painter,
                         const QStyleOptionGraphicsItem *option,
                         QWidget * /* widget */)
 {

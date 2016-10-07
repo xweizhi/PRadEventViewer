@@ -1,5 +1,9 @@
 ######################################################################
 # PRad Event Viewer, project file for qmake
+# It provides several optional components, they can be disabled by
+# comment out the corresponding line
+# Chao Peng
+# 10/07/2016
 ######################################################################
 
 greaterThan(4, QT_MAJOR_VERSION):

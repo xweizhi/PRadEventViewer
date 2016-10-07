@@ -204,6 +204,7 @@ private slots:
     void handleOnlineTimer();
 private:
     void setupOnlineMode();
+    QMenu *setupOnlineMenu();
     PRadETChannel *etChannel;
     QTimer *onlineTimer;
     ETSettingPanel *etSetting;
@@ -223,6 +224,7 @@ private slots:
     void restoreHVSetting();
 private:
     PRadHVSystem *hvSystem;
+    QMenu *setupHVMenu();
     void setupHVSystem();
     QAction *hvEnableAction;
     QAction *hvDisableAction;

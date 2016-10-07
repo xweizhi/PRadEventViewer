@@ -221,34 +221,11 @@ void PRadEventViewer::createMainMenu()
     menuBar()->addMenu(fileMenu);
 
 #ifdef USE_ONLINE_MODE
-    // online menu, toggle on/off online mode
-    QMenu *onlineMenu = new QMenu(tr("Online &Mode"));
-
-    onlineEnAction = onlineMenu->addAction(tr("Start Online Mode"));
-    onlineDisAction = onlineMenu->addAction(tr("Stop Online Mode"));
-    onlineDisAction->setEnabled(false);
-
-    connect(onlineEnAction, SIGNAL(triggered()), this, SLOT(initOnlineMode()));
-    connect(onlineDisAction, SIGNAL(triggered()), this, SLOT(stopOnlineMode()));
-    menuBar()->addMenu(onlineMenu);
+    menuBar()->addMenu(setupOnlineMenu());
 #endif
 
 #ifdef USE_CAEN_HV
-    // high voltage menu
-    QMenu *hvMenu = new QMenu(tr("High &Voltage"));
-    hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
-    hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
-    hvDisableAction->setEnabled(false);
-    hvSaveAction = hvMenu->addAction(tr("Save HV Setting"));
-    hvSaveAction->setEnabled(false);
-    hvRestoreAction = hvMenu->addAction(tr("Restore HV Setting"));
-    hvRestoreAction->setEnabled(false);
-
-    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
-    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVSystem()));
-    connect(hvSaveAction, SIGNAL(triggered()), this, SLOT(saveHVSetting()));
-    connect(hvRestoreAction, SIGNAL(triggered()), this, SLOT(restoreHVSetting()));
-    menuBar()->addMenu(hvMenu);
+    menuBar()->addMenu(setupHVMenu());
 #endif
 
     // calibration related
@@ -634,7 +611,7 @@ void PRadEventViewer::Refresh()
             ChannelAddress hv_addr = module->GetHVInfo();
             PRadHVSystem::Voltage volt = hvSystem->GetVoltage(hv_addr.crate, hv_addr.slot, hv_addr.channel);
             if(!volt.ON)
-                module->SetColor(Qt::white);
+                module->SetColor(QColor(255, 255, 255));
             else
                 module->SetColor(energySpectrum->GetColor(volt.Vmon));
         }
@@ -1352,6 +1329,21 @@ void PRadEventViewer::setupOnlineMode()
     etChannel = new PRadETChannel();
 }
 
+QMenu *PRadEventViewer::setupOnlineMenu()
+{
+    // online menu, toggle on/off online mode
+    QMenu *onlineMenu = new QMenu(tr("Online &Mode"));
+
+    onlineEnAction = onlineMenu->addAction(tr("Start Online Mode"));
+    onlineDisAction = onlineMenu->addAction(tr("Stop Online Mode"));
+    onlineDisAction->setEnabled(false);
+
+    connect(onlineEnAction, SIGNAL(triggered()), this, SLOT(initOnlineMode()));
+    connect(onlineDisAction, SIGNAL(triggered()), this, SLOT(stopOnlineMode()));
+
+    return onlineMenu;
+}
+
 void PRadEventViewer::initOnlineMode()
 {
     if(!etSetting->exec())
@@ -1532,6 +1524,26 @@ void PRadEventViewer::setupHVSystem()
     }
 
     hvCrateList.close();
+}
+
+QMenu *PRadEventViewer::setupHVMenu()
+{
+    // high voltage menu
+    QMenu *hvMenu = new QMenu(tr("High &Voltage"));
+    hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
+    hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
+    hvDisableAction->setEnabled(false);
+    hvSaveAction = hvMenu->addAction(tr("Save HV Setting"));
+    hvSaveAction->setEnabled(false);
+    hvRestoreAction = hvMenu->addAction(tr("Restore HV Setting"));
+    hvRestoreAction->setEnabled(false);
+
+    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
+    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVSystem()));
+    connect(hvSaveAction, SIGNAL(triggered()), this, SLOT(saveHVSetting()));
+    connect(hvRestoreAction, SIGNAL(triggered()), this, SLOT(restoreHVSetting()));
+
+    return hvMenu;
 }
 
 void PRadEventViewer::connectHVSystem()
