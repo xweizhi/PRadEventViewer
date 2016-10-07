@@ -67,7 +67,7 @@ HEADERS += include/PRadEventViewer.h \
            include/QRootCanvas.h \
            include/ConfigParser.h \
            include/PRadBenchMark.h \
-           include/PRadReconstructor.h \
+           include/PRadHyCalCluster.h \
            include/PRadSquareCluster.h \
            include/PRadIslandCluster.h \
            include/PRadGEMSystem.h
@@ -91,7 +91,7 @@ SOURCES += src/main.cpp \
            src/QRootCanvas.cpp \
            src/ConfigParser.cpp \
            src/PRadBenchMark.cpp \
-           src/PRadReconstructor.cpp \
+           src/PRadHyCalCluster.cpp \
            src/PRadSquareCluster.cpp \
            src/PRadIslandCluster.cpp \
            src/PRadGEMSystem.cpp

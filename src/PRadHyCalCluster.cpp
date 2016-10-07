@@ -9,30 +9,30 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
-#include "PRadReconstructor.h"
+#include "PRadHyCalCluster.h"
 
 using namespace std;
 
-PRadReconstructor::PRadReconstructor(PRadDataHandler *h)
+PRadHyCalCluster::PRadHyCalCluster(PRadDataHandler *h)
 : fHandler(h), fNHyCalClusters(0)
 {
 }
 
-PRadReconstructor::~PRadReconstructor()
+PRadHyCalCluster::~PRadHyCalCluster()
 {
 }
 
-void PRadReconstructor::Clear()
+void PRadHyCalCluster::Clear()
 {
     fNHyCalClusters = 0;
 }
 
-void PRadReconstructor::SetHandler(PRadDataHandler *h)
+void PRadHyCalCluster::SetHandler(PRadDataHandler *h)
 {
     fHandler = h;
 }
 
-void PRadReconstructor::ReadConfigFile(const string &path)
+void PRadHyCalCluster::ReadConfigFile(const string &path)
 {
     ConfigParser c_parser(": ,\t="); // self-defined splitters
 
@@ -54,7 +54,7 @@ void PRadReconstructor::ReadConfigFile(const string &path)
     }
 }
 
-ConfigValue PRadReconstructor::GetConfigValue(const string &name,
+ConfigValue PRadHyCalCluster::GetConfigValue(const string &name,
                                               const string &def_value,
                                               bool verbose)
 {
@@ -71,12 +71,12 @@ ConfigValue PRadReconstructor::GetConfigValue(const string &name,
     return it->second;
 }
 
-void PRadReconstructor::Configure(const string & /*path*/)
+void PRadHyCalCluster::Configure(const string & /*path*/)
 {
     // to be implemented by methods
 }
 
-void PRadReconstructor::Reconstruct(EventData & /*event*/)
+void PRadHyCalCluster::Reconstruct(EventData & /*event*/)
 {
     // to be implemented by methods
 }

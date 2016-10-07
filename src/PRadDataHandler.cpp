@@ -12,7 +12,7 @@
 #include "PRadDataHandler.h"
 #include "PRadEvioParser.h"
 #include "PRadDSTParser.h"
-#include "PRadReconstructor.h"
+#include "PRadHyCalCluster.h"
 #include "PRadSquareCluster.h"
 #include "PRadIslandCluster.h"
 #include "PRadGEMSystem.h"
@@ -133,7 +133,7 @@ void PRadDataHandler::ReadConfig(const string &path)
             const string var1 = "Island";
             const string var2 = c_parser.TakeFirst().String();
             ExecuteConfigCommand(&PRadDataHandler::AddHyCalClusterMethod,
-                                 (PRadReconstructor *) new PRadIslandCluster(),
+                                 (PRadHyCalCluster *) new PRadIslandCluster(),
                                  var1,
                                  var2);
         }
@@ -141,7 +141,7 @@ void PRadDataHandler::ReadConfig(const string &path)
             const string var1 = "Square";
             const string var2 = c_parser.TakeFirst().String();
             ExecuteConfigCommand(&PRadDataHandler::AddHyCalClusterMethod,
-                                 (PRadReconstructor *) new PRadSquareCluster(),
+                                 (PRadHyCalCluster *) new PRadSquareCluster(),
                                  var1,
                                  var2);
         }
@@ -1372,7 +1372,7 @@ int PRadDataHandler::FindEventIndex(const int &ev)
     return result;
 }
 
-void PRadDataHandler::AddHyCalClusterMethod(PRadReconstructor *r,
+void PRadDataHandler::AddHyCalClusterMethod(PRadHyCalCluster *r,
                                             const string &name,
                                             const string &c_path)
 {

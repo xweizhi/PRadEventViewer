@@ -14,7 +14,7 @@
 using namespace std;
 
 PRadSquareCluster::PRadSquareCluster(PRadDataHandler *h)
-: PRadReconstructor(h)
+: PRadHyCalCluster(h)
 {
 }
 

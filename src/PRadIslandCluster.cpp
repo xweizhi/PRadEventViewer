@@ -10,7 +10,7 @@
 #include "PRadIslandCluster.h"
 
 PRadIslandCluster::PRadIslandCluster(PRadDataHandler *h)
-: PRadReconstructor(h)
+: PRadHyCalCluster(h)
 {
 }
 //________________________________________________________________

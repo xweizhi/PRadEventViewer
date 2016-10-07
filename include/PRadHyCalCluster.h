@@ -14,11 +14,11 @@
 
 class PRadDataHandler;
 
-class PRadReconstructor
+class PRadHyCalCluster
 {
 public:
-    PRadReconstructor(PRadDataHandler *h = nullptr);
-    virtual ~PRadReconstructor();
+    PRadHyCalCluster(PRadDataHandler *h = nullptr);
+    virtual ~PRadHyCalCluster();
 
     void ReadConfigFile(const std::string &path);
     ConfigValue GetConfigValue(const std::string &var_name,
