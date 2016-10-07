@@ -135,6 +135,7 @@ contains(COMPONENTS, HV_CONTROL) {
 }
 
 contains(COMPONENTS, STANDARD_EVIO) {
+    DEFINES += USE_EVIO_LIB
     !contains(HEADERS, thirdparty/include) {
         HEADERS += thirdparty/include
     }
