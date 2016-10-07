@@ -60,10 +60,12 @@ LIB_OBJECTS   = $(LIB_OBJ_DIR)/PRadDAQUnit.o \
                 $(LIB_OBJ_DIR)/PRadBenchMark.o \
                 $(LIB_OBJ_DIR)/ConfigParser.o \
                 $(LIB_OBJ_DIR)/PRadHyCalCluster.o \
-                $(LIB_OBJ_DIR)/PRadGEMSystem.o \
                 $(LIB_OBJ_DIR)/PRadIslandCluster.o \
                 $(LIB_OBJ_DIR)/PRadSquareCluster.o \
-                $(LIB_OBJ_DIR)/island.o
+                $(LIB_OBJ_DIR)/island.o \
+                $(LIB_OBJ_DIR)/PRadGEMSystem.o \
+                $(LIB_OBJ_DIR)/PRadGEMFEC.o \
+                $(LIB_OBJ_DIR)/PRadGEMAPV.o
 
 
 # examples

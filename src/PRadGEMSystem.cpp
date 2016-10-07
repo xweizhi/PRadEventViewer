@@ -10,11 +10,8 @@
 #include "ConfigParser.h"
 #include <iostream>
 #include <iomanip>
-#include <algorithm>
-#include "TH1.h"
-#include "TF1.h"
-#include "TList.h"
 #include "TFile.h"
+#include "TH1.h"
 
 using namespace std;
 
@@ -65,7 +62,7 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
         if(type == "DET") {
             string readout, detector_type, name;
             c_parser >> readout >> detector_type >> name;
-            PRadGEMDET *new_det = new PRadGEMDET(readout, detector_type, name);
+            PRadGEMDetector *new_det = new PRadGEMDetector(readout, detector_type, name);
 
             if(readout == "CARTESIAN") {
                 string plane_x, plane_y;
@@ -75,8 +72,8 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
                 c_parser >> plane_x >> size_x >> connect_x >> orient_x
                          >> plane_y >> size_y >> connect_y >> orient_y;
 
-                new_det->AddPlane(PRadGEMDET::Plane_X, PRadGEMDET::Plane(plane_x, size_x, connect_x, orient_x));
-                new_det->AddPlane(PRadGEMDET::Plane_Y, PRadGEMDET::Plane(plane_y, size_y, connect_y, orient_y));
+                new_det->AddPlane(PRadGEMDetector::Plane_X, PRadGEMDetector::Plane(plane_x, size_x, connect_x, orient_x));
+                new_det->AddPlane(PRadGEMDetector::Plane_Y, PRadGEMDetector::Plane(plane_y, size_y, connect_y, orient_y));
 
                 RegisterDET(new_det);
             } else {
@@ -149,7 +146,7 @@ void PRadGEMSystem::LoadPedestal(const string &path)
     } 
 }
 
-void PRadGEMSystem::RegisterDET(PRadGEMDET *det)
+void PRadGEMSystem::RegisterDET(PRadGEMDetector *det)
 {
     if(det == nullptr)
         return;
@@ -205,7 +202,7 @@ void PRadGEMSystem::BuildAPVMap()
     }
 }
 
-PRadGEMDET *PRadGEMSystem::GetDetector(const int &id)
+PRadGEMDetector *PRadGEMSystem::GetDetector(const int &id)
 {
     if((unsigned int) id >= det_list.size()) {
         cerr << "GEM System: Cannot find detector with id " << id << endl;
@@ -214,7 +211,7 @@ PRadGEMDET *PRadGEMSystem::GetDetector(const int &id)
     return det_list[id];
 }
 
-PRadGEMDET *PRadGEMSystem::GetDetector(const std::string &name)
+PRadGEMDetector *PRadGEMSystem::GetDetector(const std::string &name)
 {
     auto it = det_map_name.find(name);
     if(it == det_map_name.end()) {
@@ -224,7 +221,7 @@ PRadGEMDET *PRadGEMSystem::GetDetector(const std::string &name)
     return it->second;
 }
 
-PRadGEMDET *PRadGEMSystem::GetDetectorByPlaneX(const std::string &plane_x)
+PRadGEMDetector *PRadGEMSystem::GetDetectorByPlaneX(const std::string &plane_x)
 {
     auto it = det_map_plane_x.find(plane_x);
     if(it == det_map_plane_x.end()) {
@@ -234,7 +231,7 @@ PRadGEMDET *PRadGEMSystem::GetDetectorByPlaneX(const std::string &plane_x)
     return it->second;
 }
 
-PRadGEMDET *PRadGEMSystem::GetDetectorByPlaneY(const std::string &plane_y)
+PRadGEMDetector *PRadGEMSystem::GetDetectorByPlaneY(const std::string &plane_y)
 {
     auto it = det_map_plane_y.find(plane_y);
     if(it == det_map_plane_y.end()) {
@@ -414,523 +411,3 @@ vector<PRadGEMAPV *> PRadGEMSystem::GetAPVList()
     return list;
 }
 
-//===========================================================================//
-//   GEM FEC                                                                 //
-//===========================================================================//
-
-PRadGEMFEC::~PRadGEMFEC()
-{
-    Clear();
-}
-
-void PRadGEMFEC::AddAPV(PRadGEMAPV *apv)
-{
-    if(apv == nullptr)
-        return;
-
-    auto it = adc_map.find(apv->adc_ch);
-
-    if(it != adc_map.end()) {
-        cerr << "GEM FEC " << id
-             << ": Abort to add existing apv to adc channel "
-             << apv->adc_ch << endl;
-        return;
-    }
-
-    adc_list.push_back(apv);
-    adc_map[apv->adc_ch] = apv;
-}
-
-void PRadGEMFEC::RemoveAPV(const int &id)
-{
-    auto it = adc_map.find(id);
-
-    if(it != adc_map.end()) {
-        auto list_it = find(adc_list.begin(), adc_list.end(), it->second);
-        if(list_it != adc_list.end())
-            adc_list.erase(list_it);
-        adc_map.erase(it);
-    }
-}
-
-void PRadGEMFEC::SortAPVList()
-{
-    sort(adc_list.begin(), adc_list.end(), [this](PRadGEMAPV *apv1, PRadGEMAPV *apv2){return apv1->adc_ch < apv2->adc_ch;});
-}
-
-PRadGEMAPV *PRadGEMFEC::GetAPV(const int &id)
-{
-    auto it = adc_map.find(id);
-
-    if(it == adc_map.end()) {
-        cerr << "GEM FEC " << id
-             << ": Cannot find APV at adc channel " << id
-             << endl;
-        return nullptr;
-    }
-
-    return it->second;
-}
-
-void PRadGEMFEC::Clear()
-{
-    for(auto &adc : adc_list)
-    {
-        delete adc, adc = nullptr;
-    }
-
-    adc_list.clear();
-    adc_map.clear();
-}
-
-void PRadGEMFEC::ClearAPVData()
-{
-    for(auto &adc : adc_list)
-    {
-        adc->ClearData();
-    }
-}
-
-void PRadGEMFEC::FitPedestal()
-{
-    for(auto &adc : adc_list)
-    {
-        adc->FitPedestal();
-    }
-}
-
-//===========================================================================//
-//   GEM APV                                                                 //
-//===========================================================================//
-
-PRadGEMAPV::PRadGEMAPV(const std::string &p,
-                       const int &f,
-                       const int &ch,
-                       const int &o,
-                       const int &idx,
-                       const int &hl,
-                       const std::string &s)
-: plane(p), fec_id(f), adc_ch(ch), orient(o),
-  plane_index(idx), header_level(hl), status(s)
-{
-#define DEFAULT_MAX_CHANNEL 550
-    // initialize
-    buffer_size = DEFAULT_MAX_CHANNEL;
-    time_samples = 3;
-    raw_data = new float[buffer_size];
-
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        offset_hist[i] = nullptr;
-        noise_hist[i] = nullptr;
-    }
-
-    if(status.find("split") != string::npos)
-        split = true;
-    else
-        split = false;
-
-    BuildStripMap();
-
-    ClearData();
-}
-
-PRadGEMAPV::~PRadGEMAPV()
-{
-    delete[] raw_data;
-}
-
-void PRadGEMAPV::CreatePedHist()
-{
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        if(offset_hist[i] == nullptr) {
-            string name = "CH_" + to_string(i) + "_OFFSET_" + to_string(fec_id) + "_" + to_string(adc_ch);
-            offset_hist[i] = new TH1I(name.c_str(), "Pedestal", 500, 2000, 3500);
-        }
-        if(noise_hist[i] == nullptr) {
-            string name = "CH_" + to_string(i) + "_NOISE_" + to_string(fec_id) + "_" + to_string(adc_ch);
-            noise_hist[i] = new TH1I(name.c_str(), "Noise", 400, -200, 200); 
-        }
-    }
-}
-
-void PRadGEMAPV::ReleasePedHist()
-{
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        if(offset_hist != nullptr) {
-            delete offset_hist[i], offset_hist[i] = nullptr;
-        }
-        if(noise_hist != nullptr) {
-            delete noise_hist[i], noise_hist[i] = nullptr;
-        }
-    }
-}
-
-void PRadGEMAPV::SetTimeSample(const size_t &t)
-{
-#define APV_EXTEND_SIZE 166 //TODO, arbitrary number, need to know exact buffer size the apv need
-    time_samples = t;
-    buffer_size = t*TIME_SAMPLE_SIZE + APV_EXTEND_SIZE;
-
-    // reallocate the memory for proper size
-    delete[] raw_data;
-
-    raw_data = new float[buffer_size];
-
-    ClearData();
-}
-
-void PRadGEMAPV::ClearData()
-{
-    for(size_t i = 0; i < buffer_size; ++i)
-        raw_data[i] = 5000.;
-}
-
-void PRadGEMAPV::ResetHitPos()
-{
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-        hit_pos[i] = false;
-}
-
-void PRadGEMAPV::ClearPedestal()
-{
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-        pedestal[i] = Pedestal(0, 0);
-}
-
-void PRadGEMAPV::UpdatePedestal(vector<Pedestal> &ped)
-{
-    for(size_t i = 0; (i < ped.size()) && (i < TIME_SAMPLE_SIZE); ++i)
-        pedestal[i] = ped[i];
-}
-
-void PRadGEMAPV::UpdatePedestal(const Pedestal &ped, const size_t &index)
-{
-    if(index >= TIME_SAMPLE_SIZE)
-        return;
-
-    pedestal[index] = ped;
-}
-
-void PRadGEMAPV::UpdatePedestal(const float &offset, const float &noise, const size_t &index)
-{
-    if(index >= TIME_SAMPLE_SIZE)
-        return;
-
-    pedestal[index].offset = offset;
-    pedestal[index].noise = noise;
-}
-
-void PRadGEMAPV::FillRawData(const uint32_t *buf, const size_t &size)
-{
-    if(2*size > buffer_size) {
-        cerr << "Received " << size * 2 << " adc words, "
-             << "but APV " << adc_ch << " in FEC " << fec_id
-             << " has only " << buffer_size << " channels" << endl;
-        return;
-    }
-
-    for(size_t i = 0; i < size; ++i)
-    {
-        SplitData(buf[i], raw_data[2*i], raw_data[2*i+1]);
-    }
-
-    ts_index = GetTimeSampleStart();
-}
-
-void PRadGEMAPV::SplitData(const uint32_t &data, float &word1, float &word2)
-{
-    int data1 = (((data>>16)&0xff)<<8) | (data>>24);
-    int data2 = ((data&0xff)<<8) | ((data>>8)&0xff);
-    word1 = (float)data1;
-    word2 = (float)data2;
-}
-
-void PRadGEMAPV::FillPedHist()
-{
-    float average[2][3];
-
-    for(size_t i = 0; i < time_samples; ++i)
-    {
-        if(split) {
-            GetAverage(average[0][i], &raw_data[ts_index + i*TIME_SAMPLE_DIFF], 1);
-            GetAverage(average[1][i], &raw_data[ts_index + i*TIME_SAMPLE_DIFF], 2);
-        } else {
-            GetAverage(average[0][i], &raw_data[ts_index + i*TIME_SAMPLE_DIFF]);
-        }
-    }
-
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        float ch_average = 0.;
-        float noise_average = 0.;
-        for(size_t j = 0; j < time_samples; ++j)
-        {
-            ch_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF];
-            if(split) {
-                if(strip_map[i] < 16)
-                    noise_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF] - average[0][j];
-                else
-                    noise_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF] - average[1][j];
-            } else {
-                noise_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF] - average[0][j];
-            }
-        }
-
-        if(offset_hist[i])
-            offset_hist[i]->Fill(ch_average/time_samples);
-
-        if(noise_hist[i])
-            noise_hist[i]->Fill(noise_average/time_samples);
-    }
-}
-
-void PRadGEMAPV::GetAverage(float &average, const float *buf, const size_t &set)
-{
-    average = 0.;
-    int count = 0;
-
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        if((set == 0) ||
-           (set == 1 && strip_map[i] < 16) ||
-           (set == 2 && strip_map[i] >= 16))
-        {
-            average += buf[i];
-            count++;
-        }
-    }
-
-    average /= (float)count;
-}
-
-void PRadGEMAPV::FitPedestal()
-{
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        if( (offset_hist[i] == nullptr) ||
-            (noise_hist[i] == nullptr) ||
-            (offset_hist[i]->Integral() < 1000) ||
-            (noise_hist[i]->Integral() < 1000) )
-            continue;
-
-        offset_hist[i]->Fit("gaus", "qww");
-        noise_hist[i]->Fit("gaus", "qww");
-        TF1 *myfit = (TF1*) offset_hist[i]->GetFunction("gaus");
-        double p0 = myfit->GetParameter(1);
-        myfit = (TF1*) noise_hist[i]->GetFunction("gaus");
-        double p1 = myfit->GetParameter(2);
-//        double p0 = ped_hist[i]->GetMean();
-//        double p1 = ped_hist[i]->GetRMS();
-        UpdatePedestal((float)p0, (float)p1, i);
-    }
-}
-
-size_t PRadGEMAPV::GetTimeSampleStart()
-{
-    for(size_t i = 2; i < buffer_size; ++i)
-    { 
-        if( (raw_data[i]   < header_level) &&
-            (raw_data[i-1] < header_level) &&
-            (raw_data[i-2] < header_level) )
-            return i + 10;
-    }
-
-    return buffer_size;
-}
-
-void PRadGEMAPV::ZeroSuppression()
-{
-    if((ts_index + TIME_SAMPLE_DIFF*(time_samples - 1) + TIME_SAMPLE_SIZE) >= buffer_size)
-    {
-        cout << fec_id << "  " << adc_ch << "  ";
-        cout << "incorrect time sample position: "  << ts_index << " " << buffer_size << " " <<time_samples<< endl;
-        return;
-    }
-
-    // common mode correction
-    for(size_t ts = 0; ts < time_samples; ++ts)
-    {
-        if(split)
-            CommonModeCorrection_Split(&raw_data[ts_index + ts*TIME_SAMPLE_DIFF], TIME_SAMPLE_SIZE);
-        else
-            CommonModeCorrection(&raw_data[ts_index + ts*TIME_SAMPLE_DIFF], TIME_SAMPLE_SIZE);
-    }
-
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        float average = 0.;
-        for(size_t j = 0; j < time_samples; ++j)
-        {
-            average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF];
-        }
-        average /= time_samples;
-
-        if(average > pedestal[i].noise * zerosup_thres)
-            hit_pos[i] = true;
-        else
-            hit_pos[i] = false;
-    }
-}
-
-void PRadGEMAPV::CollectZeroSupHits(vector<GEM_Data> &hits)
-{
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        if(hit_pos[i] == false)
-            continue;
-
-        GEM_Data hit(fec_id, adc_ch, i);
-        for(size_t j = 0; j < time_samples; ++j)
-        {
-            hit.values.emplace_back(raw_data[i + ts_index + j*TIME_SAMPLE_DIFF]);
-        }
-        hits.emplace_back(hit);
-    }
-}
-
-void PRadGEMAPV::CommonModeCorrection(float *buf, const size_t &size)
-{
-    int count = 0;
-    float average = 0;
-
-    for(size_t i = 0; i < size; ++i)
-    {
-        buf[i] = pedestal[i].offset - buf[i];
-
-        if(buf[i] < pedestal[i].noise * common_thres) {
-            average += buf[i];
-            count++;
-        }
-    }
-
-    if(count)
-        average /= (float)count;
-
-    for(size_t i = 0; i < size; ++i)
-    {
-        buf[i] -= average;
-    }
-}
-
-void PRadGEMAPV::CommonModeCorrection_Split(float *buf, const size_t &size)
-{
-    int count1 = 0, count2 = 0;
-    float average1 = 0, average2 = 0;
-
-    for(size_t i = 0; i < size; ++i)
-    {
-        buf[i] = pedestal[i].offset - buf[i];
-        if(strip_map[i] < 16) {
-            if(buf[i] < pedestal[i].noise * common_thres * 10.) {
-                average1 += buf[i];
-                count1++;
-            }
-        } else {
-            if(buf[i] < pedestal[i].noise * common_thres) {
-                average2 += buf[i];
-                count2++;
-            }
-        }
-    }
-
-    if(count1)
-        average1 /= (float)count1;
-    if(count2)
-        average2 /= (float)count2;
-
-    for(size_t i = 0; i < size; ++i)
-    {
-        if(strip_map[i] < 16)
-            buf[i] -= average1;
-        else
-            buf[i] -= average2;
-    }
-}
-
-void PRadGEMAPV::BuildStripMap()
-{
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        strip_map[i] = (unsigned char)MapStrip((int)i);
-    }
-}
-
-int PRadGEMAPV::GetStrip(const size_t &ch)
-{
-   if(ch >= TIME_SAMPLE_SIZE) {
-       cerr << "GEM APV: APV " << adc_ch
-            << " in FEC " << fec_id
-            << " only has " << TIME_SAMPLE_SIZE
-            << " channels." << endl;
-   }
-
-   return (int)strip_map[ch];
-}
-
-int PRadGEMAPV::MapStrip(const int &ch)
-{
-    // APV25 Internal Channel Mapping
-    int strip = 32*(ch%4) + 8*(ch/4) - 31*(ch/16);
-
-    // APV25 Channel to readout strip Mapping
-    if((plane.find("X") != string::npos) && (plane_index == 11)) {
-        if(strip & 1)
-            strip = 48 - (strip + 1)/2;
-        else 
-            strip = 48 + strip/2;
-    } else {
-        if(strip & 1)
-            strip = 32 - (strip + 1)/2;
-        else
-            strip = 32 + strip/2;
-    }
-
-    strip &= 0x7f;
-
-    return strip;
-}
-
-void PRadGEMAPV::PrintOutPedestal(ofstream &out)
-{
-    out << "APV "
-        << setw(12) << fec_id
-        << setw(12) << adc_ch
-        << endl;
-
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        out << setw(12) << i
-            << setw(12) << pedestal[i].offset
-            << setw(12) << pedestal[i].noise
-            << endl;
-    }
-}
-
-vector<TH1I *> PRadGEMAPV::GetHistList()
-{
-    vector<TH1I *> hist_list;
-
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        if(offset_hist[i])
-            hist_list.push_back(offset_hist[i]);
-        if(noise_hist[i])
-            hist_list.push_back(noise_hist[i]);
-    }
-
-    return hist_list;
-}
-
-vector<PRadGEMAPV::Pedestal> PRadGEMAPV::GetPedestalList()
-{
-    vector<Pedestal> ped_list;
-    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
-    {
-        ped_list.push_back(pedestal[i]);
-    }
-
-    return ped_list;
-}

@@ -70,7 +70,9 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadHyCalCluster.h \
            include/PRadSquareCluster.h \
            include/PRadIslandCluster.h \
-           include/PRadGEMSystem.h
+           include/PRadGEMSystem.h \
+           include/PRadGEMFEC.h \
+           include/PRadGEMAPV.h
 
 SOURCES += src/main.cpp \
            src/PRadEventViewer.cpp \
@@ -94,7 +96,9 @@ SOURCES += src/main.cpp \
            src/PRadHyCalCluster.cpp \
            src/PRadSquareCluster.cpp \
            src/PRadIslandCluster.cpp \
-           src/PRadGEMSystem.cpp
+           src/PRadGEMSystem.cpp \
+           src/PRadGEMFEC.cpp \
+           src/PRadGEMAPV.cpp
 
 LIBS += -lexpat -lgfortran \
         -L$$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist \
