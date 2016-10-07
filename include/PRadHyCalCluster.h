@@ -1,5 +1,5 @@
-#ifndef PRAD_RECONSTRUCTOR_H
-#define PRAD_RECONSTRUCTOR_H
+#ifndef PRAD_HYCAL_CLUSTER_H
+#define PRAD_HYCAL_CLUSTER_H
 
 #include <string>
 #include <vector>
