@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <fstream>
+#include "PRadGEMDetector.h"
 #include "PRadEventStruct.h"
 #include "datastruct.h"
 
@@ -28,9 +29,14 @@ public:
         {};
     };
 
+    struct StripNb
+    {
+        unsigned char local;
+        int plane;
+    };
+
 public:
-    PRadGEMAPV(const std::string &plane,
-               const int &fec_id,
+    PRadGEMAPV(const int &fec_id,
                const int &adc_ch,
                const int &orientation,
                const int &plane_idx,
@@ -38,6 +44,7 @@ public:
                const std::string &status);
     virtual ~PRadGEMAPV();
 
+    void SetDetectorPlane(PRadGEMDetector::Plane *p);
     void ClearData();
     void ClearPedestal();
     void CreatePedHist();
@@ -61,16 +68,18 @@ public:
     void PrintOutPedestal(std::ofstream &out);
     std::vector<TH1I *> GetHistList();
     std::vector<Pedestal> GetPedestalList();
-    int MapStrip(const int &ch);
-    int GetStrip(const size_t &ch);
+    StripNb MapStrip(int ch);
+    int GetLocalStripNb(const size_t &ch);
+    int GetPlaneStripNb(const size_t &ch);
     void GetAverage(float &ave, const float *buf, const size_t &set = 0);
     size_t GetTimeSampleStart();
 
-    std::string plane;
+public:
+    PRadGEMDetector::Plane *plane;
     int fec_id;
     int adc_ch;
     size_t time_samples;
-    int orient;
+    int orientation;
     int plane_index;
     int header_level;
 
@@ -80,7 +89,7 @@ public:
     float zerosup_thres;
     std::string status;
     Pedestal pedestal[TIME_SAMPLE_SIZE];
-    unsigned char strip_map[TIME_SAMPLE_SIZE];
+    StripNb strip_map[TIME_SAMPLE_SIZE];
     bool hit_pos[TIME_SAMPLE_SIZE];
     size_t buffer_size;
     size_t ts_index;

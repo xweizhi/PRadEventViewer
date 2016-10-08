@@ -14,14 +14,13 @@
 #include "TH1.h"
 
 
-PRadGEMAPV::PRadGEMAPV(const std::string &p,
-                       const int &f,
+PRadGEMAPV::PRadGEMAPV(const int &f,
                        const int &ch,
                        const int &o,
                        const int &idx,
                        const int &hl,
                        const std::string &s)
-: plane(p), fec_id(f), adc_ch(ch), orient(o),
+: plane(nullptr), fec_id(f), adc_ch(ch), orientation(o),
   plane_index(idx), header_level(hl), status(s)
 {
 #define DEFAULT_MAX_CHANNEL 550
@@ -41,14 +40,21 @@ PRadGEMAPV::PRadGEMAPV(const std::string &p,
     else
         split = false;
 
-    BuildStripMap();
-
     ClearData();
 }
 
 PRadGEMAPV::~PRadGEMAPV()
 {
     delete[] raw_data;
+}
+
+void PRadGEMAPV::SetDetectorPlane(PRadGEMDetector::Plane *p)
+{
+    plane = p;
+
+    // strip map is related to plane that connected, thus build the map
+    if(p != nullptr)
+        BuildStripMap();
 }
 
 void PRadGEMAPV::CreatePedHist()
@@ -185,7 +191,7 @@ void PRadGEMAPV::FillPedHist()
         {
             ch_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF];
             if(split) {
-                if(strip_map[i] < 16)
+                if(strip_map[i].local < 16)
                     noise_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF] - average[0][j];
                 else
                     noise_average += raw_data[i + ts_index + j*TIME_SAMPLE_DIFF] - average[1][j];
@@ -210,8 +216,8 @@ void PRadGEMAPV::GetAverage(float &average, const float *buf, const size_t &set)
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
         if((set == 0) ||
-           (set == 1 && strip_map[i] < 16) ||
-           (set == 2 && strip_map[i] >= 16))
+           (set == 1 && strip_map[i].local < 16) ||
+           (set == 2 && strip_map[i].local >= 16))
         {
             average += buf[i];
             count++;
@@ -237,8 +243,6 @@ void PRadGEMAPV::FitPedestal()
         double p0 = myfit->GetParameter(1);
         myfit = (TF1*) noise_hist[i]->GetFunction("gaus");
         double p1 = myfit->GetParameter(2);
-//        double p0 = ped_hist[i]->GetMean();
-//        double p1 = ped_hist[i]->GetRMS();
         UpdatePedestal((float)p0, (float)p1, i);
     }
 }
@@ -258,9 +262,19 @@ size_t PRadGEMAPV::GetTimeSampleStart()
 
 void PRadGEMAPV::ZeroSuppression()
 {
+    if(plane == nullptr)
+    {
+        std::cerr << "GEM APV Error: APV "
+                  << fec_id << ", " << adc_ch
+                  << " is not connected to a detector plane, "
+                  << "cannot handle data without correct mapping."
+                  << std::endl;
+        return;
+    }
+
     if((ts_index + TIME_SAMPLE_DIFF*(time_samples - 1) + TIME_SAMPLE_SIZE) >= buffer_size)
     {
-        std::cout << fec_id << "  " << adc_ch << "  "
+        std::cout << fec_id << ", " << adc_ch << "  "
                   << "incorrect time sample position: "  << ts_index
                   << " " << buffer_size << " " << time_samples
                   << std::endl;
@@ -340,7 +354,7 @@ void PRadGEMAPV::CommonModeCorrection_Split(float *buf, const size_t &size)
     for(size_t i = 0; i < size; ++i)
     {
         buf[i] = pedestal[i].offset - buf[i];
-        if(strip_map[i] < 16) {
+        if(strip_map[i].local < 16) {
             if(buf[i] < pedestal[i].noise * common_thres * 10.) {
                 average1 += buf[i];
                 count1++;
@@ -360,43 +374,64 @@ void PRadGEMAPV::CommonModeCorrection_Split(float *buf, const size_t &size)
 
     for(size_t i = 0; i < size; ++i)
     {
-        if(strip_map[i] < 16)
+        if(strip_map[i].local < 16)
             buf[i] -= average1;
         else
             buf[i] -= average2;
     }
 }
 
+// both local strip map and plane strip map are related to the connected plane
+// thus this function will only be called when the APV is connected to the plane
 void PRadGEMAPV::BuildStripMap()
 {
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
     {
-        strip_map[i] = (unsigned char)MapStrip((int)i);
+        strip_map[i] = MapStrip(i);
     }
 }
 
-int PRadGEMAPV::GetStrip(const size_t &ch)
+int PRadGEMAPV::GetLocalStripNb(const size_t &ch)
 {
    if(ch >= TIME_SAMPLE_SIZE) {
-       std::cerr << "GEM APV: APV " << adc_ch
+       std::cerr << "GEM APV Get Local Strip Error:"
+                 << " APV " << adc_ch
                  << " in FEC " << fec_id
                  << " only has " << TIME_SAMPLE_SIZE
                  << " channels." << std::endl;
+       return -1;
    }
 
-   return (int)strip_map[ch];
+   return (int)strip_map[ch].local;
 }
 
-int PRadGEMAPV::MapStrip(const int &ch)
+int PRadGEMAPV::GetPlaneStripNb(const size_t &ch)
 {
+   if(ch >= TIME_SAMPLE_SIZE) {
+       std::cerr << "GEM APV Get Plane Strip Error:"
+                 << " APV " << adc_ch
+                 << " in FEC " << fec_id
+                 << " only has " << TIME_SAMPLE_SIZE
+                 << " channels." << std::endl;
+       return -1;
+   }
+
+   return strip_map[ch].plane;
+}
+
+PRadGEMAPV::StripNb PRadGEMAPV::MapStrip(int ch)
+{
+    StripNb result;
+
+    // calculate local strip mapping
     // APV25 Internal Channel Mapping
     int strip = 32*(ch%4) + 8*(ch/4) - 31*(ch/16);
 
     // APV25 Channel to readout strip Mapping
-    if((plane.find("X") != std::string::npos) && (plane_index == 11)) {
+    if((plane->type == PRadGEMDetector::Plane_X) && (plane_index == 11)) {
         if(strip & 1)
             strip = 48 - (strip + 1)/2;
-        else 
+        else
             strip = 48 + strip/2;
     } else {
         if(strip & 1)
@@ -406,8 +441,23 @@ int PRadGEMAPV::MapStrip(const int &ch)
     }
 
     strip &= 0x7f;
+    result.local = strip;
 
-    return strip;
+    // calculate plane strip mapping
+    // reverse strip number by orientation
+    if(orientation != plane->orientation)
+        strip = 127 - strip;
+
+    // special APV
+    if((plane->type == PRadGEMDetector::Plane_X) && (plane_index == 11)) {
+        strip += -16 + TIME_SAMPLE_SIZE * (plane_index - 1);
+    } else {
+        strip += TIME_SAMPLE_SIZE * plane_index;
+    }
+
+    result.plane = strip;
+
+    return result;
 }
 
 void PRadGEMAPV::PrintOutPedestal(std::ofstream &out)
@@ -451,4 +501,3 @@ std::vector<PRadGEMAPV::Pedestal> PRadGEMAPV::GetPedestalList()
 
     return ped_list;
 }
-

@@ -16,7 +16,6 @@
 #include <mutex>
 #endif
 
-class PRadGEMDetector;
 class TH1I;
 
 // a simple hash function for GEM DAQ configuration
@@ -44,7 +43,7 @@ public:
     void LoadPedestal(const std::string &path) throw(PRadException);
     void RegisterDetector(PRadGEMDetector *det);
     void RegisterFEC(PRadGEMFEC *fec);
-    void RegisterAPV(PRadGEMAPV *apv);
+    void RegisterAPV(const std::string &plane, PRadGEMAPV *apv);
     void BuildAPVMap();
     void FillRawData(GEMRawData &raw, std::vector<GEM_Data> &container, const bool &fill_hist = false);
 

@@ -104,14 +104,14 @@ void PRadGEMSystem::LoadConfiguration(const string &path) throw(PRadException)
 
             c_parser >> fec_id >> adc_ch >> det_plane >> orient >> index >> header >> status;
 
-            PRadGEMAPV *new_apv = new PRadGEMAPV(det_plane, fec_id, adc_ch, orient, index, header, status);
+            PRadGEMAPV *new_apv = new PRadGEMAPV(fec_id, adc_ch, orient, index, header, status);
 
             // default levels
             new_apv->SetTimeSample(3);
             new_apv->SetCommonModeThresLevel(20.);
             new_apv->SetZeroSupThresLevel(5.);
 
-            RegisterAPV(new_apv);
+            RegisterAPV(det_plane, new_apv);
 
         }
     }
@@ -209,20 +209,21 @@ void PRadGEMSystem::RegisterFEC(PRadGEMFEC *fec)
     fec_map[fec->id] = fec;
 }
 
-void PRadGEMSystem::RegisterAPV(PRadGEMAPV *apv)
+void PRadGEMSystem::RegisterAPV(const string &plane_name, PRadGEMAPV *apv)
 {
     if(apv == nullptr)
         return;
 
-    auto *plane = GetDetectorPlane(apv->plane);
-    if(plane == nullptr) {
+    // find detector plane that connects to this apv
+    auto *det_plane = GetDetectorPlane(plane_name);
+    if(det_plane == nullptr) {
         cerr << "GEM System Error: Cannot connect apv to detector plane "
-             << apv->plane << ", make sure you have detectors defined "
+             << plane_name << ", make sure you have detectors defined "
              << "before the apv list in configuration map."
              << endl;
         return;
     }
-    plane->ConnectAPV(apv);
+    det_plane->ConnectAPV(apv);
 
 
     PRadGEMFEC *fec = GetFEC(apv->fec_id);

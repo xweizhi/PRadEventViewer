@@ -24,8 +24,15 @@ PRadGEMDetector::PRadGEMDetector(const std::string &readoutBoard,
 PRadGEMDetector::~PRadGEMDetector()
 {
     for(int i = 0; i < (int)Plane_Max; ++i)
+    {
+        for(auto &apv : planes[i]->GetAPVList())
+        {
+            apv->SetDetectorPlane(nullptr);
+        }
+
         if(planes[i] != nullptr)
             delete planes[i], planes[i] = nullptr;
+    }
 }
 
 void PRadGEMDetector::AddPlane(const PRadGEMDetector::PlaneType &type,
@@ -34,7 +41,7 @@ void PRadGEMDetector::AddPlane(const PRadGEMDetector::PlaneType &type,
                                const int &conn,
                                const int &ori)
 {
-    planes[(int)type] = new Plane(this, name, size, conn, ori);
+    planes[(int)type] = new Plane(this, name, type, size, conn, ori);
 }
 
 void PRadGEMDetector::AddPlane(const PRadGEMDetector::PlaneType &type,
@@ -101,14 +108,25 @@ void PRadGEMDetector::ConnectAPV(const PRadGEMDetector::PlaneType &type, PRadGEM
 //============================================================================//
 void PRadGEMDetector::Plane::ConnectAPV(PRadGEMAPV *apv)
 {
-    auto list_it = find(apv_list.begin(), apv_list.end(), apv);
-
-    if(list_it == apv_list.end()) {
-        apv_list.push_back(apv);
-    } else {
-        std::cout << "PRad GEM Detector Warning: Failed to connect plane " << name
-                  << " with APV at FEC " << apv->fec_id << ", Channel " << apv->adc_ch
-                  << ", APV is already connected."
-                  << std::endl;
+    for(auto &plane_apv : apv_list)
+    {
+        if(plane_apv->plane_index == apv->plane_index) {
+            std::cout << "PRad GEM Detector Warning: Failed to connect plane " << name
+                      << " with APV at FEC " << apv->fec_id << ", Channel " << apv->adc_ch
+                      << ". APV index on this plane is duplicated."
+                      << std::endl;
+            return;
+        }
+        if(apv->plane_index >= connector) {
+            std::cout << "PRad GEM Detector Warning: Failed to connect plane " << name
+                      << " with APV at FEC " << apv->fec_id << ", Channel " << apv->adc_ch
+                      << ". Plane connectors are not enough, have " << connector
+                      << ", this APV is at " << apv->plane_index
+                      << std::endl;
+            return;
+        }
     }
+
+    apv_list.push_back(apv);
+    apv->SetDetectorPlane(this);
 }

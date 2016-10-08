@@ -16,29 +16,35 @@ public:
         Plane_Max
     };
 
-    struct Plane
+    class Plane
     {
-        PRadGEMDetector *detector;
-        std::string name;
-        float size;
-        int connector;
-        int orientation;
-        std::vector<PRadGEMAPV*> apv_list;
-
+    public:
         Plane()
-        : detector(nullptr), name("Undefined"), size(0.), connector(-1), orientation(0)
+        : detector(nullptr), name("Undefined"), type(Plane_X),
+          size(0.), connector(-1), orientation(0)
         {};
 
-        Plane(const std::string &n, const float &s, const int &c, const int &o)
-        : detector(nullptr), name(n), size(s), connector(c), orientation(o)
+        Plane(const std::string &n, const PlaneType &t, const float &s,
+              const int &c, const int &o)
+        : detector(nullptr), name(n), type(t), size(s), connector(c), orientation(o)
         {};
 
-        Plane(PRadGEMDetector *d, const std::string &n, const float &s, const int &c, const int &o)
-        : detector(d), name(n), size(s), connector(c), orientation(o)
+        Plane(PRadGEMDetector *d, const std::string &n, const PlaneType &t,
+              const float &s, const int &c, const int &o)
+        : detector(d), name(n), type(t), size(s), connector(c), orientation(o)
         {};
 
         void ConnectAPV(PRadGEMAPV *apv);
         std::vector<PRadGEMAPV*> &GetAPVList() {return apv_list;};
+
+    public:
+        PRadGEMDetector *detector;
+        std::string name;
+        PlaneType type;
+        float size;
+        int connector;
+        int orientation;
+        std::vector<PRadGEMAPV*> apv_list;
     };
 
 public:
@@ -48,8 +54,8 @@ public:
     virtual ~PRadGEMDetector();
 
     void AddPlane(const PlaneType &type, Plane *plane);
-    void AddPlane(const PlaneType &type,
-                  const std::string &name, const float &size, const int &conn, const int &ori);
+    void AddPlane(const PlaneType &type, const std::string &name,
+                  const float &size, const int &conn, const int &ori);
     void AssignID(const int &i);
     std::vector<Plane*> GetPlaneList();
     Plane *GetPlane(const PlaneType &type);

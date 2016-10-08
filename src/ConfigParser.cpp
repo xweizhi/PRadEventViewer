@@ -383,7 +383,6 @@ string ConfigParser::comment_out(const string &str, size_t index)
         string str_co = comment_out(str, comment_marks.at(index));
         return comment_out(str_co, ++index);
     }
-        
 }
 
 string ConfigParser::comment_out(const string &str, const string &c)

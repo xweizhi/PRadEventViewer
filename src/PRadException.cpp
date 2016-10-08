@@ -14,12 +14,12 @@ PRadException::PRadException(const string &typ, const string &txt, const string 
 {
 }
 
-PRadException::PRadException(PRadExceptionType typ, const string &txt, const string &aux) 
+PRadException::PRadException(PRadExceptionType typ, const string &txt, const string &aux)
 : type(typ), text(txt), auxText(aux)
 {
 }
 
-PRadException::PRadException(PRadExceptionType typ, const string &txt, const string &file, const string &func, int line) 
+PRadException::PRadException(PRadExceptionType typ, const string &txt, const string &file, const string &func, int line)
 : type(typ), text(txt)
 {
     ostringstream oss;
