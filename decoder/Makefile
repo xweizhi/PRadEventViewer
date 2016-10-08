@@ -73,6 +73,7 @@ LIB_OBJECTS   = $(LIB_OBJ_DIR)/PRadDAQUnit.o \
 TARGET        = testIsland \
                 testEPICS \
                 testLMS \
+                testGEM \
                 replay
 
 EXE_SRC_DIR   = src
@@ -82,6 +83,7 @@ EXE_OBJ_DIR   = obj
 OBJECTS       = $(EXE_OBJ_DIR)/testIsland.o \
                 $(EXE_OBJ_DIR)/testEPICS.o \
                 $(EXE_OBJ_DIR)/testLMS.o \
+                $(EXE_OBJ_DIR)/testGEM.o \
                 $(EXE_OBJ_DIR)/replay.o
 
 EXE_LIBS      = -L$(T_LIBS_DIR) -lPRadDecoder

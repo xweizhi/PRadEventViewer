@@ -39,14 +39,13 @@ void PRadGEMSystem::Clear()
 
     det_list.clear();
     det_map_name.clear();
-    det_map_plane_x.clear();
-    det_map_plane_y.clear();
+    det_plane_map.clear();
     fec_list.clear();
     fec_map.clear();
     apv_map.clear();
 }
 
-void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadException)
+void PRadGEMSystem::LoadConfiguration(const string &path) throw(PRadException)
 {
     ConfigParser c_parser;
     c_parser.SetSplitters(",");
@@ -60,11 +59,13 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
         string type = c_parser.TakeFirst();
 
         if(type == "DET") {
+
             string readout, detector_type, name;
             c_parser >> readout >> detector_type >> name;
             PRadGEMDetector *new_det = new PRadGEMDetector(readout, detector_type, name);
 
             if(readout == "CARTESIAN") {
+
                 string plane_x, plane_y;
                 float size_x, size_y;
                 int connect_x, connect_y, orient_x, orient_y;
@@ -72,15 +73,21 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
                 c_parser >> plane_x >> size_x >> connect_x >> orient_x
                          >> plane_y >> size_y >> connect_y >> orient_y;
 
-                new_det->AddPlane(PRadGEMDetector::Plane_X, PRadGEMDetector::Plane(plane_x, size_x, connect_x, orient_x));
-                new_det->AddPlane(PRadGEMDetector::Plane_Y, PRadGEMDetector::Plane(plane_y, size_y, connect_y, orient_y));
+                new_det->AddPlane(PRadGEMDetector::Plane_X, plane_x, size_x, connect_x, orient_x);
+                new_det->AddPlane(PRadGEMDetector::Plane_Y, plane_y, size_y, connect_y, orient_y);
 
-                RegisterDET(new_det);
+                RegisterDetector(new_det);
+
             } else {
-                cerr << "GEM System: Unsupported detector readout type " << readout << endl;
+
+                cerr << "GEM System: Unsupported detector readout type "
+                     << readout << endl;
                 delete new_det;
+
             }
+
         } else if(type == "FEC") {
+
             int fec_id;
             string fec_ip;
 
@@ -88,7 +95,9 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
 
             PRadGEMFEC *new_fec = new PRadGEMFEC(fec_id, fec_ip);
             RegisterFEC(new_fec);
+
         } else if(type == "APV") {
+
             string det_plane, status;
             int fec_id, adc_ch, orient, index;
             unsigned short header;
@@ -103,6 +112,7 @@ void PRadGEMSystem::LoadConfiguration(const std::string &path) throw(PRadExcepti
             new_apv->SetZeroSupThresLevel(5.);
 
             RegisterAPV(new_apv);
+
         }
     }
 
@@ -119,7 +129,7 @@ void PRadGEMSystem::SortFECList()
     }
 }
 
-void PRadGEMSystem::LoadPedestal(const string &path)
+void PRadGEMSystem::LoadPedestal(const string &path) throw(PRadException)
 {
     ConfigParser c_parser;
     c_parser.SetSplitters(",: \t");
@@ -133,30 +143,61 @@ void PRadGEMSystem::LoadPedestal(const string &path)
     while(c_parser.ParseLine())
     {
         ConfigValue first = c_parser.TakeFirst();
+
         if(first == "APV") { // a new APV
+
             int fec, adc;
             c_parser >> fec >> adc;
             apv = GetAPV(fec, adc);
+
         } else { // different adc channel in this APV
+
             float offset, noise;
             c_parser >> offset >> noise;
+
             if(apv)
                 apv->UpdatePedestal(PRadGEMAPV::Pedestal(offset, noise), first.Int());
+
         }
-    } 
+    }
 }
 
-void PRadGEMSystem::RegisterDET(PRadGEMDetector *det)
+void PRadGEMSystem::RegisterDetector(PRadGEMDetector *det)
 {
     if(det == nullptr)
         return;
 
-    det->AssignID(det_list.size());
-    det_list.push_back(det);
+    if(det_map_name.find(det->name) != det_map_name.end())
+    {
+        cerr << "GEM System Error: Detector "
+             << det->name << " exists, "
+             << " abort detector registration."
+             << endl;
+        return;
+    }
 
     det_map_name[det->name] = det;
-    det_map_plane_x[det->GetPlaneX().name] = det;
-    det_map_plane_y[det->GetPlaneY().name] = det;
+
+    // register planes
+    auto planes = det->GetPlaneList();
+
+    for(auto &plane : planes)
+    {
+        if(det_plane_map.find(plane->name) != det_plane_map.end())
+        {
+            cerr << "GEM System Error: Detector Plane "
+                 << plane->name << " has been registered, "
+                 << "please make sure different planes are assigned "
+                 << "different names."
+                 << endl;
+            continue;
+        }
+
+        det_plane_map[plane->name] = plane;
+    }
+
+    det->AssignID(det_list.size());
+    det_list.push_back(det);
 }
 
 void PRadGEMSystem::RegisterFEC(PRadGEMFEC *fec)
@@ -173,10 +214,24 @@ void PRadGEMSystem::RegisterAPV(PRadGEMAPV *apv)
     if(apv == nullptr)
         return;
 
+    auto *plane = GetDetectorPlane(apv->plane);
+    if(plane == nullptr) {
+        cerr << "GEM System Error: Cannot connect apv to detector plane "
+             << apv->plane << ", make sure you have detectors defined "
+             << "before the apv list in configuration map."
+             << endl;
+        return;
+    }
+    plane->ConnectAPV(apv);
+
+
     PRadGEMFEC *fec = GetFEC(apv->fec_id);
 
     if(fec == nullptr) {
-        cerr << "GEM System: Cannot add apv to fec, make sure you have fec defined in configuration map first." << endl;
+        cerr << "GEM System Error: Cannot add apv to fec "
+             << apv->fec_id << ", make sure you have fec defined "
+             << "before the aplv list in configuration map."
+             << endl;
         return;
     }
 
@@ -211,31 +266,21 @@ PRadGEMDetector *PRadGEMSystem::GetDetector(const int &id)
     return det_list[id];
 }
 
-PRadGEMDetector *PRadGEMSystem::GetDetector(const std::string &name)
+PRadGEMDetector *PRadGEMSystem::GetDetector(const string &name)
 {
     auto it = det_map_name.find(name);
     if(it == det_map_name.end()) {
-        cerr << "GEM System: Cannot find detector with name " << name << endl;
+        cerr << "GEM System: Cannot find detector " << name << endl;
         return nullptr;
     }
     return it->second;
 }
 
-PRadGEMDetector *PRadGEMSystem::GetDetectorByPlaneX(const std::string &plane_x)
+PRadGEMDetector::Plane *PRadGEMSystem::GetDetectorPlane(const string &plane)
 {
-    auto it = det_map_plane_x.find(plane_x);
-    if(it == det_map_plane_x.end()) {
-        cerr << "GEM System: Cannot find detector with plane " << plane_x << endl;
-        return nullptr;
-    }
-    return it->second;
-}
-
-PRadGEMDetector *PRadGEMSystem::GetDetectorByPlaneY(const std::string &plane_y)
-{
-    auto it = det_map_plane_y.find(plane_y);
-    if(it == det_map_plane_y.end()) {
-        cerr << "GEM System: Cannot find detector with plane " << plane_y << endl;
+    auto it = det_plane_map.find(plane);
+    if(it == det_plane_map.end()) {
+        cerr << "GEM System: Cannot find plane " << plane << endl;
         return nullptr;
     }
     return it->second;
@@ -307,7 +352,7 @@ void PRadGEMSystem::FitPedestal()
     }
 }
 
-void PRadGEMSystem::SavePedestal(const std::string &name)
+void PRadGEMSystem::SavePedestal(const string &name)
 {
     ofstream in_file(name);
 

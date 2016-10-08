@@ -41,8 +41,8 @@ public:
     void Clear();
     void SortFECList();
     void LoadConfiguration(const std::string &path) throw(PRadException);
-    void LoadPedestal(const std::string &path);
-    void RegisterDET(PRadGEMDetector *det);
+    void LoadPedestal(const std::string &path) throw(PRadException);
+    void RegisterDetector(PRadGEMDetector *det);
     void RegisterFEC(PRadGEMFEC *fec);
     void RegisterAPV(PRadGEMAPV *apv);
     void BuildAPVMap();
@@ -59,22 +59,20 @@ public:
 
     PRadGEMDetector *GetDetector(const int &id);
     PRadGEMDetector *GetDetector(const std::string &name);
-    PRadGEMDetector *GetDetectorByPlaneX(const std::string &plane_x);
-    PRadGEMDetector *GetDetectorByPlaneY(const std::string &plane_y);
+    PRadGEMDetector::Plane *GetDetectorPlane(const std::string &plane);
     PRadGEMFEC *GetFEC(const int &id);
     PRadGEMAPV *GetAPV(const GEMChannelAddress &addr);
     PRadGEMAPV *GetAPV(const int &fec, const int &adc);
 
     std::vector<GEM_Data> GetZeroSupData();
-    std::vector<PRadGEMDetector*> &GetDETList() {return det_list;};
+    std::vector<PRadGEMDetector*> &GetDetectorList() {return det_list;};
     std::vector<PRadGEMFEC*> &GetFECList() {return fec_list;};
     std::vector<PRadGEMAPV*> GetAPVList();
 
 private:
     std::vector<PRadGEMDetector*> det_list;
     std::unordered_map<std::string, PRadGEMDetector*> det_map_name;
-    std::unordered_map<std::string, PRadGEMDetector*> det_map_plane_x;
-    std::unordered_map<std::string, PRadGEMDetector*> det_map_plane_y;
+    std::unordered_map<std::string, PRadGEMDetector::Plane*> det_plane_map;
     std::vector<PRadGEMFEC*> fec_list;
     std::unordered_map<int, PRadGEMFEC*> fec_map;
     std::unordered_map<GEMChannelAddress, PRadGEMAPV*> apv_map;
