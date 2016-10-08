@@ -55,6 +55,7 @@ public:
     void SetCommonModeThresLevel(const float &t) {common_thres = t;};
     void SetZeroSupThresLevel(const float &t) {zerosup_thres = t;};
     void FillRawData(const uint32_t *buf, const size_t &siz);
+    void FillZeroSupData(const size_t &ch, const size_t &ts, const unsigned short &val);
     void SplitData(const uint32_t &buf, float &word1, float &word2);
     void UpdatePedestal(std::vector<Pedestal> &ped);
     void UpdatePedestal(const Pedestal &ped, const size_t &index);

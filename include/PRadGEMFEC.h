@@ -21,6 +21,7 @@ public:
     std::vector<PRadGEMAPV *> &GetAPVList() {return adc_list;};
     void FitPedestal();
     void ClearAPVData();
+    void CollectZeroSupHits(std::vector<GEM_Data> &hits);
     void Clear();
 
     int id;

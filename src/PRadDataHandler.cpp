@@ -487,6 +487,12 @@ void PRadDataHandler::FeedData(GEMRawData &gemData)
     gem_srs->FillRawData(gemData, newEvent->gem_data, newEvent->is_monitor_event());
 }
 
+// feed GEM data which has been zero-suppressed
+void PRadDataHandler::FeedData(vector<GEMZeroSupData> &gemData)
+{
+    gem_srs->FillZeroSupData(gemData, newEvent->gem_data);
+}
+
 void PRadDataHandler::FillHistograms(EventData &data)
 {
     double energy = 0.;

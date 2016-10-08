@@ -345,6 +345,31 @@ void PRadGEMSystem::FillRawData(GEMRawData &raw, vector<GEM_Data> &container, co
     }
 }
 
+void PRadGEMSystem::FillZeroSupData(std::vector<GEMZeroSupData> &data_pack,
+                                    std::vector<GEM_Data> &container)
+{
+    for(auto &fec : fec_list)
+    {
+        fec->ClearAPVData();
+    }
+
+    for(auto &data : data_pack)
+        FillZeroSupData(data);
+
+    for(auto &fec : fec_list)
+    {
+        fec->CollectZeroSupHits(container);
+    }
+}
+
+void PRadGEMSystem::FillZeroSupData(GEMZeroSupData &data)
+{
+    auto it = apv_map.find(data.addr);
+    if(it != apv_map.end()) {
+        it->second->FillZeroSupData(data.channel, data.time_sample, data.adc_value);
+    }
+}
+
 void PRadGEMSystem::FitPedestal()
 {
     for(auto &fec : fec_list)

@@ -27,6 +27,7 @@ private:
     void parseDataBank(PRadEventHeader *data_header);
     void parseADC1881M(const uint32_t *data);
     void parseGEMData(const uint32_t *data, const size_t &size, const int &fec_id);
+    void parseGEMZeroSupData(const uint32_t *data, const size_t &size);
     void parseTDCV767(const uint32_t *data, const size_t &size, const int &roc_id);
     void parseTDCV1190(const uint32_t *data, const size_t &size, const int &roc_id);
     void parseDSCData(const uint32_t *data, const size_t &size);

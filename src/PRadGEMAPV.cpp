@@ -105,8 +105,11 @@ void PRadGEMAPV::SetTimeSample(const size_t &t)
 
 void PRadGEMAPV::ClearData()
 {
+    // set to a high value that won't trigger zero suppression
     for(size_t i = 0; i < buffer_size; ++i)
         raw_data[i] = 5000.;
+
+    ResetHitPos();
 }
 
 void PRadGEMAPV::ResetHitPos()
@@ -159,6 +162,24 @@ void PRadGEMAPV::FillRawData(const uint32_t *buf, const size_t &size)
     }
 
     ts_index = GetTimeSampleStart();
+}
+
+void PRadGEMAPV::FillZeroSupData(const size_t &ch, const size_t &ts, const unsigned short &val)
+{
+    size_t idx = ch + ts_index + ts*TIME_SAMPLE_DIFF;
+    if(ts >= time_samples ||
+       ch >= TIME_SAMPLE_SIZE ||
+       idx >= buffer_size)
+    {
+        std::cerr << "GEM APV Error: Failed to fill zero suppressed data, "
+                  << " channel " << ch << " or time sample " << ts
+                  << " is not allowed."
+                  << std::endl;
+        return;
+    }
+
+    hit_pos[ch] = true;
+    raw_data[idx] = val;
 }
 
 void PRadGEMAPV::SplitData(const uint32_t &data, float &word1, float &word2)

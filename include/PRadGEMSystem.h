@@ -46,6 +46,8 @@ public:
     void RegisterAPV(const std::string &plane, PRadGEMAPV *apv);
     void BuildAPVMap();
     void FillRawData(GEMRawData &raw, std::vector<GEM_Data> &container, const bool &fill_hist = false);
+    void FillZeroSupData(std::vector<GEMZeroSupData> &data_pack, std::vector<GEM_Data> &container);
+    void FillZeroSupData(GEMZeroSupData &data);
 
     void SetUnivCommonModeThresLevel(const float &thres);
     void SetUnivZeroSupThresLevel(const float &thres);

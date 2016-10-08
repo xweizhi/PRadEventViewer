@@ -83,6 +83,14 @@ void PRadGEMFEC::ClearAPVData()
     }
 }
 
+void PRadGEMFEC::CollectZeroSupHits(std::vector<GEM_Data> &hits)
+{
+    for(auto &adc : adc_list)
+    {
+        adc->CollectZeroSupHits(hits);
+    }
+}
+
 void PRadGEMFEC::FitPedestal()
 {
     for(auto &adc : adc_list)

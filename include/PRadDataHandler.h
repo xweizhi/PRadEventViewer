@@ -110,6 +110,7 @@ public:
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
     void FeedData(GEMRawData &gemData);
+    void FeedData(std::vector<GEMZeroSupData> &gemData);
     void FeedTaggerHits(TDCV1190Data &tdcData);
     void FillHistograms(EventData &data);
     void UpdateEPICS(const std::string &name, const float &value);
