@@ -40,9 +40,24 @@ int main(int /*argc*/, char * /*argv*/ [])
         {
             cout << "    " << "Plane: " << plane->name << endl;
             for(auto &apv : plane->GetAPVList())
+            {
                 cout << "    " << "    "
-                     << "APV: " << apv->fec_id << ", " << apv->adc_ch
+                     << "APV: " << apv->plane_index
+                     << ", " << apv->fec_id << ", " << apv->adc_ch;
+
+                int min = apv->GetPlaneStripNb(0);
+                int max = apv->GetPlaneStripNb(0);
+                for(size_t i = 1; i < apv->GetTimeSampleSize(); ++i)
+                {
+                    int strip = apv->GetPlaneStripNb(i);
+                    if(min > strip) min = strip;
+                    if(max < strip) max = strip;
+                }
+
+                cout << ", " << min
+                     << " ~ " << max
                      << endl;
+            }
         }
     }
 

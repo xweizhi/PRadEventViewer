@@ -73,6 +73,8 @@ public:
     int GetPlaneStripNb(const size_t &ch);
     void GetAverage(float &ave, const float *buf, const size_t &set = 0);
     size_t GetTimeSampleStart();
+    size_t GetTimeSampleSize() {return TIME_SAMPLE_SIZE;};
+    size_t GetNbOfTimeSamples() {return time_samples;};
 
 public:
     PRadGEMDetector::Plane *plane;
