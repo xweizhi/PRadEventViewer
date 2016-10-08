@@ -7,6 +7,7 @@
 #include <fstream>
 #include "PRadEventStruct.h"
 #include "PRadException.h"
+#include "PRadGEMDetector.h"
 #include "PRadGEMFEC.h"
 
 
@@ -15,6 +16,7 @@
 #include <mutex>
 #endif
 
+class PRadGEMDetector;
 class TH1I;
 
 // a simple hash function for GEM DAQ configuration
@@ -29,48 +31,6 @@ namespace std
         }
     };
 }
-
-class PRadGEMDetector
-{
-public:
-    enum PlaneType
-    {
-        Plane_X,
-        Plane_Y,
-        MaxType,
-    };
-
-    struct Plane
-    {
-        std::string name;
-        float size;
-        int connector;
-        int orientation;
-
-        Plane()
-        : name("Undefined"), size(0.), connector(-1), orientation(0)
-        {};
-        Plane(const std::string &n, const float &s, const int &c, const int &o)
-        : name(n), size(s), connector(c), orientation(o)
-        {};
-    };
-
-public:
-    PRadGEMDetector(const std::string &readoutBoard, const std::string &detectorType, const std::string &detector)
-    : name(detector), type(detectorType), readout_board(readoutBoard)
-    {};
-
-    void AddPlane(const PlaneType &type, const Plane &plane) {planes[(size_t)type] = plane;};
-    void AssignID(const int &i) {id = i;};
-    Plane &GetPlaneX() {return planes[(size_t)Plane_X];};
-    Plane &GetPlaneY() {return planes[(size_t)Plane_Y];};
-
-    int id;
-    std::string name;
-    std::string type;
-    std::string readout_board;
-    Plane planes[MaxType];
-};
 
 class PRadGEMSystem
 {

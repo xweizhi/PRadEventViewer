@@ -148,14 +148,6 @@ struct EPICSData
     EPICSData(const int &ev, std::vector<float> &val)
     : event_number(ev), values(val)
     {};
-    EPICSData(const EPICSData &e)
-    : event_number(e.event_number),
-      values(std::move(e.values))
-    {};
-    EPICSData(EPICSData &&e)
-    : event_number(e.event_number),
-      values(std::move(e.values))
-    {};
 
     void clear()
     {
@@ -193,23 +185,6 @@ struct EventData
               std::vector<DSC_Data> &dsc)
     : event_number(0), type(t), trigger((unsigned char)trg), timestamp(0),
       adc_data(adc), tdc_data(tdc), gem_data(gem), dsc_data(dsc)
-    {};
-
-    // move constructor
-    EventData(const EventData &e)
-    : event_number(e.event_number), type(e.type), trigger(e.trigger), timestamp(e.timestamp),
-      adc_data(std::move(e.adc_data)),
-      tdc_data(std::move(e.tdc_data)),
-      gem_data(std::move(e.gem_data)),
-      dsc_data(std::move(e.dsc_data))
-    {};
-
-    EventData(EventData &&e)
-    : event_number(e.event_number), type(e.type), trigger(e.trigger), timestamp(e.timestamp),
-      adc_data(std::move(e.adc_data)),
-      tdc_data(std::move(e.tdc_data)),
-      gem_data(std::move(e.gem_data)),
-      dsc_data(std::move(e.dsc_data))
     {};
 
     // functions
