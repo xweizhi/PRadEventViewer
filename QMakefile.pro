@@ -72,6 +72,7 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadIslandCluster.h \
            include/PRadGEMSystem.h \
            include/PRadGEMDetector.h \
+           include/PRadGEMPlane.h \
            include/PRadGEMFEC.h \
            include/PRadGEMAPV.h
 
@@ -99,6 +100,7 @@ SOURCES += src/main.cpp \
            src/PRadIslandCluster.cpp \
            src/PRadGEMSystem.cpp \
            src/PRadGEMDetector.cpp \
+           src/PRadGEMPlane.cpp \
            src/PRadGEMFEC.cpp \
            src/PRadGEMAPV.cpp
 

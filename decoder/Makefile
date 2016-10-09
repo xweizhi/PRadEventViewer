@@ -65,6 +65,7 @@ LIB_OBJECTS   = $(LIB_OBJ_DIR)/PRadDAQUnit.o \
                 $(LIB_OBJ_DIR)/island.o \
                 $(LIB_OBJ_DIR)/PRadGEMSystem.o \
                 $(LIB_OBJ_DIR)/PRadGEMDetector.o \
+                $(LIB_OBJ_DIR)/PRadGEMPlane.o \
                 $(LIB_OBJ_DIR)/PRadGEMFEC.o \
                 $(LIB_OBJ_DIR)/PRadGEMAPV.o
 

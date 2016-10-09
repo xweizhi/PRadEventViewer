@@ -3,10 +3,10 @@
 
 #include <vector>
 #include <fstream>
-#include "PRadGEMDetector.h"
 #include "PRadEventStruct.h"
 #include "datastruct.h"
 
+class PRadGEMPlane;
 class TH1I;
 
 class PRadGEMAPV
@@ -44,7 +44,7 @@ public:
                const std::string &status);
     virtual ~PRadGEMAPV();
 
-    void SetDetectorPlane(PRadGEMDetector::Plane *p);
+    void SetDetectorPlane(PRadGEMPlane *p);
     void ClearData();
     void ClearPedestal();
     void CreatePedHist();
@@ -78,7 +78,7 @@ public:
     size_t GetNbOfTimeSamples() {return time_samples;};
 
 public:
-    PRadGEMDetector::Plane *plane;
+    PRadGEMPlane *plane;
     int fec_id;
     int adc_ch;
     size_t time_samples;

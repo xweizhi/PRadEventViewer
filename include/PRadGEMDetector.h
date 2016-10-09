@@ -3,70 +3,32 @@
 
 #include <vector>
 #include <string>
+#include "PRadGEMPlane.h"
 
 class PRadGEMAPV;
 
 class PRadGEMDetector
 {
 public:
-    enum PlaneType
-    {
-        Plane_X,
-        Plane_Y,
-        Plane_Max
-    };
-
-    class Plane
-    {
-    public:
-        Plane()
-        : detector(nullptr), name("Undefined"), type(Plane_X),
-          size(0.), connector(-1), orientation(0)
-        {};
-
-        Plane(const std::string &n, const PlaneType &t, const float &s,
-              const int &c, const int &o)
-        : detector(nullptr), name(n), type(t), size(s), connector(c), orientation(o)
-        {};
-
-        Plane(PRadGEMDetector *d, const std::string &n, const PlaneType &t,
-              const float &s, const int &c, const int &o)
-        : detector(d), name(n), type(t), size(s), connector(c), orientation(o)
-        {};
-
-        void ConnectAPV(PRadGEMAPV *apv);
-        std::vector<PRadGEMAPV*> &GetAPVList() {return apv_list;};
-
-    public:
-        PRadGEMDetector *detector;
-        std::string name;
-        PlaneType type;
-        float size;
-        int connector;
-        int orientation;
-        std::vector<PRadGEMAPV*> apv_list;
-    };
-
-public:
     PRadGEMDetector(const std::string &readoutBoard,
                     const std::string &detectorType,
                     const std::string &detector);
     virtual ~PRadGEMDetector();
 
-    void AddPlane(const PlaneType &type, Plane *plane);
-    void AddPlane(const PlaneType &type, const std::string &name,
-                  const float &size, const int &conn, const int &ori);
+    void AddPlane(const PRadGEMPlane::PlaneType &type, PRadGEMPlane *plane);
+    void AddPlane(const PRadGEMPlane::PlaneType &type, const std::string &name,
+                  const double &size, const int &conn, const int &ori);
     void AssignID(const int &i);
-    std::vector<Plane*> GetPlaneList();
-    Plane *GetPlane(const PlaneType &type);
-    void ConnectAPV(const PlaneType &plane, PRadGEMAPV *apv);
-    std::vector<PRadGEMAPV*> GetAPVList(const PlaneType &type);
+    std::vector<PRadGEMPlane*> GetPlaneList();
+    PRadGEMPlane *GetPlane(const PRadGEMPlane::PlaneType &type);
+    void ConnectAPV(const PRadGEMPlane::PlaneType &plane, PRadGEMAPV *apv);
+    std::vector<PRadGEMAPV*> GetAPVList(const PRadGEMPlane::PlaneType &type);
 
     int id;
     std::string name;
     std::string type;
     std::string readout_board;
-    Plane *planes[Plane_Max];
+    std::vector<PRadGEMPlane*> planes;
 };
 
 #endif

@@ -67,14 +67,14 @@ void PRadGEMSystem::LoadConfiguration(const string &path) throw(PRadException)
             if(readout == "CARTESIAN") {
 
                 string plane_x, plane_y;
-                float size_x, size_y;
+                double size_x, size_y;
                 int connect_x, connect_y, orient_x, orient_y;
 
                 c_parser >> plane_x >> size_x >> connect_x >> orient_x
                          >> plane_y >> size_y >> connect_y >> orient_y;
 
-                new_det->AddPlane(PRadGEMDetector::Plane_X, plane_x, size_x, connect_x, orient_x);
-                new_det->AddPlane(PRadGEMDetector::Plane_Y, plane_y, size_y, connect_y, orient_y);
+                new_det->AddPlane(PRadGEMPlane::Plane_X, plane_x, size_x, connect_x, orient_x);
+                new_det->AddPlane(PRadGEMPlane::Plane_Y, plane_y, size_y, connect_y, orient_y);
 
                 RegisterDetector(new_det);
 
@@ -277,7 +277,7 @@ PRadGEMDetector *PRadGEMSystem::GetDetector(const string &name)
     return it->second;
 }
 
-PRadGEMDetector::Plane *PRadGEMSystem::GetDetectorPlane(const string &plane)
+PRadGEMPlane *PRadGEMSystem::GetDetectorPlane(const string &plane)
 {
     auto it = det_plane_map.find(plane);
     if(it == det_plane_map.end()) {

@@ -1,7 +1,6 @@
 //============================================================================//
 // GEM detector class                                                         //
-// A detector has X and Y planes, each of the plane is connected to several   //
-// APVs                                                                       //
+// A detector has several planes (X, Y)                                       //
 //                                                                            //
 // Chao Peng                                                                  //
 // 10/07/2016                                                                 //
@@ -17,35 +16,29 @@ PRadGEMDetector::PRadGEMDetector(const std::string &readoutBoard,
                                  const std::string &detector)
 : name (detector), type(detectorType), readout_board(readoutBoard)
 {
-    for(int i = 0; i < (int)Plane_Max; ++i)
-        planes[i] = nullptr;
+    planes.assign(PRadGEMPlane::Plane_Max, nullptr);
 }
 
 PRadGEMDetector::~PRadGEMDetector()
 {
-    for(int i = 0; i < (int)Plane_Max; ++i)
+    for(auto &plane : planes)
     {
-        for(auto &apv : planes[i]->GetAPVList())
-        {
-            apv->SetDetectorPlane(nullptr);
-        }
-
-        if(planes[i] != nullptr)
-            delete planes[i], planes[i] = nullptr;
+        if(plane != nullptr)
+            delete plane, plane = nullptr;
     }
 }
 
-void PRadGEMDetector::AddPlane(const PRadGEMDetector::PlaneType &type,
+void PRadGEMDetector::AddPlane(const PRadGEMPlane::PlaneType &type,
                                const std::string &name,
-                               const float &size,
+                               const double &size,
                                const int &conn,
                                const int &ori)
 {
-    planes[(int)type] = new Plane(this, name, type, size, conn, ori);
+    planes[(int)type] = new PRadGEMPlane(this, name, type, size, conn, ori);
 }
 
-void PRadGEMDetector::AddPlane(const PRadGEMDetector::PlaneType &type,
-                               PRadGEMDetector::Plane *plane)
+void PRadGEMDetector::AddPlane(const PRadGEMPlane::PlaneType &type,
+                               PRadGEMPlane *plane)
 {
     if(plane->detector != nullptr) {
         std::cerr << "PRad GEM Detector Error: "
@@ -74,20 +67,17 @@ void PRadGEMDetector::AssignID(const int &i)
     id = i;
 }
 
-std::vector<PRadGEMDetector::Plane*> PRadGEMDetector::GetPlaneList()
+std::vector<PRadGEMPlane*> PRadGEMDetector::GetPlaneList()
 {
-    std::vector<Plane*> result;
-    for(int i = 0; i < (int)Plane_Max; ++i)
-        result.push_back(planes[i]);
-    return result;
+    return planes;
 }
 
-PRadGEMDetector::Plane *PRadGEMDetector::GetPlane(const PRadGEMDetector::PlaneType &type)
+PRadGEMPlane *PRadGEMDetector::GetPlane(const PRadGEMPlane::PlaneType &type)
 {
     return planes[(int)type];
 }
 
-std::vector<PRadGEMAPV*> PRadGEMDetector::GetAPVList(const PRadGEMDetector::PlaneType &type)
+std::vector<PRadGEMAPV*> PRadGEMDetector::GetAPVList(const PRadGEMPlane::PlaneType &type)
 {
     if(planes[(int)type] == nullptr)
         return std::vector<PRadGEMAPV*>();
@@ -95,7 +85,7 @@ std::vector<PRadGEMAPV*> PRadGEMDetector::GetAPVList(const PRadGEMDetector::Plan
     return planes[(int)type]->apv_list;
 }
 
-void PRadGEMDetector::ConnectAPV(const PRadGEMDetector::PlaneType &type, PRadGEMAPV *apv)
+void PRadGEMDetector::ConnectAPV(const PRadGEMPlane::PlaneType &type, PRadGEMAPV *apv)
 {
     if(planes[(int)type] == nullptr)
         return;
@@ -103,30 +93,3 @@ void PRadGEMDetector::ConnectAPV(const PRadGEMDetector::PlaneType &type, PRadGEM
     planes[(int)type]->ConnectAPV(apv);
 }
 
-//============================================================================//
-// Detector Plane Functions                                                   //
-//============================================================================//
-void PRadGEMDetector::Plane::ConnectAPV(PRadGEMAPV *apv)
-{
-    for(auto &plane_apv : apv_list)
-    {
-        if(plane_apv->plane_index == apv->plane_index) {
-            std::cout << "PRad GEM Detector Warning: Failed to connect plane " << name
-                      << " with APV at FEC " << apv->fec_id << ", Channel " << apv->adc_ch
-                      << ". APV index on this plane is duplicated."
-                      << std::endl;
-            return;
-        }
-        if(apv->plane_index >= connector) {
-            std::cout << "PRad GEM Detector Warning: Failed to connect plane " << name
-                      << " with APV at FEC " << apv->fec_id << ", Channel " << apv->adc_ch
-                      << ". Plane connectors are not enough, have " << connector
-                      << ", this APV is at " << apv->plane_index
-                      << std::endl;
-            return;
-        }
-    }
-
-    apv_list.push_back(apv);
-    apv->SetDetectorPlane(this);
-}

@@ -7,6 +7,7 @@
 //============================================================================//
 
 #include "PRadGEMFEC.h"
+#include "PRadGEMAPV.h"
 #include <iostream>
 #include <algorithm>
 

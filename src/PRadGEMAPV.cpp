@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include "PRadGEMPlane.h"
 #include "PRadGEMAPV.h"
 #include "TF1.h"
 #include "TH1.h"
@@ -48,7 +49,7 @@ PRadGEMAPV::~PRadGEMAPV()
     delete[] raw_data;
 }
 
-void PRadGEMAPV::SetDetectorPlane(PRadGEMDetector::Plane *p)
+void PRadGEMAPV::SetDetectorPlane(PRadGEMPlane *p)
 {
     plane = p;
 
@@ -449,7 +450,7 @@ PRadGEMAPV::StripNb PRadGEMAPV::MapStrip(int ch)
     int strip = 32*(ch%4) + 8*(ch/4) - 31*(ch/16);
 
     // APV25 Channel to readout strip Mapping
-    if((plane->type == PRadGEMDetector::Plane_X) && (plane_index == 11)) {
+    if((plane->type == PRadGEMPlane::Plane_X) && (plane_index == 11)) {
         if(strip & 1)
             strip = 48 - (strip + 1)/2;
         else
@@ -470,7 +471,7 @@ PRadGEMAPV::StripNb PRadGEMAPV::MapStrip(int ch)
         strip = 127 - strip;
 
     // special APV
-    if((plane->type == PRadGEMDetector::Plane_X) && (plane_index == 11)) {
+    if((plane->type == PRadGEMPlane::Plane_X) && (plane_index == 11)) {
         strip += -16 + TIME_SAMPLE_SIZE * (plane_index - 1);
     } else {
         strip += TIME_SAMPLE_SIZE * plane_index;

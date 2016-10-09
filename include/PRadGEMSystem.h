@@ -8,7 +8,9 @@
 #include "PRadEventStruct.h"
 #include "PRadException.h"
 #include "PRadGEMDetector.h"
+#include "PRadGEMPlane.h"
 #include "PRadGEMFEC.h"
+#include "PRadGEMAPV.h"
 
 
 #ifdef MULTI_THREAD
@@ -60,7 +62,7 @@ public:
 
     PRadGEMDetector *GetDetector(const int &id);
     PRadGEMDetector *GetDetector(const std::string &name);
-    PRadGEMDetector::Plane *GetDetectorPlane(const std::string &plane);
+    PRadGEMPlane *GetDetectorPlane(const std::string &plane);
     PRadGEMFEC *GetFEC(const int &id);
     PRadGEMAPV *GetAPV(const GEMChannelAddress &addr);
     PRadGEMAPV *GetAPV(const int &fec, const int &adc);
@@ -73,7 +75,7 @@ public:
 private:
     std::vector<PRadGEMDetector*> det_list;
     std::unordered_map<std::string, PRadGEMDetector*> det_map_name;
-    std::unordered_map<std::string, PRadGEMDetector::Plane*> det_plane_map;
+    std::unordered_map<std::string, PRadGEMPlane*> det_plane_map;
     std::vector<PRadGEMFEC*> fec_list;
     std::unordered_map<int, PRadGEMFEC*> fec_map;
     std::unordered_map<GEMChannelAddress, PRadGEMAPV*> apv_map;

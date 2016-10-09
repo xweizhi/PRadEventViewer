@@ -4,7 +4,9 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "PRadGEMAPV.h"
+#include "PRadEventStruct.h"
+
+class PRadGEMAPV;
 
 class PRadGEMFEC
 {
