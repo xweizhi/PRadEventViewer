@@ -223,20 +223,20 @@ struct EventData
     const std::vector<GEM_Data> &get_gem_data() const {return gem_data;};
     const std::vector<DSC_Data> &get_dsc_data() const {return dsc_data;};
 
-    bool is_physics_event()
+    bool is_physics_event() const
     {
         return ( (trigger == PHYS_LeadGlassSum) ||
                  (trigger == PHYS_TotalSum)     ||
                  (trigger == PHYS_TaggerE)      ||
                  (trigger == PHYS_Scintillator) );
     };
-    bool is_monitor_event()
+    bool is_monitor_event() const
     {
         return ( (trigger == LMS_Led) ||
                  (trigger == LMS_Alpha) );
     };
 
-    double get_beam_time()
+    double get_beam_time() const
     {
         double elapsed_time = 0.;
         if(dsc_data.size() > REF_CHANNEL)
@@ -247,7 +247,7 @@ struct EventData
         return elapsed_time;
     };
 
-    double get_live_time()
+    double get_live_time() const
     {
         double live_time = 1.;
         if(dsc_data.size() > REF_CHANNEL)
@@ -258,7 +258,7 @@ struct EventData
         return live_time;
     };
 
-    double get_beam_charge()
+    double get_beam_charge() const
     {
         double beam_charge = 0.;
         if(dsc_data.size() > FCUP_CHANNEL)
@@ -269,7 +269,7 @@ struct EventData
         return beam_charge;
     };
 
-    double get_beam_current()
+    double get_beam_current() const
     {
         double beam_time = get_beam_time();
         if(beam_time > 0.)
@@ -278,7 +278,7 @@ struct EventData
             return 0.;
     };
 
-    DSC_Data get_dsc_channel(const uint32_t &idx)
+    DSC_Data get_dsc_channel(const uint32_t &idx) const
     {
         if(dsc_data.size() <= idx)
             return DSC_Data();
@@ -286,12 +286,12 @@ struct EventData
             return dsc_data.at(idx);
     };
 
-    DSC_Data get_ref_channel()
+    DSC_Data get_ref_channel() const
     {
         return get_dsc_channel(REF_CHANNEL);
     };
 
-    DSC_Data get_dsc_scaled_by_ref(const uint32_t &idx)
+    DSC_Data get_dsc_scaled_by_ref(const uint32_t &idx) const
     {
         if(idx >= dsc_data.size())
             return DSC_Data();

@@ -406,6 +406,10 @@ void PRadGEMSystem::ChooseEvent(const EventData &data)
 
 void PRadGEMSystem::Reconstruct(const EventData &data)
 {
+    // only reconstruct physics event
+    if(!data.is_physics_event())
+        return;
+
     // Plane based reconstruction, collect hits first
     // There exists two way to collect hits to plane.
     // This is the first way, collect hits from event data:
