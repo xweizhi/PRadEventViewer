@@ -46,6 +46,9 @@ PRadGEMAPV::PRadGEMAPV(const int &f,
 
 PRadGEMAPV::~PRadGEMAPV()
 {
+    if(plane != nullptr)
+        plane->DisconnectAPV(plane_index);
+
     delete[] raw_data;
 }
 
@@ -373,6 +376,26 @@ void PRadGEMAPV::CollectZeroSupHits(std::vector<GEM_Data> &hits)
         hits.emplace_back(hit);
     }
 }
+
+void PRadGEMAPV::CollectZeroSupHits()
+{
+    if(plane == nullptr)
+        return;
+
+    for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
+    {
+        if(hit_pos[i] == false)
+            continue;
+
+        std::vector<float> charges;
+        for(size_t j = 0; j < time_samples; ++j)
+        {
+            charges.push_back(raw_data[i + ts_index + j*TIME_SAMPLE_DIFF]);
+        }
+        plane->AddPlaneHit(strip_map[i].plane, charges);
+    }
+}
+
 
 void PRadGEMAPV::CommonModeCorrection(float *buf, const size_t &size)
 {

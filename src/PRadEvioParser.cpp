@@ -310,7 +310,7 @@ void PRadEvioParser::parseGEMZeroSupData(const uint32_t *data, const size_t &siz
     // adc value: 11 bit
     //
 
-    if(data[0] != GEMDATA_ZEROSUP) {
+    if((data[0]&0xffffff00) != GEMDATA_ZEROSUP) {
         cerr << "Unrecognized GEM zero suppressed data header word: "
              << "0x" << hex << setw(8) << setfill('0') << data[0]
              << endl;

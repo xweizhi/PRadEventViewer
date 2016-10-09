@@ -19,11 +19,20 @@ public:
 
     struct PlaneHit
     {
-        double position;
+        int strip;
         double charge;
 
-        PlaneHit() : position(0.), charge(0.) {};
-        PlaneHit(const double &p, const double &c) : position(p), charge(c) {};
+        PlaneHit() : strip(0), charge(0.) {};
+        PlaneHit(const int &s, const double &c) : strip(s), charge(c) {};
+    };
+
+    struct PlaneCluster
+    {
+        std::vector<PlaneHit> hits;
+
+        PlaneCluster() {};
+        PlaneCluster(const std::vector<PlaneHit> &p) : hits(p) {};
+        PlaneCluster(std::vector<PlaneHit> &&p) : hits(std::move(p)) {};
     };
 
 public:
@@ -35,11 +44,14 @@ public:
     virtual ~PRadGEMPlane();
 
     void ConnectAPV(PRadGEMAPV *apv);
+    void DisconnectAPV(const size_t &plane_index);
     double GetStripPosition(const int &plane_strip);
     double GetMaxCharge(const std::vector<float> &charges);
     double GetIntegratedCharge(const std::vector<float> &charges);
     void AddPlaneHit(const int &plane_strip, const std::vector<float> &charges);
     void ClearPlaneHits();
+    void CollectAPVHits();
+    void ClusterHits();
 
     // set parameter
     void SetDetector(PRadGEMDetector *det) {detector = det;};
@@ -57,6 +69,8 @@ public:
     int &GetCapacity() {return connector;};
     int &GetOrientation() {return orientation;};
     std::vector<PRadGEMAPV*> GetAPVList();
+    std::vector<PlaneHit> &GetPlaneHits();
+    std::vector<PlaneCluster> &GetPlaneCluster();
 
 private:
     PRadGEMDetector *detector;
@@ -67,6 +81,7 @@ private:
     int orientation;
     std::vector<PRadGEMAPV*> apv_list;
     std::vector<PlaneHit> hit_list;
+    std::vector<PlaneCluster> cluster_list;
 };
 
 #endif

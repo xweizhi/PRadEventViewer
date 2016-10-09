@@ -16,7 +16,7 @@ PRadGEMDetector::PRadGEMDetector(const std::string &readoutBoard,
                                  const std::string &detector)
 : name (detector), type(detectorType), readout_board(readoutBoard)
 {
-    planes.assign(PRadGEMPlane::Plane_Max, nullptr);
+    planes.resize(PRadGEMPlane::Plane_Max, nullptr);
 }
 
 PRadGEMDetector::~PRadGEMDetector()
@@ -62,6 +62,15 @@ void PRadGEMDetector::AddPlane(const PRadGEMPlane::PlaneType &type,
     planes[(int)type] = plane;
 }
 
+void PRadGEMDetector::ClearPlaneHits()
+{
+    for(auto &plane : planes)
+    {
+        if(plane != nullptr)
+            plane->ClearPlaneHits();
+    }
+}
+
 void PRadGEMDetector::AssignID(const int &i)
 {
     id = i;
@@ -69,7 +78,17 @@ void PRadGEMDetector::AssignID(const int &i)
 
 std::vector<PRadGEMPlane*> PRadGEMDetector::GetPlaneList()
 {
-    return planes;
+    // since it allows nullptr in planes
+    // for safety issue, only pack existing planes and return
+    std::vector<PRadGEMPlane*> result;
+
+    for(auto &plane : planes)
+    {
+        if(plane != nullptr)
+            result.push_back(plane);
+    }
+
+    return result;
 }
 
 PRadGEMPlane *PRadGEMDetector::GetPlane(const PRadGEMPlane::PlaneType &type)
@@ -92,4 +111,3 @@ void PRadGEMDetector::ConnectAPV(const PRadGEMPlane::PlaneType &type, PRadGEMAPV
 
     planes[(int)type]->ConnectAPV(apv);
 }
-

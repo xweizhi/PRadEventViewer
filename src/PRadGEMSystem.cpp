@@ -10,14 +10,16 @@
 #include "ConfigParser.h"
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 #include "TFile.h"
 #include "TH1.h"
 
 using namespace std;
 
-PRadGEMSystem::PRadGEMSystem()
+PRadGEMSystem::PRadGEMSystem(const std::string &config_file)
 {
-
+    if(!config_file.empty())
+        LoadConfiguration(config_file);
 }
 
 PRadGEMSystem::~PRadGEMSystem()
@@ -47,6 +49,9 @@ void PRadGEMSystem::Clear()
 
 void PRadGEMSystem::LoadConfiguration(const string &path) throw(PRadException)
 {
+    // release memory before load new configuration
+    Clear();
+
     ConfigParser c_parser;
     c_parser.SetSplitters(",");
 
@@ -392,23 +397,44 @@ void PRadGEMSystem::ChooseEvent(const EventData &data)
 
 void PRadGEMSystem::Reconstruct(const EventData &data)
 {
+    // Plane based reconstruction, collect hits first
+    // There exists two way to collect hits to plane.
+    // This is the first way, collect hits from event data:
+    // 1. Get hits data
+    // 2. Find corresponding APV and its connected plane
+    // 3. Transform APV's channel to plane strip
+    // 4. Add plane hits (plane strip, charges from time samples)
+    // The other way is
+    // Decode the raw data, do zero suppression on all APVs
+    // or use ChooseEvent() to redistribute the hits to APVs
+    // so APV got the hits in its storage
+    // use plane->CollectAPVHits() to ccollect these hits
+
     // clear hits for all detector planes
     for(auto &det : det_list)
     {
-        for(auto &plane : det->GetPlaneList())
-            plane->ClearPlaneHits();
+        det->ClearPlaneHits();
     }
 
     // add the hits from event data
     for(auto &hit : data.gem_data)
     {
         auto apv = GetAPV(hit.addr.fec, hit.addr.adc);
+        if(apv == nullptr)
+            continue;
+
         auto plane = apv->GetPlane();
-        if(apv && plane)
-            plane->AddPlaneHit(apv->GetPlaneStripNb(hit.addr.strip), hit.values);
+        if(plane == nullptr) {
+            std::cout << "GEM System Warning: APV " << apv->GetAddress()
+                      << " is not connected to any detector plane."
+                      << std::endl;
+            continue;
+        }
+
+        plane->AddPlaneHit(apv->GetPlaneStripNb(hit.addr.strip), hit.values);
     }
 
-    // TODO call cluste method to reconstruct
+    // TODO call cluster method to reconstruct
 }
 
 void PRadGEMSystem::FitPedestal()

@@ -48,7 +48,11 @@ void PRadGEMFEC::RemoveAPV(const int &id)
 
 void PRadGEMFEC::SortAPVList()
 {
-    sort(adc_list.begin(), adc_list.end(), [this](PRadGEMAPV *apv1, PRadGEMAPV *apv2){return apv1->GetADCChannel() < apv2->GetADCChannel();});
+    sort(adc_list.begin(), adc_list.end(),
+        [this](PRadGEMAPV *apv1, PRadGEMAPV *apv2)
+        {
+            return apv1->GetADCChannel() < apv2->GetADCChannel();
+        });
 }
 
 PRadGEMAPV *PRadGEMFEC::GetAPV(const int &id)

@@ -10,6 +10,8 @@
 #include "PRadGEMPlane.h"
 #include "PRadGEMAPV.h"
 #include <iostream>
+#include <algorithm>
+
 
 PRadGEMPlane::PRadGEMPlane()
 : detector(nullptr), name("Undefined"), type(Plane_X),
@@ -35,7 +37,8 @@ PRadGEMPlane::~PRadGEMPlane()
 {
     for(auto &apv : apv_list)
     {
-        apv->SetDetectorPlane(nullptr);
+        if(apv != nullptr)
+            apv->SetDetectorPlane(nullptr);
     }
 }
 
@@ -77,9 +80,18 @@ void PRadGEMPlane::ConnectAPV(PRadGEMAPV *apv)
     apv->SetDetectorPlane(this);
 }
 
-// since the original apv list may contain nullptr, here output all available APVs
+void PRadGEMPlane::DisconnectAPV(const size_t &plane_index)
+{
+    if(plane_index >= apv_list.size())
+        return;
+
+    apv_list[plane_index] = nullptr;
+}
+
 std::vector<PRadGEMAPV*> PRadGEMPlane::GetAPVList()
 {
+    // since the apv list may contain nullptr,
+    // only pack connected APVs and return
     std::vector<PRadGEMAPV*> result;
 
     for(const auto &apv : apv_list)
@@ -134,6 +146,56 @@ void PRadGEMPlane::ClearPlaneHits()
 
 void PRadGEMPlane::AddPlaneHit(const int &plane_strip, const std::vector<float> &charges)
 {
-    hit_list.emplace_back(GetStripPosition(plane_strip), GetMaxCharge(charges));
+    //TODO, know why the strips are discarded,
+    //and why 1391? apv 11 is totally removed
+
+    // X plane needs to remove 16 strips at both ends
+    if((type == Plane_X) &&
+       ((plane_strip < 16) || (plane_strip > 1391)))
+       return;
+
+    hit_list.emplace_back(plane_strip, GetMaxCharge(charges));
 }
+
+void PRadGEMPlane::CollectAPVHits()
+{
+    ClearPlaneHits();
+
+    for(auto &apv : apv_list)
+    {
+        if(apv != nullptr)
+            apv->CollectZeroSupHits();
+    }
+}
+
+void PRadGEMPlane::ClusterHits()
+{
+    // clear plane clusters
+    cluster_list.clear();
+
+    // sort the hits by its strip number
+    std::sort(hit_list.begin(), hit_list.end(),
+              // lamda expr, compare hit by their strip numbers
+              [](const PlaneHit &h1, const PlaneHit &h2)
+              {
+                  return h1.strip < h2.strip;
+              });
+
+    // group the hits that have consecutive strip number
+    auto cluster_begin = hit_list.begin();
+    for(auto it = hit_list.begin(); it != hit_list.end(); ++it)
+    {
+        auto next = it + 1;
+        // end of list, group the last cluster
+        if(next == hit_list.end())
+            cluster_list.emplace_back(std::vector<PlaneHit>(cluster_begin, next));
+
+        // check consecutivity
+        if(next->strip - it->strip > 1) {
+            cluster_list.emplace_back(std::vector<PlaneHit>(cluster_begin, next));
+            cluster_begin = next;
+        }
+    }
+}
+
 

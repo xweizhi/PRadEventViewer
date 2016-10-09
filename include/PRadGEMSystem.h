@@ -36,7 +36,7 @@ namespace std
 class PRadGEMSystem
 {
 public:
-    PRadGEMSystem();
+    PRadGEMSystem(const std::string &config_file = "");
     virtual ~PRadGEMSystem();
 
     void Clear();

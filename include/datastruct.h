@@ -154,7 +154,7 @@ struct GEMChannelAddress
 
 #define GEMDATA_APVBEG 0x41444300 //&0xffffff00
 #define GEMDATA_FECEND 0xfafafafa
-#define GEMDATA_ZEROSUP 0xfecfecfe
+#define GEMDATA_ZEROSUP 0xfecfec00 //&xffffff00
 
 #define V767_HEADER_BIT  (1 << 22)
 #define V767_END_BIT     (1 << 21)
