@@ -146,9 +146,6 @@ void PRadGEMPlane::ClearPlaneHits()
 
 void PRadGEMPlane::AddPlaneHit(const int &plane_strip, const std::vector<float> &charges)
 {
-    //TODO, know why the strips are discarded,
-    //and why 1391? apv 11 is totally removed
-
     // X plane needs to remove 16 strips at both ends
     if((type == Plane_X) &&
        ((plane_strip < 16) || (plane_strip > 1391)))
@@ -186,9 +183,12 @@ void PRadGEMPlane::ClusterHits()
     for(auto it = hit_list.begin(); it != hit_list.end(); ++it)
     {
         auto next = it + 1;
+
         // end of list, group the last cluster
-        if(next == hit_list.end())
+        if(next == hit_list.end()) {
             cluster_list.emplace_back(std::vector<PlaneHit>(cluster_begin, next));
+            break;
+        }
 
         // check consecutivity
         if(next->strip - it->strip > 1) {

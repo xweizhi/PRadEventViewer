@@ -71,15 +71,24 @@ void PRadGEMSystem::LoadConfiguration(const string &path) throw(PRadException)
 
             if(readout == "CARTESIAN") {
 
-                string plane_x, plane_y;
-                double size_x, size_y;
-                int connect_x, connect_y, orient_x, orient_y;
+                string plane;
+                double size;
+                int connector, orient;
+                PRadGEMPlane::PlaneType type;
 
-                c_parser >> plane_x >> size_x >> connect_x >> orient_x
-                         >> plane_y >> size_y >> connect_y >> orient_y;
+                // A planes is defined in 4 parameters
+                while(c_parser.NbofElements() >= 4)
+                {
+                    c_parser >> plane >> size >> connector >> orient;
 
-                new_det->AddPlane(PRadGEMPlane::Plane_X, plane_x, size_x, connect_x, orient_x);
-                new_det->AddPlane(PRadGEMPlane::Plane_Y, plane_y, size_y, connect_y, orient_y);
+                    // determine plane type
+                    if(plane.find("X") != string::npos)
+                        type = PRadGEMPlane::Plane_X;
+                    else
+                        type = PRadGEMPlane::Plane_Y;
+
+                    new_det->AddPlane(type, plane, size, connector, orient);
+                }
 
                 RegisterDetector(new_det);
 
