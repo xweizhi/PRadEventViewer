@@ -82,9 +82,10 @@ public:
     std::list<GEMPlaneCluster> &GetPlaneCluster() {return cluster_list;};
 
 private:
-    void filterCluster();
-    void splitCluster();
-    bool inspectCluster(const GEMPlaneCluster &c);
+    void filterClusters();
+    void splitClusters();
+    bool filterCluster(const GEMPlaneCluster &c);
+    bool splitCluster(GEMPlaneCluster &c, GEMPlaneCluster &c1);
 
 private:
     PRadGEMDetector *detector;

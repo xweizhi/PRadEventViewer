@@ -11,6 +11,7 @@
 #include "PRadGEMPlane.h"
 #include "PRadGEMAPV.h"
 #include <iostream>
+#include <iterator>
 #include <algorithm>
 
 
@@ -199,13 +200,13 @@ void PRadGEMPlane::ClusterHits()
     }
 
     // split the clusters that may contain multiple physical hits
-    splitCluster();
+    splitClusters();
 
     // remove the clusters that does not pass certain criteria
-    filterCluster();
+    filterClusters();
 }
 
-void PRadGEMPlane::splitCluster()
+void PRadGEMPlane::splitClusters()
 {
     // We are trying to find the valley that satisfies certain critieria,
     // i.e., less than a sigma comparing to neighbor strips on both sides.
@@ -216,41 +217,64 @@ void PRadGEMPlane::splitCluster()
     // loop over the cluster list
     for(auto c_it = cluster_list.begin(); c_it != cluster_list.end(); ++c_it)
     {
-        auto &hits = c_it->hits;
-
         // no need to do separation if less than 3 hits
-        if(hits.size() < 3)
+        if(c_it->hits.size() < 3)
             continue;
 
-        // we use 3 consecutive iterator
-        auto it_prev = hits.begin();
-        auto it = it_prev + 1;
-        auto it_next = it + 1;
-        for(; it_next != hits.end(); ++it_prev, ++it, ++it_next)
-        {
-            if( (it_prev->charge - it->charge > 14) &&
-                (it_next->charge - it->charge > 14) )
-            {
-                // split charge
-                it->charge /= 2.;
+        // split the cluster
+        GEMPlaneCluster split_cluster;
 
-                // create new cluster, and insert behind current iterator
-                GEMPlaneCluster split(std::vector<GEMPlaneHit>(it, hits.end()));
-                cluster_list.insert(std::next(c_it, 1), split);
+        // insert the split cluster behind
+        if(splitCluster(*c_it, split_cluster))
+            cluster_list.insert(std::next(c_it, 1), split_cluster);
 
-                // remove the hits that are grouped into a new cluster
-                // keep the overlap strip
-                hits.erase(it_next, hits.end());
-
-                // no need to continue, since the left hits are moved into next
-                // cluster
-                break;
-            }
-        }
     }
 }
 
-bool PRadGEMPlane::inspectCluster(const GEMPlaneCluster &c)
+bool PRadGEMPlane::splitCluster(GEMPlaneCluster &c, GEMPlaneCluster &c1)
+{
+    // we use 2 consecutive iterator
+    auto it = c.hits.begin();
+    auto it_next = it + 1;
+
+    // find the local minimum
+    bool descending = false, extremum = false;
+    auto minimum = it;
+
+    for(; it_next != c.hits.end(); ++it, ++it_next)
+    {
+        if(descending) {
+            // update minimum
+            if(it->charge < minimum->charge)
+                minimum = it;
+
+            // start to transcending, get the first local minimum
+            if(it_next->charge - it->charge > 14) {
+                extremum = true;
+                break;
+            }
+        } else {
+            // descending trend, start to find local minimum
+            if(it_next->charge - it->charge < 14)
+                descending = true;
+        }
+    }
+
+    if(extremum) {
+        // half the charge of overlap strip
+        minimum->charge /= 2.;
+
+        // new split cluster
+        c1 = GEMPlaneCluster(std::vector<GEMPlaneHit>(minimum, c.hits.end()));
+
+        // remove the hits that are moved into new cluster, but keep the minimum
+        c.hits.erase(std::next(minimum, 1), c.hits.end());
+    }
+
+    return extremum;
+}
+
+bool PRadGEMPlane::filterCluster(const GEMPlaneCluster &c)
 {
     //TODO make parameters configurable
 
@@ -262,12 +286,12 @@ bool PRadGEMPlane::inspectCluster(const GEMPlaneCluster &c)
     return true;
 }
 
-void PRadGEMPlane::filterCluster()
+void PRadGEMPlane::filterClusters()
 {
     for(auto it = cluster_list.begin(); it != cluster_list.end(); ++it)
     {
         // carefully remove element inside the loop
-        if(!inspectCluster(*it))
+        if(!filterCluster(*it))
             cluster_list.erase(it--);
     }
 }

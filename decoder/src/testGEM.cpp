@@ -108,7 +108,6 @@ int main(int /*argc*/, char * /*argv*/ [])
     dst_parser->CloseInput();
 
     cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;
-    cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;
     cout << "Read " << handler->GetEventCount() << " events and "
          << handler->GetEPICSEventCount() << " EPICS events from file."
          << endl;
