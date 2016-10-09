@@ -35,15 +35,15 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     for(auto &detector: det_list)
     {
-        cout << "Detector: " << detector->name << endl;
+        cout << "Detector: " << detector->GetName() << endl;
         for(auto &plane : detector->GetPlaneList())
         {
-            cout << "    " << "Plane: " << plane->name << endl;
+            cout << "    " << "Plane: " << plane->GetName() << endl;
             for(auto &apv : plane->GetAPVList())
             {
                 cout << "    " << "    "
-                     << "APV: " << apv->plane_index
-                     << ", " << apv->fec_id << ", " << apv->adc_ch;
+                     << "APV: " << apv->GetPlaneIndex()
+                     << ", " << apv->GetAddress();
 
                 int min = apv->GetPlaneStripNb(0);
                 int max = apv->GetPlaneStripNb(0);

@@ -58,6 +58,15 @@ void PRadGEMAPV::SetDetectorPlane(PRadGEMPlane *p)
         BuildStripMap();
 }
 
+void PRadGEMAPV::SetPlaneIndex(const int &p)
+{
+    plane_index = p;
+
+    // re-connect to the current plane
+    if(plane != nullptr)
+        plane->ConnectAPV(this);
+}
+
 void PRadGEMAPV::CreatePedHist()
 {
     for(size_t i = 0; i < TIME_SAMPLE_SIZE; ++i)
@@ -181,6 +190,27 @@ void PRadGEMAPV::FillZeroSupData(const size_t &ch, const size_t &ts, const unsig
 
     hit_pos[ch] = true;
     raw_data[idx] = val;
+}
+
+void PRadGEMAPV::FillZeroSupData(const size_t &ch, const std::vector<float> &vals)
+{
+    if(vals.size() != time_samples || ch >= TIME_SAMPLE_SIZE)
+    {
+        std::cerr << "GEM APV Error: Failed to fill zero suppressed data, "
+                  << " channel " << ch << " or time sample " << vals.size()
+                  << " is not allowed."
+                  << std::endl;
+        return;
+    }
+
+    hit_pos[ch] = true;
+
+    for(size_t i = 0; i < vals.size(); ++i)
+    {
+        size_t idx = ch + ts_index + i*TIME_SAMPLE_DIFF;
+        raw_data[idx] = vals[i];
+    }
+
 }
 
 void PRadGEMAPV::SplitData(const uint32_t &data, float &word1, float &word2)
@@ -450,7 +480,7 @@ PRadGEMAPV::StripNb PRadGEMAPV::MapStrip(int ch)
     int strip = 32*(ch%4) + 8*(ch/4) - 31*(ch/16);
 
     // APV25 Channel to readout strip Mapping
-    if((plane->type == PRadGEMPlane::Plane_X) && (plane_index == 11)) {
+    if((plane->GetType() == PRadGEMPlane::Plane_X) && (plane_index == 11)) {
         if(strip & 1)
             strip = 48 - (strip + 1)/2;
         else
@@ -467,11 +497,11 @@ PRadGEMAPV::StripNb PRadGEMAPV::MapStrip(int ch)
 
     // calculate plane strip mapping
     // reverse strip number by orientation
-    if(orientation != plane->orientation)
+    if(orientation != plane->GetOrientation())
         strip = 127 - strip;
 
     // special APV
-    if((plane->type == PRadGEMPlane::Plane_X) && (plane_index == 11)) {
+    if((plane->GetType() == PRadGEMPlane::Plane_X) && (plane_index == 11)) {
         strip += -16 + TIME_SAMPLE_SIZE * (plane_index - 1);
     } else {
         strip += TIME_SAMPLE_SIZE * plane_index;
@@ -523,3 +553,12 @@ std::vector<PRadGEMAPV::Pedestal> PRadGEMAPV::GetPedestalList()
 
     return ped_list;
 }
+
+//============================================================================//
+// Outside Class                                                              //
+//============================================================================//
+std::ostream &operator <<(std::ostream &os, const GEMChannelAddress &ad)
+{
+    return os << ad.fec_id << ", " << ad.adc_ch;
+}
+

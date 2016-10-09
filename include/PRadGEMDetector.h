@@ -18,12 +18,21 @@ public:
     void AddPlane(const PRadGEMPlane::PlaneType &type, PRadGEMPlane *plane);
     void AddPlane(const PRadGEMPlane::PlaneType &type, const std::string &name,
                   const double &size, const int &conn, const int &ori);
-    void AssignID(const int &i);
-    std::vector<PRadGEMPlane*> GetPlaneList();
-    PRadGEMPlane *GetPlane(const PRadGEMPlane::PlaneType &type);
     void ConnectAPV(const PRadGEMPlane::PlaneType &plane, PRadGEMAPV *apv);
+
+    // get parameters
+    int GetID() {return id;};
+    std::string GetName() {return name;};
+    std::string GetType() {return type;};
+    std::string GetReadoutBoard() {return readout_board;};
+    PRadGEMPlane *GetPlane(const PRadGEMPlane::PlaneType &type);
+    std::vector<PRadGEMPlane*> GetPlaneList();
     std::vector<PRadGEMAPV*> GetAPVList(const PRadGEMPlane::PlaneType &type);
 
+    // set parameters
+    void AssignID(const int &i);
+
+private:
     int id;
     std::string name;
     std::string type;

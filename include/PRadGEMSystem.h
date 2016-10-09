@@ -41,6 +41,8 @@ public:
 
     void Clear();
     void SortFECList();
+    void ChooseEvent(const EventData &data);
+    void Reconstruct(const EventData &data);
     void LoadConfiguration(const std::string &path) throw(PRadException);
     void LoadPedestal(const std::string &path) throw(PRadException);
     void RegisterDetector(PRadGEMDetector *det);

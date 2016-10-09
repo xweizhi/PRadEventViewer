@@ -40,11 +40,11 @@ void PRadGEMDetector::AddPlane(const PRadGEMPlane::PlaneType &type,
 void PRadGEMDetector::AddPlane(const PRadGEMPlane::PlaneType &type,
                                PRadGEMPlane *plane)
 {
-    if(plane->detector != nullptr) {
+    if(plane->GetDetector() != nullptr) {
         std::cerr << "PRad GEM Detector Error: "
-                  << "Trying to add plane " << plane->name
+                  << "Trying to add plane " << plane->GetName()
                   << " to detector " << name
-                  << ", but the plane is belong to " << plane->detector->name
+                  << ", but the plane is belong to " << plane->GetDetector()->name
                   << std::endl;
         return;
     }
@@ -58,7 +58,7 @@ void PRadGEMDetector::AddPlane(const PRadGEMPlane::PlaneType &type,
                   << std::endl;
     }
 
-    plane->detector = this;
+    plane->SetDetector(this);
     planes[(int)type] = plane;
 }
 
@@ -82,7 +82,7 @@ std::vector<PRadGEMAPV*> PRadGEMDetector::GetAPVList(const PRadGEMPlane::PlaneTy
     if(planes[(int)type] == nullptr)
         return std::vector<PRadGEMAPV*>();
 
-    return planes[(int)type]->apv_list;
+    return planes[(int)type]->GetAPVList();
 }
 
 void PRadGEMDetector::ConnectAPV(const PRadGEMPlane::PlaneType &type, PRadGEMAPV *apv)

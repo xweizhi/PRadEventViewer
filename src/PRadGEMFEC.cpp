@@ -21,17 +21,17 @@ void PRadGEMFEC::AddAPV(PRadGEMAPV *apv)
     if(apv == nullptr)
         return;
 
-    auto it = adc_map.find(apv->adc_ch);
+    auto it = adc_map.find(apv->GetADCChannel());
 
     if(it != adc_map.end()) {
         std::cerr << "GEM FEC " << id
                   << ": Abort to add existing apv to adc channel "
-                  << apv->adc_ch << std::endl;
+                  << apv->GetADCChannel() << std::endl;
         return;
     }
 
     adc_list.push_back(apv);
-    adc_map[apv->adc_ch] = apv;
+    adc_map[apv->GetADCChannel()] = apv;
 }
 
 void PRadGEMFEC::RemoveAPV(const int &id)
@@ -48,7 +48,7 @@ void PRadGEMFEC::RemoveAPV(const int &id)
 
 void PRadGEMFEC::SortAPVList()
 {
-    sort(adc_list.begin(), adc_list.end(), [this](PRadGEMAPV *apv1, PRadGEMAPV *apv2){return apv1->adc_ch < apv2->adc_ch;});
+    sort(adc_list.begin(), adc_list.end(), [this](PRadGEMAPV *apv1, PRadGEMAPV *apv2){return apv1->GetADCChannel() < apv2->GetADCChannel();});
 }
 
 PRadGEMAPV *PRadGEMFEC::GetAPV(const int &id)
@@ -81,6 +81,14 @@ void PRadGEMFEC::ClearAPVData()
     for(auto &adc : adc_list)
     {
         adc->ClearData();
+    }
+}
+
+void PRadGEMFEC::ResetAPVHits()
+{
+    for(auto &adc : adc_list)
+    {
+        adc->ResetHitPos();
     }
 }
 

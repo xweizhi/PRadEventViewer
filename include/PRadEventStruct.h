@@ -218,6 +218,11 @@ struct EventData
     std::vector<GEM_Data> &get_gem_data() {return gem_data;};
     std::vector<DSC_Data> &get_dsc_data() {return dsc_data;};
 
+    const std::vector<ADC_Data> &get_adc_data() const {return adc_data;};
+    const std::vector<TDC_Data> &get_tdc_data() const {return tdc_data;};
+    const std::vector<GEM_Data> &get_gem_data() const {return gem_data;};
+    const std::vector<DSC_Data> &get_dsc_data() const {return dsc_data;};
+
     bool is_physics_event()
     {
         return ( (trigger == PHYS_LeadGlassSum) ||

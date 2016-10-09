@@ -121,7 +121,11 @@ void PRadGEMSystem::LoadConfiguration(const string &path) throw(PRadException)
 
 void PRadGEMSystem::SortFECList()
 {
-    sort(fec_list.begin(), fec_list.end(), [this](PRadGEMFEC *fec1, PRadGEMFEC *fec2){return fec1->id < fec2->id;});
+    sort(fec_list.begin(), fec_list.end(),
+         [this](PRadGEMFEC *fec1, PRadGEMFEC *fec2)
+         {
+            return fec1->GetID() < fec2->GetID();
+         });
 
     for(auto &fec : fec_list)
     {
@@ -167,33 +171,33 @@ void PRadGEMSystem::RegisterDetector(PRadGEMDetector *det)
     if(det == nullptr)
         return;
 
-    if(det_map_name.find(det->name) != det_map_name.end())
+    if(det_map_name.find(det->GetName()) != det_map_name.end())
     {
         cerr << "GEM System Error: Detector "
-             << det->name << " exists, "
+             << det->GetName() << " exists, "
              << " abort detector registration."
              << endl;
         return;
     }
 
-    det_map_name[det->name] = det;
+    det_map_name[det->GetName()] = det;
 
     // register planes
     auto planes = det->GetPlaneList();
 
     for(auto &plane : planes)
     {
-        if(det_plane_map.find(plane->name) != det_plane_map.end())
+        if(det_plane_map.find(plane->GetName()) != det_plane_map.end())
         {
             cerr << "GEM System Error: Detector Plane "
-                 << plane->name << " has been registered, "
+                 << plane->GetName() << " has been registered, "
                  << "please make sure different planes are assigned "
                  << "different names."
                  << endl;
             continue;
         }
 
-        det_plane_map[plane->name] = plane;
+        det_plane_map[plane->GetName()] = plane;
     }
 
     det->AssignID(det_list.size());
@@ -206,7 +210,7 @@ void PRadGEMSystem::RegisterFEC(PRadGEMFEC *fec)
         return;
 
     fec_list.push_back(fec);
-    fec_map[fec->id] = fec;
+    fec_map[fec->GetID()] = fec;
 }
 
 void PRadGEMSystem::RegisterAPV(const string &plane_name, PRadGEMAPV *apv)
@@ -226,11 +230,11 @@ void PRadGEMSystem::RegisterAPV(const string &plane_name, PRadGEMAPV *apv)
     det_plane->ConnectAPV(apv);
 
 
-    PRadGEMFEC *fec = GetFEC(apv->fec_id);
+    PRadGEMFEC *fec = GetFEC(apv->GetFECID());
 
     if(fec == nullptr) {
         cerr << "GEM System Error: Cannot add apv to fec "
-             << apv->fec_id << ", make sure you have fec defined "
+             << apv->GetFECID() << ", make sure you have fec defined "
              << "before the aplv list in configuration map."
              << endl;
         return;
@@ -238,9 +242,7 @@ void PRadGEMSystem::RegisterAPV(const string &plane_name, PRadGEMAPV *apv)
 
     fec->AddAPV(apv);
 
-    GEMChannelAddress addr(apv->fec_id, apv->adc_ch);
-
-    apv_map[addr] = apv;
+    apv_map[apv->GetAddress()] = apv;
 }
 
 void PRadGEMSystem::BuildAPVMap()
@@ -252,8 +254,7 @@ void PRadGEMSystem::BuildAPVMap()
         vector<PRadGEMAPV *> apv_list = fec->GetAPVList();
         for(auto &apv : apv_list)
         {
-            GEMChannelAddress addr(apv->fec_id, apv->adc_ch);
-            apv_map[addr] = apv;
+            apv_map[apv->GetAddress()] = apv;
         }
     }
 }
@@ -348,14 +349,17 @@ void PRadGEMSystem::FillRawData(GEMRawData &raw, vector<GEM_Data> &container, co
 void PRadGEMSystem::FillZeroSupData(std::vector<GEMZeroSupData> &data_pack,
                                     std::vector<GEM_Data> &container)
 {
+    // clear all the APVs' hits
     for(auto &fec : fec_list)
     {
-        fec->ClearAPVData();
+        fec->ResetAPVHits();
     }
 
+    // fill in the online zero-suppressed data
     for(auto &data : data_pack)
         FillZeroSupData(data);
 
+    // collect these zero-suppressed hits
     for(auto &fec : fec_list)
     {
         fec->CollectZeroSupHits(container);
@@ -368,6 +372,43 @@ void PRadGEMSystem::FillZeroSupData(GEMZeroSupData &data)
     if(it != apv_map.end()) {
         it->second->FillZeroSupData(data.channel, data.time_sample, data.adc_value);
     }
+}
+
+void PRadGEMSystem::ChooseEvent(const EventData &data)
+{
+    // clear all the APVs' hits
+    for(auto &fec : fec_list)
+    {
+        fec->ClearAPVData();
+    }
+
+    for(auto &hit : data.gem_data)
+    {
+        auto apv = GetAPV(hit.addr.fec, hit.addr.adc);
+        if(apv)
+            apv->FillZeroSupData(hit.addr.strip, hit.values);
+    }
+}
+
+void PRadGEMSystem::Reconstruct(const EventData &data)
+{
+    // clear hits for all detector planes
+    for(auto &det : det_list)
+    {
+        for(auto &plane : det->GetPlaneList())
+            plane->ClearPlaneHits();
+    }
+
+    // add the hits from event data
+    for(auto &hit : data.gem_data)
+    {
+        auto apv = GetAPV(hit.addr.fec, hit.addr.adc);
+        auto plane = apv->GetPlane();
+        if(apv && plane)
+            plane->AddPlaneHit(apv->GetPlaneStripNb(hit.addr.strip), hit.values);
+    }
+
+    // TODO call cluste method to reconstruct
 }
 
 void PRadGEMSystem::FitPedestal()
@@ -451,13 +492,13 @@ void PRadGEMSystem::SaveHistograms(const string &path)
 
     for(auto fec : fec_list)
     {
-        string fec_name = "FEC " + to_string(fec->id);
+        string fec_name = "FEC " + to_string(fec->GetID());
         TDirectory *cdtof = f->mkdir(fec_name.c_str());
         cdtof->cd();
 
         for(auto apv : fec->GetAPVList())
         {
-            string adc_name = "ADC " + to_string(apv->adc_ch);
+            string adc_name = "ADC " + to_string(apv->GetADCChannel());
             TDirectory *cur_dir = cdtof->mkdir(adc_name.c_str());
             cur_dir->cd();
 
