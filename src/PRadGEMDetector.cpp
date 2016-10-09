@@ -62,7 +62,18 @@ void PRadGEMDetector::AddPlane(const PRadGEMPlane::PlaneType &type,
     planes[(int)type] = plane;
 }
 
-void PRadGEMDetector::ClearPlaneHits()
+void PRadGEMDetector::ReconstructHits()
+{
+    for(auto &plane : planes)
+    {
+        if(plane == nullptr)
+            continue;
+
+        plane->ClusterHits();
+    }
+}
+
+void PRadGEMDetector::ClearHits()
 {
     for(auto &plane : planes)
     {

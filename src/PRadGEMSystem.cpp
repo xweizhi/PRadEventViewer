@@ -426,7 +426,7 @@ void PRadGEMSystem::Reconstruct(const EventData &data)
     // clear hits for all detector planes
     for(auto &det : det_list)
     {
-        det->ClearPlaneHits();
+        det->ClearHits();
     }
 
     // add the hits from event data
@@ -447,7 +447,10 @@ void PRadGEMSystem::Reconstruct(const EventData &data)
         plane->AddPlaneHit(apv->GetPlaneStripNb(hit.addr.strip), hit.values);
     }
 
-    // TODO call cluster method to reconstruct
+    for(auto &det : det_list)
+    {
+        det->ReconstructHits();
+    }
 }
 
 void PRadGEMSystem::FitPedestal()

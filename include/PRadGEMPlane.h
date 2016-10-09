@@ -1,11 +1,38 @@
 #ifndef PRAD_GEM_PLANE_H
 #define PRAD_GEM_PLANE_H
 
+#include <list>
 #include <vector>
 #include <string>
 
 class PRadGEMDetector;
 class PRadGEMAPV;
+
+struct GEMPlaneHit
+{
+    int strip;
+    double charge;
+
+    GEMPlaneHit() : strip(0), charge(0.) {};
+    GEMPlaneHit(const int &s, const double &c) : strip(s), charge(c) {};
+};
+
+struct GEMPlaneCluster
+{
+    double position;
+    double charge;
+    std::vector<GEMPlaneHit> hits;
+
+    GEMPlaneCluster(): position(0.), charge(0.) {};
+
+    GEMPlaneCluster(const std::vector<GEMPlaneHit> &p)
+    : position(0.), charge(0.), hits(p)
+    {};
+
+    GEMPlaneCluster(std::vector<GEMPlaneHit> &&p)
+    : position(0.), charge(0.), hits(std::move(p))
+    {};
+};
 
 class PRadGEMPlane
 {
@@ -15,24 +42,6 @@ public:
         Plane_X,
         Plane_Y,
         Plane_Max
-    };
-
-    struct PlaneHit
-    {
-        int strip;
-        double charge;
-
-        PlaneHit() : strip(0), charge(0.) {};
-        PlaneHit(const int &s, const double &c) : strip(s), charge(c) {};
-    };
-
-    struct PlaneCluster
-    {
-        std::vector<PlaneHit> hits;
-
-        PlaneCluster() {};
-        PlaneCluster(const std::vector<PlaneHit> &p) : hits(p) {};
-        PlaneCluster(std::vector<PlaneHit> &&p) : hits(std::move(p)) {};
     };
 
 public:
@@ -69,8 +78,13 @@ public:
     int &GetCapacity() {return connector;};
     int &GetOrientation() {return orientation;};
     std::vector<PRadGEMAPV*> GetAPVList();
-    std::vector<PlaneHit> &GetPlaneHits();
-    std::vector<PlaneCluster> &GetPlaneCluster();
+    std::vector<GEMPlaneHit> &GetPlaneHits();
+    std::list<GEMPlaneCluster> &GetPlaneCluster() {return cluster_list;};
+
+private:
+    void filterCluster();
+    void splitCluster();
+    bool inspectCluster(const GEMPlaneCluster &c);
 
 private:
     PRadGEMDetector *detector;
@@ -80,8 +94,10 @@ private:
     int connector;
     int orientation;
     std::vector<PRadGEMAPV*> apv_list;
-    std::vector<PlaneHit> hit_list;
-    std::vector<PlaneCluster> cluster_list;
+    std::vector<GEMPlaneHit> hit_list;
+    // there will be requent remove, split operations for clusters in the middle
+    // thus use list instead of vector
+    std::list<GEMPlaneCluster> cluster_list;
 };
 
 #endif

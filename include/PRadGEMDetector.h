@@ -19,7 +19,8 @@ public:
     void AddPlane(const PRadGEMPlane::PlaneType &type, const std::string &name,
                   const double &size, const int &conn, const int &ori);
     void ConnectAPV(const PRadGEMPlane::PlaneType &plane, PRadGEMAPV *apv);
-    void ClearPlaneHits();
+    void ReconstructHits();
+    void ClearHits();
 
     // get parameters
     int GetID() {return id;};
