@@ -255,8 +255,10 @@ bool PRadGEMPlane::splitCluster(GEMPlaneCluster &c, GEMPlaneCluster &c1)
             }
         } else {
             // descending trend, start to find local minimum
-            if(it_next->charge - it->charge < 14)
+            if(it->charge - it_next->charge > 14) {
                 descending = true;
+                minimum = it_next;
+            }
         }
     }
 
