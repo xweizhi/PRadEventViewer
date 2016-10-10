@@ -3,8 +3,9 @@
 // A GEM plane is a component of GEM detector                                 //
 // It is connected to several APV units                                       //
 // GEM hits are collected on plane level and reconstructed in cluster         //
+// Reconstruction is based on the code from Xinzhan Bai and Kondo Gnanvo      //
 //                                                                            //
-// Chao Peng                                                                  //
+// Chao Peng, Xinzhan Bai                                                     //
 // 10/07/2016                                                                 //
 //============================================================================//
 

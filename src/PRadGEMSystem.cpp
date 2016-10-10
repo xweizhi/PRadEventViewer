@@ -1,6 +1,7 @@
 //============================================================================//
 // GEM DAQ System class                                                       //
-// Algorithm is based on the code from Kondo Gnanvo and Xinzhan Bai           //
+// Structure of the DAQ system is based on the code from Kondo Gnanvo         //
+// and Xinzhan Bai                                                            //
 //                                                                            //
 // Chao Peng                                                                  //
 // 06/17/2016                                                                 //

@@ -30,7 +30,8 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     // get GEM system
     PRadGEMSystem *gem_srs = handler->GetSRS();
-/*
+
+/* show the APVs and their strip numbers on planes
     // show the plane list
     auto det_list = gem_srs->GetDetectorList();
 
@@ -62,6 +63,7 @@ int main(int /*argc*/, char * /*argv*/ [])
         }
     }
 */
+
     dst_parser->OpenInput("/work/hallb/prad/replay/prad_001287.dst");
 
     int count = 0;
@@ -81,14 +83,15 @@ int main(int /*argc*/, char * /*argv*/ [])
 
             gem_srs->Reconstruct(event);
 
-            auto det_list = gem_srs->GetDetectorList();
-
-            for(auto &detector: det_list)
+            // detectors from GEM system
+            for(auto &detector: gem_srs->GetDetectorList())
             {
                 cout << "Detector: " << detector->GetName() << endl;
+                // planes from a detector
                 for(auto &plane : detector->GetPlaneList())
                 {
                     cout << "    " << "Plane: " << plane->GetName() << endl;
+                    // clusters from a plane
                     for(auto &cluster : plane->GetPlaneCluster())
                     {
                         cout << "    " << "    "
@@ -96,13 +99,12 @@ int main(int /*argc*/, char * /*argv*/ [])
                              << cluster.position << ", "
                              << cluster.peak_charge
                              << endl;
-/*
+                        // hits from a cluster
                         for(auto &hit : cluster.hits)
                         {
                             cout << "    " << "    " << "     "
                                  << hit.strip << ", " << hit.charge << endl;
                         }
-*/
                     }
                 }
             }
