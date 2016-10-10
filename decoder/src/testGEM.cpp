@@ -92,13 +92,17 @@ int main(int /*argc*/, char * /*argv*/ [])
                     for(auto &cluster : plane->GetPlaneCluster())
                     {
                         cout << "    " << "    "
-                             << "Cluster: " << endl;
-
+                             << "Cluster: "
+                             << cluster.position << ", "
+                             << cluster.peak_charge
+                             << endl;
+/*
                         for(auto &hit : cluster.hits)
                         {
                             cout << "    " << "    " << "     "
                                  << hit.strip << ", " << hit.charge << endl;
                         }
+*/
                     }
                 }
             }

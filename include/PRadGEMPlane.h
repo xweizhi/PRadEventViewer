@@ -14,23 +14,28 @@ struct GEMPlaneHit
     double charge;
 
     GEMPlaneHit() : strip(0), charge(0.) {};
-    GEMPlaneHit(const int &s, const double &c) : strip(s), charge(c) {};
+    GEMPlaneHit(const int &s, const double &c)
+    : strip(s), charge(c) {};
 };
 
 struct GEMPlaneCluster
 {
     double position;
-    double charge;
+    double peak_charge;
+    double total_charge;
+    int central_strip;
     std::vector<GEMPlaneHit> hits;
 
-    GEMPlaneCluster(): position(0.), charge(0.) {};
+    GEMPlaneCluster()
+    : position(0.), peak_charge(0.), total_charge(0.)
+    {};
 
     GEMPlaneCluster(const std::vector<GEMPlaneHit> &p)
-    : position(0.), charge(0.), hits(p)
+    : position(0.), peak_charge(0.), total_charge(0.), hits(p)
     {};
 
     GEMPlaneCluster(std::vector<GEMPlaneHit> &&p)
-    : position(0.), charge(0.), hits(std::move(p))
+    : position(0.), peak_charge(0.), total_charge(0.), hits(std::move(p))
     {};
 };
 
@@ -60,7 +65,7 @@ public:
     void AddPlaneHit(const int &plane_strip, const std::vector<float> &charges);
     void ClearPlaneHits();
     void CollectAPVHits();
-    void ClusterHits();
+    void ReconstructHits();
 
     // set parameter
     void SetDetector(PRadGEMDetector *det) {detector = det;};
@@ -82,10 +87,13 @@ public:
     std::list<GEMPlaneCluster> &GetPlaneCluster() {return cluster_list;};
 
 private:
+    void clusterHits();
     void filterClusters();
     void splitClusters();
+    void reconstructClusters();
     bool filterCluster(const GEMPlaneCluster &c);
     bool splitCluster(GEMPlaneCluster &c, GEMPlaneCluster &c1);
+    void reconstructCluster(GEMPlaneCluster &c);
 
 private:
     PRadGEMDetector *detector;

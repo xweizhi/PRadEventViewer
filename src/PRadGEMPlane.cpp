@@ -149,6 +149,7 @@ void PRadGEMPlane::ClearPlaneHits()
 void PRadGEMPlane::AddPlaneHit(const int &plane_strip, const std::vector<float> &charges)
 {
     // X plane needs to remove 16 strips at both ends
+    // This is a special setup for PRad GEMs, so not configurable
     if((type == Plane_X) &&
        ((plane_strip < 16) || (plane_strip > 1391)))
        return;
@@ -167,43 +168,22 @@ void PRadGEMPlane::CollectAPVHits()
     }
 }
 
-void PRadGEMPlane::ClusterHits()
+void PRadGEMPlane::ReconstructHits()
 {
-    // clear plane clusters
+    // clear existing clusters
     cluster_list.clear();
 
-    // sort the hits by its strip number
-    std::sort(hit_list.begin(), hit_list.end(),
-              // lamda expr, compare hit by their strip numbers
-              [](const GEMPlaneHit &h1, const GEMPlaneHit &h2)
-              {
-                  return h1.strip < h2.strip;
-              });
-
-    // group the hits that have consecutive strip number
-    auto cluster_begin = hit_list.begin();
-    for(auto it = hit_list.begin(); it != hit_list.end(); ++it)
-    {
-        auto next = it + 1;
-
-        // end of list, group the last cluster
-        if(next == hit_list.end()) {
-            cluster_list.emplace_back(std::vector<GEMPlaneHit>(cluster_begin, next));
-            break;
-        }
-
-        // check consecutivity
-        if(next->strip - it->strip > 1) {
-            cluster_list.emplace_back(std::vector<GEMPlaneHit>(cluster_begin, next));
-            cluster_begin = next;
-        }
-    }
+    // group consecutive hits as the preliminary clusters
+    clusterHits();
 
     // split the clusters that may contain multiple physical hits
     splitClusters();
 
     // remove the clusters that does not pass certain criteria
     filterClusters();
+
+    // reconstruct position and charge for the cluster
+    reconstructClusters();
 }
 
 void PRadGEMPlane::splitClusters()
@@ -231,13 +211,49 @@ void PRadGEMPlane::splitClusters()
     }
 }
 
+void PRadGEMPlane::clusterHits()
+{
+    // sort the hits by its strip number
+    std::sort(hit_list.begin(), hit_list.end(),
+              // lamda expr, compare hit by their strip numbers
+              [](const GEMPlaneHit &h1, const GEMPlaneHit &h2)
+              {
+                  return h1.strip < h2.strip;
+              });
+
+    // group the hits that have consecutive strip number
+    auto cluster_begin = hit_list.begin();
+    for(auto it = hit_list.begin(); it != hit_list.end(); ++it)
+    {
+        auto next = it + 1;
+
+        // end of list, group the last cluster
+        if(next == hit_list.end()) {
+            cluster_list.emplace_back(std::vector<GEMPlaneHit>(cluster_begin, next));
+            break;
+        }
+
+        // check consecutivity
+        if(next->strip - it->strip > 1) {
+            cluster_list.emplace_back(std::vector<GEMPlaneHit>(cluster_begin, next));
+            cluster_begin = next;
+        }
+    }
+}
+
+// This function helps splitClusters()
+// It finds the FIRST local minimum, separate the cluster at its position
+// The charge at local minimum strip will be halved, and kept for both original
+// and split clusters.
+// It returns true if a cluster is split, and vice versa
+// The split part of the original cluster c will be removed, and filled in c1
 bool PRadGEMPlane::splitCluster(GEMPlaneCluster &c, GEMPlaneCluster &c1)
 {
     // we use 2 consecutive iterator
     auto it = c.hits.begin();
     auto it_next = it + 1;
 
-    // find the local minimum
+    // loop to find the local minimum
     bool descending = false, extremum = false;
     auto minimum = it;
 
@@ -248,13 +264,14 @@ bool PRadGEMPlane::splitCluster(GEMPlaneCluster &c, GEMPlaneCluster &c1)
             if(it->charge < minimum->charge)
                 minimum = it;
 
-            // start to transcending, get the first local minimum
+            // transcending trend, confirm a local minimum (valley)
             if(it_next->charge - it->charge > 14) {
                 extremum = true;
+                // only needs the first local minimum, thus exit the loop
                 break;
             }
         } else {
-            // descending trend, start to find local minimum
+            // descending trend, expect a local minimum
             if(it->charge - it_next->charge > 14) {
                 descending = true;
                 minimum = it_next;
@@ -276,6 +293,16 @@ bool PRadGEMPlane::splitCluster(GEMPlaneCluster &c, GEMPlaneCluster &c1)
     return extremum;
 }
 
+void PRadGEMPlane::filterClusters()
+{
+    for(auto it = cluster_list.begin(); it != cluster_list.end(); ++it)
+    {
+        // did not pass the filter, carefully remove element inside the loop
+        if(!filterCluster(*it))
+            cluster_list.erase(it--);
+    }
+}
+
 bool PRadGEMPlane::filterCluster(const GEMPlaneCluster &c)
 {
     //TODO make parameters configurable
@@ -288,13 +315,34 @@ bool PRadGEMPlane::filterCluster(const GEMPlaneCluster &c)
     return true;
 }
 
-void PRadGEMPlane::filterClusters()
+void PRadGEMPlane::reconstructClusters()
 {
-    for(auto it = cluster_list.begin(); it != cluster_list.end(); ++it)
+    for(auto &cluster : cluster_list)
     {
-        // carefully remove element inside the loop
-        if(!filterCluster(*it))
-            cluster_list.erase(it--);
+        reconstructCluster(cluster);
     }
 }
 
+void PRadGEMPlane::reconstructCluster(GEMPlaneCluster &c)
+{
+    // here determine position, peak charge and total charge of the cluster
+    c.total_charge = 0.;
+    c.peak_charge = 0.;
+    double weight_pos = 0.;
+
+    // no hits
+    if(!c.hits.size())
+        return;
+
+    for(auto &hit : c.hits)
+    {
+        if(c.peak_charge < hit.charge)
+            c.peak_charge = hit.charge;
+
+        c.total_charge += hit.charge;
+
+        weight_pos += GetStripPosition(hit.strip)*hit.charge;
+    }
+
+    c.position = weight_pos/c.total_charge;
+}

@@ -69,7 +69,7 @@ void PRadGEMDetector::ReconstructHits()
         if(plane == nullptr)
             continue;
 
-        plane->ClusterHits();
+        plane->ReconstructHits();
     }
 }
 
