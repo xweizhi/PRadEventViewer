@@ -23,7 +23,6 @@ struct GEMPlaneCluster
     double position;
     double peak_charge;
     double total_charge;
-    int central_strip;
     std::vector<GEMPlaneHit> hits;
 
     GEMPlaneCluster()
