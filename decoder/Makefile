@@ -8,8 +8,10 @@
 
 MAKEFILE      = Makefile
 PRAD_PATH     = ..
-####### Compiler, tools and options
+# enable multi-threading in the code
+DEFINES       = -DMULTI_THREAD
 
+####### Compiler, tools and options
 CC            = gcc
 CXX           = g++
 FORTRAN       = gfortran

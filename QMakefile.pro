@@ -9,6 +9,9 @@
 greaterThan(4, QT_MAJOR_VERSION):
     QT += widgets concurrent
 
+# enable multi threading
+DEFINES += MULTI_THREAD
+
 ######################################################################
 # optional components
 ######################################################################

@@ -1,5 +1,10 @@
 //============================================================================//
-// GEM DAQ System class                                                       //
+// GEM System class                                                           //
+// It has both the physical and the DAQ structure of GEM detectors in PRad    //
+// Physical structure: 2 detectors, each has 2 planes (X, Y)                  //
+// DAQ structure: several FECs, each has several APVs                         //
+// APVs and detector planes are connected                                     //
+//                                                                            //
 // Structure of the DAQ system is based on the code from Kondo Gnanvo         //
 // and Xinzhan Bai                                                            //
 //                                                                            //

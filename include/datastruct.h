@@ -4,8 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#define MULTI_THREAD
-
 enum PRadEventType
 {
     CODA_Unknown = 0x0,
