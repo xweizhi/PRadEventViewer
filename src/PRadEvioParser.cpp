@@ -465,7 +465,7 @@ void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const
         tiData.time_high = data[5] & 0xffff;
         tiData.latch_word = data[6] & 0xff;
         tiData.lms_phase = (data[8] >> 16) & 0xff;
-        myHandler->FeedData(tiData);   
+        myHandler->FeedData(tiData);
     }
 }
 
@@ -494,7 +494,7 @@ PRadTriggerType PRadEvioParser::bit_to_trigger(const unsigned int &bit)
         }
     }
 
-    return (PRadTriggerType) trg; 
+    return (PRadTriggerType) trg;
 }
 
 unsigned int PRadEvioParser::trigger_to_bit(const PRadTriggerType &trg)
