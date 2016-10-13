@@ -229,7 +229,7 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
 
     // number of boards given by the self defined info word in CODA readout list
     const unsigned char boardNum = data[0]&0xFF;
-    unsigned int index = 2, wordCount;
+    unsigned int index = 1, wordCount;
     ADC1881MData adcData;
 
     adcData.config.crate = (data[0]>>20)&0xF;
@@ -237,8 +237,11 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
     // parse the data for all boards
     for(unsigned char i = 0; i < boardNum; ++i)
     {
-        if(data[index] == ADC1881M_DATAEND) // self defined, end of crate word
+        if(data[index] == ADC1881M_ALIGNMENT) // 64 bit alignment, skip
+            index++;
+        else if(data[index] == ADC1881M_DATAEND) // self defined, end of crate word
             break;
+
         adcData.config.slot = (data[index]>>27)&0x1F;
         wordCount = (data[index]&0x7F) + index;
         while(++index < wordCount)

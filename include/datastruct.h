@@ -149,6 +149,7 @@ struct GEMChannelAddress
 // some words defined in readout list
 #define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
 #define ADC1881M_DATAEND 0xfabc0005
+#define ADC1881M_ALIGNMENT 0x00000000 // 64 bit data alignment
 
 #define GEMDATA_APVBEG 0x41444300 //&0xffffff00
 #define GEMDATA_FECEND 0xfafafafa

@@ -77,6 +77,7 @@ TARGET        = testIsland \
                 testEPICS \
                 testLMS \
                 testGEM \
+                testSim \
                 replay
 
 EXE_LIBS      = -L$(T_LIBS_DIR) -lPRadDecoder
@@ -112,6 +113,9 @@ testLMS: src/testLMS.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
 
 testGEM: src/testGEM.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
+
+testSim: src/testSim.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
 
 replay: src/replay.cpp
