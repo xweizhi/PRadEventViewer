@@ -11,6 +11,8 @@
 #include "PRadBenchMark.h"
 #include "PRadDAQUnit.h"
 #include "PRadGEMSystem.h"
+#include "TFile.h"
+#include "TTree.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -33,19 +35,32 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     //    handler->ReadFromEvio("/home/chao/Desktop/prad_001287.evio.0");
     // read simulation output
-    handler->ReadFromEvio("/home/chao/geant4/PRadSim/output/simrun_46.evio");
+    handler->ReadFromEvio("/home/chao/geant4/PRadSim/output/simrun_47.evio");
+
+    TFile *f = new TFile("testSim.root", "RECREATE");
+    TTree *t = new TTree("T", "T");
+
+    int N;
+    double E[100], x[100], y[100]; // maximum number of clusters, 100 is enough
+    // retrieve part of the cluster information
+    t->Branch("NClusters", &N, "NClusters/I");
+    t->Branch("ClusterE", &E, "ClusterE/D");
+    t->Branch("ClusterX", &x[0], "ClusterX[NClusters]/D");
+    t->Branch("ClusterY", &y[0], "ClusterY[NClusters]/D");
+
 
     for(size_t i = 0; i < handler->GetEventCount(); ++i)
     {
         handler->HyCalReconstruct(i);
-        int Nhits;
-        HyCalHit *hit = handler->GetHyCalCluster(Nhits);
+        HyCalHit *hit = handler->GetHyCalCluster(N);
 
-        cout << "event " << i << endl;
-        for(int i = 0; i < Nhits; ++i)
+        for(int i = 0; i < N; ++i)
         {
-            cout << hit[i].E << "  " << hit[i].x << "  " << hit[i].y << endl;
+            E[i] = hit[i].E;
+            x[i] = hit[i].x_log;
+            y[i] = hit[i].y_log;
         }
+        t->Fill();
     }
 
     cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;
@@ -54,6 +69,10 @@ int main(int /*argc*/, char * /*argv*/ [])
          << endl;
     cout << handler->GetBeamCharge() << endl;
     cout << handler->GetLiveTime() << endl;
+
+    f->cd();
+    t->Write();
+    f->Close();
 
 //    handler->WriteToDST("prad_001323_0-10.dst");
     //handler->PrintOutEPICS();

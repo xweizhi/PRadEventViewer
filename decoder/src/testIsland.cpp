@@ -33,7 +33,7 @@ int main(int /*argc*/, char * /*argv*/ [])
     dst_parser->OpenInput("/work/hallb/prad/replay/prad_001291.dst");
 
     //----------init root file-------------//
-    TFile *f = new TFile("testEPICS.root", "RECREATE");
+    TFile *f = new TFile("testIsland.root", "RECREATE");
     TTree *t = new TTree("T", "T");
 
     Int_t clusterN, eventNumber;
