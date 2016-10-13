@@ -185,6 +185,21 @@ void PRadDataHandler::RegisterChannel(PRadDAQUnit *channel)
 {
     channel->AssignID(channelList.size());
     channelList.push_back(channel);
+
+    // connect channel to existing TDC group
+    string tdcName = channel->GetTDCName();
+
+    if(tdcName.empty() || tdcName == "N/A" || tdcName == "NONE")
+        return; // not belongs to any tdc group
+
+    PRadTDCGroup *tdcGroup = GetTDCGroup(tdcName);
+    if(tdcGroup == nullptr) { // cannot find the tdc group
+        cerr << "Cannot find TDC group: " << tdcName
+             << " make sure you added all the tdc groups"
+             << endl;
+        return;
+    }
+    tdcGroup->AddChannel(channel);
 }
 
 void PRadDataHandler::RegisterEPICS(const string &name, const uint32_t &id, const float &value)
@@ -224,22 +239,6 @@ void PRadDataHandler::BuildChannelMap()
     // DAQ configuration map
     for(auto &channel : channelList)
         map_daq[channel->GetDAQInfo()] = channel;
-
-    // TDC groups
-    for(auto &channel : channelList)
-    {
-        string tdcName = channel->GetTDCName();
-        if(tdcName.empty() || tdcName == "N/A" || tdcName == "NONE")
-            continue; // not belongs to any tdc group
-        PRadTDCGroup *tdcGroup = GetTDCGroup(tdcName);
-        if(tdcGroup == nullptr) {
-            cerr << "Cannot find TDC group: " << tdcName
-                 << " make sure you added all the tdc groups"
-                 << endl;
-            continue;
-        }
-        tdcGroup->AddChannel(channel);
-    }
 }
 
 // erase the data container

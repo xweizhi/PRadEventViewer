@@ -160,11 +160,8 @@ void PRadEventViewer::generateSpectrum()
 void PRadEventViewer::generateHyCalModules()
 {
     readModuleList();
-    handler->ReadTDCList("config/tdc_group_list.txt");
 
-    // end of channel/module reading
-    buildModuleMap();
-
+    // other information for data handler
     handler->ReadEPICSChannels("config/epics_channels.txt");
     handler->ReadPedestalFile("config/pedestal.dat");
     handler->ReadCalibrationFile("config/calibration.txt");
@@ -424,6 +421,9 @@ void PRadEventViewer::setupInfoWindow()
 // read module list from file
 void PRadEventViewer::readModuleList()
 {
+    // build TDC groups first
+    handler->ReadTDCList("config/tdc_group_list.txt");
+
     ConfigParser c_parser;
     if(!c_parser.OpenFile("config/module_list.txt")) {
         std::cerr << "ERROR: Missing configuration file \"config/module_list.txt\""
@@ -466,13 +466,18 @@ void PRadEventViewer::readModuleList()
     }
 
     c_parser.CloseFile();
+
+    // make handler to build the module map
+    handler->BuildChannelMap();
+
+    // set TDC Group box for the TDC view
+    setTDCGroupBox();
 }
 
 // build module maps for speed access to module
 // send the tdc group geometry to scene for annotation
-void PRadEventViewer::buildModuleMap()
+void PRadEventViewer::setTDCGroupBox()
 {
-    handler->BuildChannelMap();
     // tdc maps
     std::unordered_map< std::string, PRadTDCGroup * > tdcList = handler->GetTDCGroupSet();
     for(auto &it : tdcList)
@@ -909,7 +914,7 @@ void PRadEventViewer::UpdateHistCanvas()
     case EnergyTDCHist:
         if(selection != nullptr) {
             histCanvas->UpdateHist(1, selection->GetHist("PHYS"));
-            PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
+            PRadTDCGroup *tdc = selection->GetTDCGroup();
             if(tdc)
                 histCanvas->UpdateHist(2, tdc->GetHist());
             else

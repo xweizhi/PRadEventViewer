@@ -13,7 +13,8 @@ PRadDAQUnit::PRadDAQUnit(const std::string &name,
                          const std::string &tdc,
                          const Geometry &geo)
 : channelName(name), geometry(geo), address(daqAddr), pedestal(Pedestal(0, 0)),
-  tdcGroup(tdc), occupancy(0), sparsify(0), channelID(0), adc_value(0), primexID(-1)
+  tdcName(tdc), tdcGroup(nullptr),
+  occupancy(0), sparsify(0), channelID(0), adc_value(0), primexID(-1)
 {
     std::string hist_name;
 
@@ -85,7 +86,7 @@ void PRadDAQUnit::MapHist(const std::string &name, PRadTriggerType type)
     hist[index] = hist_trg;
 }
 
-TH1 *PRadDAQUnit::GetHist(const std::string &n)
+TH1 *PRadDAQUnit::GetHist(const std::string &n) const
 {
     auto it = histograms.find(n);
     if(it == histograms.end()) {
@@ -94,7 +95,7 @@ TH1 *PRadDAQUnit::GetHist(const std::string &n)
     return it->second;
 }
 
-std::vector<TH1*> PRadDAQUnit::GetHistList()
+std::vector<TH1*> PRadDAQUnit::GetHistList() const
 {
     std::vector<TH1*> hlist;
 
@@ -119,7 +120,7 @@ void PRadDAQUnit::UpdatePedestal(const double &m, const double &s)
 }
 
 // universe calibration code, can be implemented by derivative class
-double PRadDAQUnit::Calibration(const unsigned short &adcVal)
+double PRadDAQUnit::Calibration(const unsigned short &adcVal) const
 {
     double sub_adc = (double)adcVal - pedestal.mean;
 
@@ -158,12 +159,12 @@ unsigned short PRadDAQUnit::Sparsification(const unsigned short &adcVal)
     return adcVal - sparsify;
 }
 
-double PRadDAQUnit::GetEnergy(const unsigned short &adcVal)
+double PRadDAQUnit::GetEnergy(const unsigned short &adcVal) const
 {
     return Calibration(adcVal);
 }
 
-double PRadDAQUnit::GetEnergy()
+double PRadDAQUnit::GetEnergy() const
 {
     return Calibration(adc_value);
 }

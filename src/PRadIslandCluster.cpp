@@ -777,7 +777,7 @@ void PRadIslandCluster::FinalProcessing()
         fHyCalCluster[i].y_log *= 10.; // cm to mm
 
         PRadDAQUnit *module = fHandler->GetChannel(PRadDAQUnit::NameFromPrimExID(fHyCalCluster[i].cid));
-        PRadTDCGroup *tdc = fHandler->GetTDCGroup(module->GetTDCName());
+        PRadTDCGroup *tdc = module->GetTDCGroup();
         fHyCalCluster[i].set_time(tdc->GetTimeMeasure());
     }
 }

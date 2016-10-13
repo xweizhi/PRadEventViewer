@@ -124,7 +124,7 @@ private:
     void generateSpectrum();
     void generateHyCalModules();
     void generateScalerBoxes();
-    void buildModuleMap();
+    void setTDCGroupBox();
     void readModuleList();
     void readTDCList();
     void readSpecialChannels();

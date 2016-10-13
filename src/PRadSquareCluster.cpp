@@ -224,9 +224,9 @@ double PRadSquareCluster::Distance(const vector<double> &p1, const vector<double
     return sqrt(quadratic_sum);
 }
 
-vector<unsigned short> & PRadSquareCluster::GetTimeForCluster(PRadDAQUnit *module)
+vector<unsigned short> &PRadSquareCluster::GetTimeForCluster(PRadDAQUnit *module)
 {
-    PRadTDCGroup* thisGroup = fHandler->GetTDCGroup(module->GetTDCName());
+    PRadTDCGroup* thisGroup = module->GetTDCGroup();
     return thisGroup->GetTimeMeasure();
 }
 

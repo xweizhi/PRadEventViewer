@@ -21,14 +21,15 @@ public:
     void CleanBuffer();
     void ResetHistograms();
     void ClearTimeMeasure();
-    size_t GetNbOfChs() {return groupList.size();};
-    std::vector<unsigned short> &GetTimeMeasure() {return timeMeasure;};
-    const std::vector<PRadDAQUnit *> &GetGroupList() {return groupList;};
-    const std::string &GetName() {return groupName;};
-    const ChannelAddress &GetAddress() {return address;};
-    const int &GetID() {return groupID;};
     void FillHist(const unsigned short &time);
-    TH1I *GetHist() {return tdcHist;};
+
+    int GetID() const {return groupID;};
+    std::string GetName() const {return groupName;};
+    ChannelAddress GetAddress() const {return address;};
+    size_t GetNbOfChs() const {return groupList.size();};
+    TH1I *GetHist() const {return tdcHist;};
+    const std::vector<PRadDAQUnit *> &GetGroupList() const {return groupList;};
+    std::vector<unsigned short> &GetTimeMeasure() {return timeMeasure;};
 
     bool operator < (const PRadTDCGroup &rhs) const
     {
