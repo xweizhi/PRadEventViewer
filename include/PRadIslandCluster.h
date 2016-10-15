@@ -152,6 +152,7 @@ protected:
     void FinalProcessing();
 
     float fMinHitE;
+    float fLogWeightThres;
 
     blockINFO_t fBlockINFO[T_BLOCKS];
     int fModuleStatus[MSECT][MCOL][MROW];
