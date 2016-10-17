@@ -50,18 +50,17 @@ void PRadEventFilter::LoadBadEventList(const std::string &path)
 
 bool PRadEventFilter::IsBadEvent(const EventData &event)
 {
-    bool bad = false;
-
+    // loop the whole list
     for(auto &interval : bad_events_list)
     {
-        // in the bad event list
         if((event.event_number >= interval.begin) &&
            (event.event_number <= interval.end))
         {
-            bad = true;
-            break;
+            // found in the listed bad events intervals
+            return true;
         }
     }
 
-    return bad;
+    // not in the list
+    return false;
 }
