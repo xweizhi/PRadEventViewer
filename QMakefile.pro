@@ -77,7 +77,8 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadGEMDetector.h \
            include/PRadGEMPlane.h \
            include/PRadGEMFEC.h \
-           include/PRadGEMAPV.h
+           include/PRadGEMAPV.h \
+           include/PRadEventFilter.h
 
 SOURCES += src/main.cpp \
            src/PRadEventViewer.cpp \
@@ -105,7 +106,8 @@ SOURCES += src/main.cpp \
            src/PRadGEMDetector.cpp \
            src/PRadGEMPlane.cpp \
            src/PRadGEMFEC.cpp \
-           src/PRadGEMAPV.cpp
+           src/PRadGEMAPV.cpp \
+           src/PRadEventFilter.cpp
 
 LIBS += -lexpat -lgfortran \
         -L$$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist \
