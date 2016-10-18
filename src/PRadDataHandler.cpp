@@ -1196,7 +1196,7 @@ void PRadDataHandler::ReadGainFactor(const string &path, const int &ref)
 
     while(c_parser.ParseLine())
     {
-        if(c_parser.NbofElements() == 2) {
+        if(c_parser.NbofElements() == 4) {
             c_parser >> name >> ref_gain[0] >> ref_gain[1] >> ref_gain[2];
 
             if((tmp = GetChannel(name)) != nullptr)
