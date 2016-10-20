@@ -13,9 +13,11 @@ class Spectrum;
 class SpectrumSettingPanel;
 class PRadHistCanvas;
 class PRadDataHandler;
+class PRadLogBox;
+class PRadHyCalCluster;
+class PRadGEMSystem;
 class PRadDetCoor;
 class PRadDetMatch;
-class PRadLogBox;
 #ifdef USE_ONLINE_MODE
 class PRadETChannel;
 class ETSettingPanel;
@@ -130,7 +132,7 @@ private:
     void generateSpectrum();
     void generateHyCalModules();
     void generateScalerBoxes();
-    void buildModuleMap();
+    void setTDCGroupBox();
     void readModuleList();
     void readTDCList();
     void readSpecialChannels();
@@ -156,7 +158,6 @@ private:
                              const QString &suffix,
                              QFileDialog::AcceptMode mode = QFileDialog::AcceptOpen,
                              QFileDialog::FileMode fmode = QFileDialog::ExistingFiles);
-    
     void reconCurrentEvent();
 
     PRadDataHandler *handler;
@@ -202,7 +203,7 @@ private:
 
     QFuture<bool> future;
     QFutureWatcher<void> watcher;
-    
+
     bool fUseIsland;
     bool fShowMatchedGEM;
 
