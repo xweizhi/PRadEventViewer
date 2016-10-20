@@ -7,11 +7,14 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 #include "PRadIslandCluster.h"
 
 PRadIslandCluster::PRadIslandCluster(PRadDataHandler *h)
 : PRadHyCalCluster(h)
 {
+    fZ0[0] = 2.67; fZ0[1] = 0.86;
+    fE0[0] = 2.84e-3; fE0[1] = 1.1e-3;
 }
 //________________________________________________________________
 void PRadIslandCluster::Configure(const std::string &c_path)
@@ -20,10 +23,17 @@ void PRadIslandCluster::Configure(const std::string &c_path)
 
     std::string path;
 
-    fMinHitE = GetConfigValue("MIN_BLOCK_ENERGY", "0.005").Float();
-
-    // default value is 3.6, suggested by the study with GEM by Weizhi
-    fLogWeightThres = GetConfigValue("LOG_WEIGHT_THRESHOLD", "3.6").Float();
+    fDoShowerDepth = GetConfigValue("DO_SHOWER_DEPTH", "0").Int();
+    fUse2ExpWeight = GetConfigValue("USE_DOUBLE_EXP_WEIGHT", "0").Int();
+    fDoNonLinCorr  = GetConfigValue("DO_NON_LINEARITY_CORRECTION", "0").Int();
+    fMinHitE       = GetConfigValue("MIN_BLOCK_ENERGY", "0.005").Float();
+    fWeightFreePar = GetConfigValue("WEIGHT_FREE_PAR", "4.2").Float();
+    fMinClusterE   = GetConfigValue("MIN_CLUSTER_E", "0.05").Float();
+    fMinCenterE    = GetConfigValue("MIN_CENTER_E", "0.01").Float();
+    fZLGToPWO      = GetConfigValue("Z_LG_TO_PWO", "-10.12").Float();
+    fZHyCal        = GetConfigValue("Z_HYCAL", "581.7").Float();
+    fCutOffThr     = GetConfigValue("CUT_OFF_THRESHOLD", "0.01").Float();
+    f2ExpFreeWeight= GetConfigValue("DOUBLE_EXP_FREE_WEIGHT", "0.4").Float();
 
     path = GetConfigValue("BLOCK_INFO_FILE", "config/blockinfo.dat");
     LoadBlockInfo(path);
@@ -33,6 +43,8 @@ void PRadIslandCluster::Configure(const std::string &c_path)
 
     path = GetConfigValue("LEADGLASS_PROFILE", "config/prof_lg.dat");
     LoadLeadGlassProfile(path);
+    
+    path = GetConfigValue("NON_LINEARITY_FILE", "config/nonlin.dat");
 }
 //________________________________________________________________
 void PRadIslandCluster::LoadCrystalProfile(const std::string &path)
@@ -47,6 +59,15 @@ void PRadIslandCluster::LoadLeadGlassProfile(const std::string &path)
     char c_path[256];
     strcpy(c_path, path.c_str());
     load_lg_prof_(c_path, strlen(c_path));
+}
+void PRadIslandCluster::LoadNonLinearity(const std::string &path)
+{
+    FILE *fp;
+    fp = fopen(path.c_str(), "r");
+    for(int i=0; i < T_BLOCKS; ++i) {
+        fscanf(fp,"%f",&(fNonLin[i]));
+    }
+    fclose(fp);
 }
 //________________________________________________________________
 void PRadIslandCluster::LoadBlockInfo(const std::string &path)
@@ -114,8 +135,10 @@ void PRadIslandCluster::LoadBlockInfo(const std::string &path)
                 int thisrow = fBlockINFO[i].row;
                 int thiscol = fBlockINFO[i].col;
                 fModuleStatus[isector][thiscol-1][thisrow-1] = 0; // HYCAL_STATUS[i];
-                if(thisid == 1835)
+                if(thisid == 1835 || thisid == 16  || thisid == 107  || thisid == 900 ){
                     fModuleStatus[isector][thiscol-1][thisrow-1] = 1; // HYCAL_STATUS[i];
+                    fDeadModules.push_back(fBlockINFO[i]); //save dead module info
+                }
             }
         }
     }
@@ -182,11 +205,11 @@ void PRadIslandCluster::LoadModuleData(EventData& event)
 void PRadIslandCluster::CallIsland(int isect)
 {
     //float xsize, ysize;
-    SET_EMIN  = 0.05;   // banks->CONFIG->config->CLUSTER_ENERGY_MIN;
+    SET_EMIN  = fMinClusterE;   // banks->CONFIG->config->CLUSTER_ENERGY_MIN;
     SET_EMAX  = 9.9;    // banks->CONFIG->config->CLUSTER_ENERGY_MAX;
     SET_HMIN  = 1;      // banks->CONFIG->config->CLUSTER_MIN_HITS_NUMBER;
     SET_MINM  = 0.01;   // banks->CONFIG->config->CLUSTER_MAX_CELL_MIN_ENERGY;
-    ZHYCAL    = 580.;   // ALignment[1].al.z;
+    ZHYCAL    = fZHyCal;   // ALignment[1].al.z;
     ISECT     = isect;
 
     for(int icol = 1; icol <= MCOL; ++icol)
@@ -275,7 +298,6 @@ void PRadIslandCluster::CallIsland(int isect)
         int  type   = adcgam_cbk_.u.iadcgam[k][7];
         int  dime   = adcgam_cbk_.u.iadcgam[k][8];
         int  status = adcgam_cbk_.u.iadcgam[k][10];
-
         if(type >= 90)
         {
             printf("island warning: cluster with type 90+ truncated\n");
@@ -286,6 +308,7 @@ void PRadIslandCluster::CallIsland(int isect)
             printf("island warning: cluster with nhits %i truncated\n",dime);
             continue;
         }
+        fHyCalCluster[n].DistClean();
 
         fHyCalCluster[n].type     = type;
         fHyCalCluster[n].nblocks  = dime;
@@ -294,7 +317,6 @@ void PRadIslandCluster::CallIsland(int isect)
         fHyCalCluster[n].y        = y;
         fHyCalCluster[n].chi2     = chi2;
         fHyCalCluster[n].status   = status;
-
         float ecellmax = -1.; int idmax = -1;
         float sW      = 0.0;
         float xpos    = 0.0;
@@ -312,39 +334,51 @@ void PRadIslandCluster::CallIsland(int isect)
             float xcell = fBlockINFO[id-1].x;
             float ycell = fBlockINFO[id-1].y;
 
-            if((type%10 == 1) || (type%10 == 2))
-            {
-                xcell += xc;
-                ycell += yc;
+            if(type%10 == 1 || type%10 == 2){
+	            xcell += xc;
+	            ycell += yc;
             }
 
-            if(ecell > ecellmax)
-            {
-                ecellmax = ecell;
-                idmax = id;
+            if(ecell > ecellmax){
+	            ecellmax = ecell;
+	            idmax = id;
             }
 
-            if(ecell > 0.)
-            {
-                W  = fLogWeightThres + log(ecell/e);
-                if(W > 0)
-                {
-                    sW += W;
-                    xpos += xcell*W;
-                    ypos += ycell*W;
-                }
+            if(ecell > 0.){
+                if (!fUse2ExpWeight){
+	                W = fWeightFreePar + log(ecell/e);
+	            }else{
+	                W = GetDoubleExpWeight(ecell, e);
+	            }
+	            if(W > 0){
+	                sW += W;
+	                xpos += xcell*W;
+	                ypos += ycell*W;
+	            }
             }
 
             fClusterStorage[n].E[j]  = ecell;
             fClusterStorage[n].x[j]  = xcell;
             fClusterStorage[n].y[j]  = ycell;
+
         }
 
         fHyCalCluster[n].sigma_E    = ecellmax;  // use it temproraly
 
         if(sW) {
-            fHyCalCluster[n].x_log = xpos/sW;
-            fHyCalCluster[n].y_log = ypos/sW;
+            //adding shower depth correction here
+            float zk = 1.;
+            if (fDoShowerDepth){
+                if(idmax<999) {
+                    fHyCalCluster[n].dz = GetShowerDepth(0,e);
+                    fHyCalCluster[n].dz -= 10.12; // set common z for both part
+                }else{
+                    fHyCalCluster[n].dz = GetShowerDepth(1,e);
+                }
+                zk = 1. / (1. + fHyCalCluster[n].dz/ZHYCAL);
+            }
+            fHyCalCluster[n].x_log = zk*xpos/sW;
+            fHyCalCluster[n].y_log = zk*ypos/sW;
         } else {
             printf("WRN bad cluster log. coord , center id = %i %f\n", idmax, fHyCalCluster[n].E);
             fHyCalCluster[n].x_log = 0.;
@@ -613,7 +647,7 @@ void PRadIslandCluster::MergeClusters(int i, int j)
         float ycell = fClusterStorage[i].y[k1];
         if(ecell > 0.)
         {
-            W  = 4.2 + log(ecell/e);
+            W  = fWeightFreePar + log(ecell/e);
             if(W > 0)
             {
                 sW += W;
@@ -631,7 +665,7 @@ void PRadIslandCluster::MergeClusters(int i, int j)
 
         if(ecell > 0.)
         {
-            W  = 4.2 + log(ecell/e);
+            W  = fWeightFreePar + log(ecell/e);
             if(W > 0)
             {
                 sW += W;
@@ -680,22 +714,19 @@ void PRadIslandCluster::MergeClusters(int i, int j)
     fHyCalCluster[i].nblocks = kk;
 }
 //____________________________________________________________________________
-float PRadIslandCluster::EnergyCorrect (float c_energy, int /*central_id*/)
+float PRadIslandCluster::EnergyCorrect (float c_energy, int central_id)
 {
     float energy = c_energy;
-    //float fr = (central_id < 999) ? 0.062 : 0.042;
-
-    //float ecorr = 1. - fr * exp(-Nonlin_en1[central_id-1]*energy);
-
-    //ecorr *= 1. - Nonlin_en2[central_id-1] * energy*1.e-3;
-    //if(fabs(ecorr-1.) < 0.3) energy /= ecorr;
-
+    if (fDoNonLinCorr){
+        float ecorr = 1. + fNonLin[central_id-1]*(energy-0.55);
+        if(fabs(ecorr-1.) < 0.6) energy /= ecorr;
+    }
     return energy;
 }
 //____________________________________________________________________________
 void PRadIslandCluster::ClusterProcessing()
 {
-    float pi = 3.1415926535;
+    //float pi = 3.1415926535;
     //  final cluster processing (add status and energy resolution sigma_E):
     for(int i = 0; i < fNHyCalClusters; ++i)
     {
@@ -703,8 +734,8 @@ void PRadIslandCluster::ClusterProcessing()
         int idmax = fHyCalCluster[i].cid;
 
         // apply 1st approx. non-lin. corr. (was obtained for PWO):
-        e *= 1. + 200.*pi/pow((pi+e),7.5);
-        fHyCalCluster[i].E = e;
+        //e *= 1. + 200.*pi/pow((pi+e),7.5);
+        //fHyCalCluster[i].E = e;
 
         //float x   = fHyCalCluster[i].x1;
         //float y   = fHyCalCluster[i].y1;
@@ -771,15 +802,110 @@ void PRadIslandCluster::FinalProcessing()
     // here transform the PrimEx unit convention to ours
     for(int i = 0; i < fNHyCalClusters; ++i)
     {
+        if (fHyCalCluster[i].type == 0  || fHyCalCluster[i].type == 1)
+        SETBIT(fHyCalCluster[i].flag, kPWO);
+        if (fHyCalCluster[i].type == 10 || fHyCalCluster[i].type == 11)
+        SETBIT(fHyCalCluster[i].flag, kLG);
+        if (fHyCalCluster[i].type == 2  || fHyCalCluster[i].type == 12)
+        SETBIT(fHyCalCluster[i].flag, kTransition);
+        if (fHyCalCluster[i].type == 1){
+            SETBIT(fHyCalCluster[i].flag, kInnerBound);
+            SETBIT(fHyCalCluster[i].flag, kPWO);
+        }
+        if (fHyCalCluster[i].type == 11){
+            SETBIT(fHyCalCluster[i].flag, kOuterBound);
+            SETBIT(fHyCalCluster[i].flag, kLG);
+        }
+        if (fHyCalCluster[i].status == 10 || fHyCalCluster[i].status == 30)
+        SETBIT(fHyCalCluster[i].flag, kSplit);
+
+        for (unsigned int j=0; j<fDeadModules.size(); j++){
+            float r = sqrt( pow((fDeadModules.at(j).x - fHyCalCluster[i].x_log), 2) +
+                            pow((fDeadModules.at(j).y - fHyCalCluster[i].y_log), 2) );
+            float size = 0;
+            if (fDeadModules.at(j).sector == 0) size = CRYS_SIZE_X;
+            else size = GLASS_SIZE;
+
+            if (r/size < 1.5) SETBIT(fHyCalCluster[i].flag, kDeadModule);
+        }
+
+
+
         fHyCalCluster[i].E *= 1000.; // GeV to MeV
         fHyCalCluster[i].sigma_E *= 1000.; // GeV to MeV
         fHyCalCluster[i].x *= -10.; // cm to mm
         fHyCalCluster[i].y *= 10.; // cm to mm
         fHyCalCluster[i].x_log *= -10.; // cm to mm
         fHyCalCluster[i].y_log *= 10.; // cm to mm
+        fHyCalCluster[i].dz *= 10.; //cm to mm
 
-        PRadDAQUnit *module = fHandler->GetChannel(PRadDAQUnit::NameFromPrimExID(fHyCalCluster[i].cid));
-        PRadTDCGroup *tdc = module->GetTDCGroup();
+
+        PRadDAQUnit *module =
+        fHandler->GetChannel(PRadDAQUnit::NameFromPrimExID(fHyCalCluster[i].cid));
+
+        PRadTDCGroup *tdc = fHandler->GetTDCGroup(module->GetTDCName());
+
+        fHyCalCluster[i].clear_time();
         fHyCalCluster[i].set_time(tdc->GetTimeMeasure());
+        //copy the module info the cluster has
+
+#ifdef RECON_DISPLAY
+        int dime   = fHyCalCluster[i].nblocks;
+        for(int k = 0; k < (dime>MAX_CC ? MAX_CC : dime); ++k){
+            fHyCalCluster[i].moduleID[k] = fClusterStorage[i].id[k];
+            fHyCalCluster[i].moduleE[k] = 1000.*fClusterStorage[i].E[k];
+        }
+#endif
     }
 }
+//_______________________________________________________________________________
+inline float PRadIslandCluster::GetShowerDepth(int type, float & E)
+{
+    if (type >= 2){
+        std::cout<<"PRadIslandCluster::GetShowerDepth: unexpected type "
+        <<type<<std::endl;
+        return 0;
+    }
+
+    return (E > 0.) ? fZ0[type]*log(1.+E/fE0[type]) : 0.;
+}
+//_________________________________________________________________________________
+float PRadIslandCluster::GetDoubleExpWeight(float& e, float& E)
+{
+    float y = e/E;
+    return std::max(0.,1.-Finv(y) /Finv(fCutOffThr))/(1.-Finv(1.)/Finv(fCutOffThr));
+}
+//_________________________________________________________________________________
+inline float PRadIslandCluster::Finv(float y)
+{
+    float x0 = 0.;
+    float y0 = 0.;
+    float x1 = -10.;
+    float x2 = 10.;
+    float y1 = Fx(x1) - y;
+    float y2 = Fx(x2) - y;
+    while(fabs(x1-x2) > 1e-6){
+        x0 = 0.5*(x1+x2);
+        y0 = Fx(x0) - y;
+        if(y1*y0 > 0){
+          x1 = x0;
+          y1 = y0;
+        }else{
+          x2 = x0;
+          y2 = y0;
+        }
+    }
+    return x0;
+}
+//_________________________________________________________________________________
+inline float PRadIslandCluster::Fx(float& x)
+{
+    return (1.-f2ExpFreeWeight)*exp(-3.*x) + f2ExpFreeWeight*exp(-2.*x/3.);
+}
+
+
+
+
+
+
+

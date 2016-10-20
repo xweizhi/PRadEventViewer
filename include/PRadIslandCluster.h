@@ -3,6 +3,7 @@
 
 #include <string>
 #include "PRadHyCalCluster.h"
+#include <vector>
 
 //this is a c++ wrapper around the primex island algorithm
 //used for HyCal cluster reconstruction
@@ -19,7 +20,6 @@
 #define T_BLOCKS 2156
 
 #define MAX_HHITS 1728 // For Hycal
-#define MAX_CC 60 // Maximum Cluster Cells per cluster
 
 #define nint_phot_cell  5
 #define ncoef_phot_cell 3
@@ -133,33 +133,52 @@ public:
     PRadIslandCluster(PRadDataHandler *h = nullptr);
     virtual ~PRadIslandCluster() {;}
 
-    void SetHandler(PRadDataHandler* theHandler) { fHandler = theHandler; }
-    void Configure(const std::string &c_path);
-    void LoadBlockInfo(const std::string &path);
-    void LoadCrystalProfile(const std::string &path);
-    void LoadLeadGlassProfile(const std::string &path);
-    void Reconstruct(EventData &event);
-    void Clear();
+    void  SetHandler(PRadDataHandler* theHandler) { fHandler = theHandler; }
+    void  Configure(const std::string &c_path);
+    void  LoadBlockInfo(const std::string &path);
+    void  LoadCrystalProfile(const std::string &path);
+    void  LoadLeadGlassProfile(const std::string &path);
+    void  LoadNonLinearity(const std::string &path);
+    void  Reconstruct(EventData &event);
+    void  Clear();
 
 protected:
-    void LoadModuleData(EventData& thisEvent);
-    void CallIsland(int isect);
-    void GlueTransitionClusters();
-    void ClusterProcessing();
-    int ClustersMinDist(int i,int j);
-    void MergeClusters(int i, int j);
+    void  LoadModuleData(EventData& thisEvent);
+    void  CallIsland(int isect);
+    void  GlueTransitionClusters();
+    void  ClusterProcessing();
+    int   ClustersMinDist(int i,int j);
+    void  MergeClusters(int i, int j);
     float EnergyCorrect (float c_energy, int central_id);
-    void FinalProcessing();
+    void  FinalProcessing();
+    float GetShowerDepth(int type, float & E);
+    float GetDoubleExpWeight(float& e, float& E);
+    float Finv(float y);
+    float Fx(float& x);
+    
 
+    int   fDoShowerDepth;
+    int   fUse2ExpWeight;
+    int   fDoNonLinCorr;
     float fMinHitE;
-    float fLogWeightThres;
+    float fWeightFreePar; 
+    float fMinClusterE;
+    float fMinCenterE;
+    float fZLGToPWO;
+    float fZHyCal;
+    float fCutOffThr;
+    float f2ExpFreeWeight;
 
     blockINFO_t fBlockINFO[T_BLOCKS];
+    float fNonLin[T_BLOCKS];
     int fModuleStatus[MSECT][MCOL][MROW];
     int fNClusterBlocks;
     cluster_block_t fClusterBlock[T_BLOCKS];
     cluster_t fClusterStorage[MAX_HCLUSTERS];
     int ich[MCOL][MROW];
+    std::vector<blockINFO_t> fDeadModules;
+    float fE0[2];
+    float fZ0[2];
 };
 
 #endif

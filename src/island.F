@@ -28,11 +28,10 @@
         do i2 = 0, i1
           read(22,'(i3,1x,i3,2(1x,e20.10))')
      &      id1, id2, fcell_hyc, fd2c
-
           acell(0,i1,i2) = fcell_hyc
           acell(0,i2,i1) = fcell_hyc
-          ad2c(0,i2,i1) = fd2c
-          ad2c(0,i1,i2) = fd2c
+           ad2c(0,i2,i1) = fd2c
+           ad2c(0,i1,i2) = fd2c
         enddo
       enddo
 *
@@ -69,8 +68,8 @@
 
           acell(1,i1,i2) = fcell_hyc
           acell(1,i2,i1) = fcell_hyc
-          ad2c(1,i2,i1) = fd2c
-          ad2c(1,i1,i2) = fd2c
+           ad2c(1,i2,i1) = fd2c
+           ad2c(1,i1,i2) = fd2c
         enddo
       enddo
 *
@@ -156,7 +155,7 @@ cc    call dump_hyc
 *
       do i = 1, NCOL
         do j = 1, NROW
-          ie = nint(1.*ech(i,j))
+          ie = ech(i,j)
           if(ie.gt.0)then
             nw     = nw + 1             ! one more hit
             ia(nw) = 100*i+j            ! code address
@@ -386,7 +385,7 @@ c
      &          fwrk(10800,0:12)    ,! working array for resolved peaks
      &          fe, fia
 *
-      integer j, idsum, nn
+      integer j, idsum
 *
 *               -----------external  declarations----------
 *
@@ -409,23 +408,23 @@ c
 * li
       idsum = 0
       do ic = 1, nadc
-        idsum = idsum + nint(0.01*id(ic))
+        idsum = idsum + id(ic)
       enddo
       if(nadc.lt.3) then
         minpk = 1
       else
 cc      minpk = max(1,nint(0.16+0.06*idsum))
         if(isect.ne.0) then
-c      changing unit from 10 MeV to 0.1 MeV
-          minpk = max(1, nint(20.*log(1.+0.01*idsum)))
+          minpk = max(1,nint(20.*log(1.+0.0001*idsum)))
         else
-          minpk = max(1, nint( 7.*log(1.+0.01*idsum)))
+          minpk = max(1,nint( 7.*log(1.+0.0001*idsum)))
         endif
       endif
+      minpk = minpk*100
 * li
       npk=0
       do 1 ic=1,nadc
-        iac=nint(0.01*id(ic))
+        iac=id(ic)
         if(iac.lt.minpk)       go to 1
         ixy=ia(ic)
         ixymax=ixy+100+1
@@ -434,25 +433,20 @@ c      changing unit from 10 MeV to 0.1 MeV
         in=ic+1
         do while (in.le.nadc.and.ia(in).le.ixymax)
           iy=ia(in)-ia(in)/100*100
-          if(iabs(iy-iyc).le.1.and.nint(0.01*id(in)).ge.iac) go to 1
+          if(iabs(iy-iyc).le.1.and.id(in).ge.iac) go to 1
           in=in+1
         enddo
         in=ic-1
         do while (in.ge.1.and.ia(in).ge.ixymin)
           iy=ia(in)-ia(in)/100*100
-          if(iabs(iy-iyc).le.1.and.nint(0.01*id(in)).gt.iac) go to 1
+          if(iabs(iy-iyc).le.1.and.id(in).gt.iac) go to 1
           in=in-1
         enddo
         npk=npk+1           !  peak found
         ipnpk(npk)=ic
         if(npk.eq.10.or.npk.ge.10000/nadc-3) go to 10
     1 continue
-      !do nn = 1, nadc
-       ! print*, ia(nn), nint(0.01*id(nn)), npk
-      !enddo
-
       if(npk.eq.0)             return
-          
 c
 c   gamma search for one peak :
 c
@@ -580,7 +574,7 @@ c             if(iter.ne.1)  ratio=float(iwrk(in,ipk))/iwrk(in,npk+1)
             ypk(ipk)=ypk(ipk)/epk(ipk)
           else
             write(*,'(a,f6.2,a,i2)')
-     &       'WRN: lost maximum with peak energy ', id(ic)*1.e-2,
+     &       'WRN: lost maximum with peak energy ', id(ic)*1.e-4,
      &       ' at ITER = ', iter
           endif
 * li
@@ -605,10 +599,10 @@ c             if(iter.ne.1)  ratio=float(iwrk(in,ipk))/iwrk(in,npk+1)
           iwrk(i,npk+1)=iwk
 *
 cc
-          if(fwrk(i,0).gt.1.e-4) then
+          if(fwrk(i,0).gt.1.e-2) then
             fwrk(i,npk+1)=fwrk(i,0)
           else
-            fwrk(i,npk+1)=1.e-4
+            fwrk(i,npk+1)=1.e-2
           endif
         enddo
       enddo       ! end of iteration to separate peaks in a cluster
@@ -617,7 +611,7 @@ c
         leng=0
         do i=1,nadc
 cc        if(iwrk(i,0).gt.0) then
-          if(fwrk(i,0).gt.1.e-4) then
+          if(fwrk(i,0).gt.1.e-2) then
             ixy=ia(i)
             ie=id(i)*float(iwrk(i,ipk))/iwrk(i,0)+.5  ! part of cell energy #i belonging to peak #ipk
             fe=id(i)*fwrk(i,ipk)/fwrk(i,0)            ! part of cell energy #i belonging to peak #ipk
@@ -745,10 +739,10 @@ c
           endif
         enddo
 *
-        if(iabs(ide-idecorr).gt.5) then
+cc      if(iabs(ide-idecorr).gt.5) then
 cc          print*, 'WARNING RENORM. CORR MISMATCH ',
 cc     &      ia(i), id(i), ide, idecorr
-        endif
+cc      endif
 234     continue
       enddo
 *
@@ -1029,7 +1023,7 @@ c
         d2=(xx-x2)**2*xsize**2 + (yy-y2)**2*ysize**2
         xm2=ee*e2*d2
 c
-        if(xm2.gt.0.) xm2=sqrt(xm2)/zhycal*10.  ! mass in mev.
+        if(xm2.gt.0.) xm2=sqrt(xm2)/zhycal*0.1  ! mass in mev.
 c
 cc      if(xm2.gt.xm2cut*(ee+e2)*0.01) then
 cc      if(xm2.gt.xm2cut) then
@@ -1120,9 +1114,13 @@ cc      if(xm2.gt.xm2cut) then
 *
       nneibnew = 0
       do i = 1, nneib
+        ix = ian(i) / 100
+        iy = ian(i) - ix * 100
         if(ian(i).ne.-1) then
+        if(stat_ch(ix,iy).eq.0) then    ! suggested by Weizhi:
           nneibnew = nneibnew + 1
           ian(nneibnew) = ian(i)
+        endif
         endif
       enddo
       nneib = nneibnew
@@ -1190,7 +1188,7 @@ cc      if(xm2.gt.xm2cut) then
       corr = corr / 1.006
 *
       if(corr.lt..8) then
-        print*, 'corr = ', corr, a0, x0, y0
+cc      print*, 'corr = ', corr, a0, x0, y0 ! to many if around central hole
         corr=.8
       else if(corr.gt.1.) then
         corr=1.
@@ -1224,14 +1222,14 @@ cc      if(xm2.gt.xm2cut) then
       integer 
      &        i,ix,iy                ! 
       real
-     &        const                 ,!
+c    &        const                 ,!
      &        a,d                   ,! 
      &        cell_hyc               ! calc. energy in cell
 *
 *               --------------data statements--------------
 *
-      data const/1.5/
-      save const
+c     data const/1.5/
+c     save const
 *
       real fcell, sigma2
 *
@@ -1245,10 +1243,9 @@ c
         if (e1.ne.0.) then
           if(abs(x1-ix).gt.6.0 .or. abs(y1-iy).gt.6.0) then
           else
-c       changing unit from 10 MeV to 0.1 MeV
             fcell = cell_hyc(x1-ix,y1-iy)
             chisq = chisq
-     &      + 0.01*e1*(fcell-id(i)/e1)**2/sigma2(x1-ix,y1-iy,fcell,e1) 
+     &          + e1*(fcell-id(i)/e1)**2 / sigma2(x1-ix,y1-iy,fcell,e1)
           endif
 *
         else
@@ -1264,10 +1261,9 @@ c       changing unit from 10 MeV to 0.1 MeV
         if (e1.ne.0.) then
           if(abs(x1-ix).gt.6.0 .or. abs(y1-iy).gt.6.0) then
           else
-c       changing unit from 10 MeV to 0.1 MeV
             fcell = cell_hyc(x1-ix,y1-iy)
             chisq = chisq
-     &    + 0.01*e1*fcell**2 / sigma2(x1-ix,y1-iy,fcell,e1)
+     &          + e1*fcell**2 / sigma2(x1-ix,y1-iy,fcell,e1)
           endif
 *
         else
@@ -1289,16 +1285,16 @@ c       changing unit from 10 MeV to 0.1 MeV
       parameter (alp = 0.816, bet1 = 32.1, bet2 = 1.72)
 *
       if(dx*dx+dy*dy.gt.25.) then
-        sigma2 = 1.
+        sigma2 = 100.
         return
       endif
 *
-c     changing unit from 10 MeV to 0.1 MeV
-      sigma2 =  alp*fc+(bet1+bet2*sqrt(0.01*e))*d2c(dx,dy)+0.2/(0.01*e)
-      ! 0.2 for ped-sigma and 10/sqrt(12)
+      sigma2 =  alp*fc + (bet1+bet2*sqrt(e/100.))*d2c(dx,dy)
+     &       +  0.2/(e/100.)       ! 0.2 for ped-sigma and 10/sqrt(12)
 #ifdef test_p
       sigma2 =  sigma2 / (0.0001*e)**0.166
 #endif
+      sigma2 =  100. * sigma2
 *
       return
       end
@@ -1326,7 +1322,7 @@ c     changing unit from 10 MeV to 0.1 MeV
 *
         d2c = ad2c(i0,i,  j)   * (1.-wx) * (1.-wy) +
      &        ad2c(i0,i+1,j)   *     wx  * (1.-wy) +
-     &        ad2c(i0,i,  j+1) * (1.-wx) *     wy +
+     &        ad2c(i0,i,  j+1) * (1.-wx) *     wy  +
      &        ad2c(i0,i+1,j+1) *     wx  *     wy
       else
         d2c = 1.
@@ -1343,14 +1339,14 @@ c     changing unit from 10 MeV to 0.1 MeV
       real s
 *
       if(e1.ne.0..and.e2.ne.0.) then
-        s = e1*sigma2(dx1,dy1,f1,e1)/(0.01*e1)**0.166 +
-     &      e2*sigma2(dx2,dy2,f2,e2)/(0.01*e2)**0.166
+        s = e1*sigma2(dx1,dy1,f1,e1)/(0.0001*e1)**0.166 +
+     &      e2*sigma2(dx2,dy2,f2,e2)/(0.0001*e2)**0.166
       else if(e1.eq.0..and.e2.eq.0.) then
-        s = 9.
+        s = 90000.
       else if(e1.eq.0.) then
-        s = e2*sigma2(dx2,dy2,f2,e2)/(0.01*e2)**0.166
+        s = e2*sigma2(dx2,dy2,f2,e2)/(0.0001*e2)**0.166
       else
-        s = e1*sigma2(dx1,dy1,f1,e1)/(0.01*e1)**0.166
+        s = e1*sigma2(dx1,dy1,f1,e1)/(0.0001*e1)**0.166
       endif
 *
       chisqt = (e1*f1+e2*f2-ecell)**2 / s
@@ -1367,7 +1363,7 @@ c     changing unit from 10 MeV to 0.1 MeV
       if(e1.ne.0..and.e2.ne.0.) then
         s = e1*sigma2(dx1,dy1,f1,e1) + e2*sigma2(dx2,dy2,f2,e2)
       else if(e1.eq.0..and.e2.eq.0.) then
-        s = 9.
+        s = 90000.
       else if(e1.eq.0.) then
         s = e2*sigma2(dx2,dy2,f2,e2)
       else
@@ -1422,7 +1418,7 @@ c     changing unit from 10 MeV to 0.1 MeV
      &     u,r,rsq,rsq2       ,!  
      &     epsc,eps0,eps1,eps2,!
      &     stpmin,epsmax      ,!
-     &     const              ,!
+c    &     const              ,!
      &     delch              ,!
      &     step               ,! 
      &     cosi,scal          ,!
@@ -1450,10 +1446,10 @@ c     changing unit from 10 MeV to 0.1 MeV
 *               --------------Data statements--------------
 *
       data 
-     &     stpmin/.005/      ,!
+     &     stpmin/.5/        ,!
      &     epsmax/.9999/     ,!
-     &     delch /10./       ,! /8./
-     &     const /1.5/
+     &     delch /10./        ! /8./
+c    &     const /1.5/
 *
 *               --------------Event Analysis Code-------------
 *
@@ -1480,9 +1476,9 @@ c
         ix = ia(i)/100
         iy = ia(i)-ix*100
         u  = (ix-x0)*dxc/r+(iy-y0)*dyc/r
-        epsc=epsc-id(i)*u*abs(u)
+        epsc=epsc-0.01*id(i)*u*abs(u)
       enddo
-      epsc=epsc/(e0*rsq)
+      epsc=epsc/(0.01*e0*rsq)
       if(epsc.gt.0.8) epsc=0.8
       if(epsc.lt.-.8) epsc=-.8
       dxc=dxc/sqrt(1.-epsc**2)
@@ -1595,7 +1591,7 @@ c
 *
           enddo
           grc  = sqrt(grec**2+grxc**2+gryc**2)
-          if(grc.lt.1.e-10) grc=1.e-10
+          if(grc.lt.1.e-6) grc=1.e-6
           if(iter.gt.1) then
             cosi = (gre*grec+grx*grxc+gry*gryc)/(gr*grc)
             scal = abs(gr/grc-cosi)
@@ -1758,9 +1754,9 @@ c
         wx  = ax - i
         wy  = ay - j
 *
-        cell_hyc = acell(i0,i,  j)   * (1.-wx) * (1.-wy)  +
-     &             acell(i0,i+1,j)   *     wx  * (1.-wy)  +
-     &             acell(i0,i,  j+1) * (1.-wx) *     wy   +
+        cell_hyc = acell(i0,i,  j)   * (1.-wx) * (1.-wy) +
+     &             acell(i0,i+1,j)   *     wx  * (1.-wy) +
+     &             acell(i0,i,  j+1) * (1.-wx) *     wy  +
      &             acell(i0,i+1,j+1) *     wx  *     wy
       else
         cell_hyc = 0.
