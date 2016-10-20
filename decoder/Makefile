@@ -70,7 +70,9 @@ LIB_OBJECTS   = $(LIB_OBJ_DIR)/PRadDAQUnit.o \
                 $(LIB_OBJ_DIR)/PRadGEMPlane.o \
                 $(LIB_OBJ_DIR)/PRadGEMFEC.o \
                 $(LIB_OBJ_DIR)/PRadGEMAPV.o \
-                $(LIB_OBJ_DIR)/PRadEventFilter.o
+                $(LIB_OBJ_DIR)/PRadEventFilter.o \
+                $(LIB_OBJ_DIR)/PRadDetCoor.o \
+                $(LIB_OBJ_DIR)/PRadDetMatch.o 
 
 
 # examples
@@ -79,7 +81,8 @@ TARGET        = testIsland \
                 testLMS \
                 testGEM \
                 testSim \
-                replay
+                replay \
+                testCombine
 
 EXE_LIBS      = -L$(T_LIBS_DIR) -lPRadDecoder
 
@@ -122,7 +125,8 @@ testSim: src/testSim.cpp
 replay: src/replay.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
 
-
+testCombine: src/testCombine.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
 
 ####### Clean
 clean: cleanobj cleanexe cleanlib

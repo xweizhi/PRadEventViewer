@@ -6,6 +6,7 @@
 #include <deque>
 #include <utility>
 #include "datastruct.h"
+#include "TObject.h"
 
 // some discriminator related settings
 #define REF_CHANNEL 7
@@ -14,6 +15,10 @@
 #define FCUP_CHANNEL 6
 #define FCUP_OFFSET 100.0
 #define FCUP_SLOPE 906.2
+
+#define MAX_CC 60
+#define MAX_GEM_MATCH 100
+#define NGEM 2
 
 struct RunInfo
 {
@@ -325,11 +330,27 @@ struct EventData
     };
 };
 
+enum HyCalClusterStatus{
+    kPWO = 0,     //cluster center at PWO region
+    kLG,          //cluster center at LG region
+    kTransition,  //cluster center at LG region
+    kSplit,       //cluster after splitting
+    kDeadModule,  //cluster near dead module
+    kInnerBound,  //cluster near the inner hole of HyCal
+    kOuterBound,  //cluster near the outer boundary of HyCal
+    kGEM1Match,   //cluster found a match GEM hit on GEM 1
+    kGEM2Match,   //cluster found a match GEM hit on GEM 2
+    kGEMMatch,    //cluster found a match GEM hit from either one
+    kOverlapMatch,//cluster found a match on both GEM
+    kMultiGEMHits //multiple GEM hits appear near HyCal Hit
+};
+
 struct HyCalHit
 {
 #define TIME_MEASURE_SIZE 3
+    unsigned int flag;  // overall status of the cluster
     short type;         // Cluster types: 0,1,2,3,4;-1
-    short status;       // Energy Correction Status
+    short status;       // Spliting status
     short nblocks;      // Number of blocks in a cluster
     short cid;          // Cluster's central cell ID
     float E;            // Cluster's energy (MeV)
@@ -337,37 +358,53 @@ struct HyCalHit
     float y;            // Cluster's y-position (mm)
     float x_log;        // x reconstruct with log scale (mm)
     float y_log;        // y reconstruct with log scale (mm)
+    float x_gem;        // x coor from GEM after match
+    float y_gem;        // y coor from GEM after match
+    float z_gem;        // z coor from GEM after match
     float chi2;         // chi2 comparing to shower profile
     float sigma_E;
+    float dz;           // z shift due to shower depth corretion
     unsigned short time[TIME_MEASURE_SIZE];      // time information from central TDC group
+    unsigned short moduleID[MAX_CC];
+    float moduleE[MAX_CC];
+
+    //for GEM HyCal match
+    unsigned short gemClusterID[NGEM][MAX_GEM_MATCH];
+    unsigned short gemNClusters[NGEM];
 
     HyCalHit()
-    : type(0), status(0), nblocks(0), cid(0), E(0), x(0), y(0), x_log(0),
-      y_log(0), chi2(0), sigma_E(0)
+    : flag(0), type(0), status(0), nblocks(0), cid(0), E(0), x(0), y(0), x_log(0),
+      y_log(0), chi2(0), sigma_E(0), dz(0)
     {
         clear_time();
+        clear_gem();
+        for (int i=0; i<NGEM; i++) gemNClusters[i] = 0;
     }
 
     HyCalHit(const float &cx, const float &cy, const float &cE)
-    : type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
-      y_log(0), chi2(0), sigma_E(0)
+    : flag(0), type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
+      y_log(0), chi2(0), sigma_E(0), dz(0)
     {
         clear_time();
+        clear_gem();
+        for (int i=0; i<NGEM; i++) gemNClusters[i] = 0;
     }
 
     HyCalHit(const float &cx, const float &cy, const float &cE, const std::vector<unsigned short> &t)
-    : type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
-      y_log(0), chi2(0), sigma_E(0)
+    : flag(0), type(0), status(0), nblocks(0), cid(0), E(cE), x(cx), y(cy), x_log(0),
+      y_log(0), chi2(0), sigma_E(0), dz(0)
     {
         set_time(t);
     }
 
     HyCalHit(const short &t, const short &s, const short &n,
              const float &cx, const float &cy, const float &cE, const float &ch)
-    : type(t), status(s), nblocks(n), cid(0), E(cE), x(cx), y(cy), x_log(0),
-      y_log(0), chi2(ch), sigma_E(0)
+    : flag(0), type(t), status(s), nblocks(n), cid(0), E(cE), x(cx), y(cy), x_log(0),
+      y_log(0), chi2(ch), sigma_E(0), dz(0)
     {
         clear_time();
+        clear_gem();
+        for (int i=0; i<NGEM; i++) gemNClusters[i] = 0;
     }
     void clear_time()
     {
@@ -384,6 +421,48 @@ struct HyCalHit
                 time[i] = 0;
         }
     }
+
+    void add_gem_clusterID(const int & detid, const unsigned short &id){
+        if (gemNClusters[detid] >= MAX_GEM_MATCH) return;
+        gemClusterID[detid][gemNClusters[detid]] = id;
+        gemNClusters[detid]++;
+    }
+
+    void clear_gem(){
+        for (int i=0; i<NGEM; i++) gemNClusters[i] = 0;
+        x_gem = 0.; y_gem = 0.; z_gem = -1;
+    }
+
+    void DistClean(){
+        clear_time();
+        clear_gem();
+        flag = 0;
+    }
+};
+
+struct GEMDetCluster {
+    float x;
+    float y;
+    float z;
+    float x_charge;
+    float y_charge;
+    int x_size;
+    int y_size;
+    int chamber_id;
+
+    GEMDetCluster()
+    :x(0.), y(0.), z(0.), x_charge(0.), y_charge(0.),
+     x_size(0), y_size(0), chamber_id(-1) {}
+
+    GEMDetCluster(const float& cx, const float& cy, const float& cz,
+                  const float& cx_charge, const float& cy_charge,
+                  const int& cx_size, const int& cy_size, const int& cchamber_id)
+    :x(cx), y(cy), z(cz), x_charge(cx_charge), y_charge(cy_charge),
+     x_size(cx_size), y_size(cy_size), chamber_id(cchamber_id) {}
+
+    GEMDetCluster(const GEMDetCluster& rhs)
+    :x(rhs.x), y(rhs.y), z(rhs.z), x_charge(rhs.x_charge), y_charge(rhs.y_charge),
+     x_size(rhs.x_size), y_size(rhs.y_size), chamber_id(rhs.chamber_id) {}
 };
 
 // DST file related info

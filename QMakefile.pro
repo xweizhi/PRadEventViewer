@@ -21,14 +21,16 @@ COMPONENTS =
 
 # enable online mode, it requires Event Transfer,
 # it is the monitoring process from CODA group
-COMPONENTS += ONLINE_MODE
+#COMPONENTS += ONLINE_MODE
 
 # enable high voltage control, it requires CAENHVWrapper library
-COMPONENTS += HV_CONTROL
+#COMPONENTS += HV_CONTROL
 
 # use standard evio libraries instead of self-defined function to read
 # evio data files
 COMPONENTS += STANDARD_EVIO
+
+COMPONENTS += RECON_DISPLAY
 
 ######################################################################
 # optional components end
@@ -78,7 +80,9 @@ HEADERS += include/PRadEventViewer.h \
            include/PRadGEMPlane.h \
            include/PRadGEMFEC.h \
            include/PRadGEMAPV.h \
-           include/PRadEventFilter.h
+           include/PRadEventFilter.h \
+           include/PRadDetCoor.h \
+           include/PRadDetMatch.h
 
 SOURCES += src/main.cpp \
            src/PRadEventViewer.cpp \
@@ -107,7 +111,9 @@ SOURCES += src/main.cpp \
            src/PRadGEMPlane.cpp \
            src/PRadGEMFEC.cpp \
            src/PRadGEMAPV.cpp \
-           src/PRadEventFilter.cpp
+           src/PRadEventFilter.cpp \
+           src/PRadDetCoor.cpp \
+           src/PRadDetMatch.cpp
 
 LIBS += -lexpat -lgfortran \
         -L$$(ROOTSYS)/lib -lCore -lRint -lRIO -lNet -lHist \
@@ -164,6 +170,10 @@ contains(COMPONENTS, STANDARD_EVIO) {
         INCLUDEPATH += thirdparty/include
     }
     LIBS += -L$$(THIRD_LIB) -levio -levioxx
+}
+
+contains(COMPONENTS, RECON_DISPLAY) {
+    DEFINES += RECON_DISPLAY
 }
 ######################################################################
 # self-defined components end

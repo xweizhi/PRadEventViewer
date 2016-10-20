@@ -3,6 +3,7 @@
 
 #include <QGraphicsScene>
 #include <vector>
+#include <map>
 
 class PRadEventViewer;
 class HyCalModule;
@@ -53,6 +54,10 @@ public:
     void addModule(HyCalModule *module);
     void addItem(QGraphicsItem *item);
     QVector<HyCalModule *> GetModuleList() {return moduleList;};
+    void ClearHits();
+    void AddHyCalHits(const QPointF &hit);
+    void AddGEMHits(int igem, const QPointF &hit);
+    void AddEnergyValue(QString s, const QRectF &module);
 
 protected:
     void drawForeground(QPainter *painter, const QRectF &rect);
@@ -66,6 +71,9 @@ private:
     QList<TextBox> tdcBoxList;
     QVector<TextBox> scalarBoxList;
     QVector<HyCalModule *> moduleList;
+    QList<QPointF> recon_hits;
+    std::map< int, QList<QPointF> > gem_hits;
+    std::vector< std::pair<QString, const QRectF> > module_energy;
 };
 
 #endif

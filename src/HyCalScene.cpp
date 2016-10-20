@@ -66,6 +66,50 @@ void HyCalScene::drawForeground(QPainter *painter, const QRectF &rect)
         }
     }
 
+    if(!recon_hits.isEmpty()) {
+        QPen pen(Qt::red);
+        pen.setWidth(2);
+        pen.setCosmetic(true);
+        painter->setPen(pen);
+        for(auto &hit : recon_hits)
+        {
+            painter->drawEllipse(hit, 7., 7.);
+        }
+    }
+  
+    if (!module_energy.empty()){
+       QPen pen(Qt::black);
+       pen.setWidth(2);
+       pen.setCosmetic(true);
+       painter->setPen(pen);
+       painter->setFont(QFont("times", 3));
+
+       for (unsigned int i=0; i<module_energy.size(); i++){
+          painter->drawText((module_energy.at(i)).second, Qt::TextWordWrap, (module_energy.at(i)).first);
+       }
+     }
+     
+     if (!gem_hits.empty()){
+        std::map< int, QList<QPointF> >::iterator it;
+        QPen pen1(Qt::blue);
+        pen1.setWidth(2);
+        pen1.setCosmetic(true);
+        QPen pen2(Qt::magenta);
+        pen2.setWidth(2);
+        pen2.setCosmetic(true);
+        
+        for(it = gem_hits.begin(); it != gem_hits.end(); it++)
+        {
+          if (it->first == 0) painter->setPen(pen1);
+          else painter->setPen(pen2);
+          for (auto &hit : it->second ){
+              painter->drawEllipse(hit, 3.5, 3.5);
+          }
+        }
+     }
+
+
+
     painter->restore();
 }
 
@@ -142,4 +186,35 @@ void HyCalScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         }
     }
 }
+void HyCalScene::AddHyCalHits(const QPointF &p)
+{
+    recon_hits.append(p);
+}
+
+void HyCalScene::AddGEMHits(int igem, const QPointF &hit)
+{
+    std::map< int, QList<QPointF> >::iterator it;
+    it = gem_hits.find(igem);
+    if (it != gem_hits.end()){
+      (it->second).append(hit);
+    }else{
+      QList<QPointF> thisList;
+      thisList.append(hit);
+      gem_hits[igem] = thisList;
+    }
+
+}
+
+void HyCalScene::ClearHits()
+{
+    recon_hits.clear();
+    module_energy.clear();
+    gem_hits.clear();
+}
+
+void HyCalScene::AddEnergyValue(QString s, const QRectF &p)
+{
+    module_energy.push_back(std::pair<QString, QRectF>(s, p) );
+}
+
 

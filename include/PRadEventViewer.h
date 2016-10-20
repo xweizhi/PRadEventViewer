@@ -13,6 +13,8 @@ class Spectrum;
 class SpectrumSettingPanel;
 class PRadHistCanvas;
 class PRadDataHandler;
+class PRadDetCoor;
+class PRadDetMatch;
 class PRadLogBox;
 #ifdef USE_ONLINE_MODE
 class PRadETChannel;
@@ -117,6 +119,10 @@ private slots:
     void eraseBufferAction();
     void findEvent();
     void editCustomValueLabel(QTreeWidgetItem* item, int column);
+    void useSquareRecon();
+    void useIslandRecon();
+    void showAllGEMHits() { fShowMatchedGEM = false; }
+    void showMatchedGEMHits() { fShowMatchedGEM = true; }
 
 private:
     void initView();
@@ -124,7 +130,7 @@ private:
     void generateSpectrum();
     void generateHyCalModules();
     void generateScalerBoxes();
-    void setTDCGroupBox();
+    void buildModuleMap();
     void readModuleList();
     void readTDCList();
     void readSpecialChannels();
@@ -150,8 +156,12 @@ private:
                              const QString &suffix,
                              QFileDialog::AcceptMode mode = QFileDialog::AcceptOpen,
                              QFileDialog::FileMode fmode = QFileDialog::ExistingFiles);
+    
+    void reconCurrentEvent();
 
     PRadDataHandler *handler;
+    PRadDetCoor *fDetCoor;
+    PRadDetMatch *fDetMatch;
     int currentEvent;
     HistType histType;
     AnnoType annoType;
@@ -192,6 +202,9 @@ private:
 
     QFuture<bool> future;
     QFutureWatcher<void> watcher;
+    
+    bool fUseIsland;
+    bool fShowMatchedGEM;
 
 #ifdef USE_ONLINE_MODE
 public:

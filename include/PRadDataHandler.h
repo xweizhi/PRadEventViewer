@@ -72,6 +72,7 @@ public:
     PRadDAQUnit *GetChannel(const ChannelAddress &daqInfo);
     PRadDAQUnit *GetChannel(const std::string &name);
     PRadDAQUnit *GetChannel(const unsigned short &id);
+    PRadDAQUnit *GetChannelPrimex(const unsigned short &id);
     PRadTDCGroup *GetTDCGroup(const std::string &name);
     PRadTDCGroup *GetTDCGroup(const ChannelAddress &addr);
     const std::unordered_map< std::string, PRadTDCGroup *> &GetTDCGroupSet() {return map_name_tdc;};

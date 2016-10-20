@@ -41,6 +41,12 @@
 #include "PRadTDCGroup.h"
 #include "PRadLogBox.h"
 #include "PRadBenchMark.h"
+#include "PRadIslandCluster.h"
+#include "PRadSquareCluster.h"
+#include "PRadGEMSystem.h"
+#include "PRadGEMPlane.h"
+#include "PRadDetCoor.h"
+#include "PRadDetMatch.h"
 
 #ifdef USE_ONLINE_MODE
 #include "PRadETChannel.h"
@@ -67,6 +73,18 @@ PRadEventViewer::PRadEventViewer()
 {
     initView();
     setupUI();
+#ifdef RECON_DISPLAY
+    handler->AddHyCalClusterMethod((PRadHyCalCluster *) new PRadIslandCluster(), "Island", "config/island.conf");
+    handler->AddHyCalClusterMethod((PRadHyCalCluster *) new PRadSquareCluster(), "Square", "config/square.conf");
+    handler->SetHyCalClusterMethod("Island");
+    handler->ReadGEMConfiguration("config/gem_map.cfg");
+    fDetCoor = new PRadDetCoor();
+    fDetCoor->Configurate("config/DetCoor.conf");
+    fDetMatch = new PRadDetMatch();
+    fDetMatch->Configurate("config/DetCoor.conf");
+    fUseIsland = true;
+    fShowMatchedGEM = true;
+#endif
 }
 
 PRadEventViewer::~PRadEventViewer()
@@ -160,8 +178,11 @@ void PRadEventViewer::generateSpectrum()
 void PRadEventViewer::generateHyCalModules()
 {
     readModuleList();
+    handler->ReadTDCList("config/tdc_group_list.txt");
 
-    // other information for data handler
+    // end of channel/module reading
+    buildModuleMap();
+
     handler->ReadEPICSChannels("config/epics_channels.txt");
     handler->ReadPedestalFile("config/pedestal.dat");
     handler->ReadCalibrationFile("config/calibration.txt");
@@ -175,7 +196,7 @@ void PRadEventViewer::generateHyCalModules()
 
 void PRadEventViewer::generateScalerBoxes()
 {
-    HyCal->AddScalerBox(tr("Pb-Glass Sum")    , Qt::black, QRectF(-650, -640, 150, 40), QColor(255, 155, 155, 50)); 
+    HyCal->AddScalerBox(tr("Pb-Glass Sum")    , Qt::black, QRectF(-650, -640, 150, 40), QColor(255, 155, 155, 50));
     HyCal->AddScalerBox(tr("Total Sum")       , Qt::black, QRectF(-500, -640, 150, 40), QColor(155, 255, 155, 50));
     HyCal->AddScalerBox(tr("LMS Led")         , Qt::black, QRectF(-350, -640, 150, 40), QColor(155, 155, 255, 50));
     HyCal->AddScalerBox(tr("LMS Alpha")       , Qt::black, QRectF(-200, -640, 150, 40), QColor(255, 200, 100, 50));
@@ -274,7 +295,22 @@ void PRadEventViewer::createMainMenu()
     connect(findEventAction, SIGNAL(triggered()), this, SLOT(findEvent()));
 
     menuBar()->addMenu(toolMenu);
+#ifdef RECON_DISPLAY
+    //reconstruct display
+    QMenu *reconMenu = new QMenu(tr("&Recon Display"));
 
+    QAction *useSquare = reconMenu->addAction(tr("Use Square HyCal Recon"));
+    QAction *useIsland = reconMenu->addAction(tr("Use Island HyCal Recon"));
+    QAction *showAllGEMHit = reconMenu->addAction(tr("Show All GEM Hits"));
+    QAction *showMatchedGEMHit = reconMenu->addAction(tr("Show Matched GEM Hits"));
+
+    connect(useSquare, SIGNAL(triggered()), this, SLOT(useSquareRecon()));
+    connect(useIsland, SIGNAL(triggered()), this, SLOT(useIslandRecon()));
+    connect(showAllGEMHit, SIGNAL(triggered()), this, SLOT(showAllGEMHits()));
+    connect(showMatchedGEMHit, SIGNAL(triggered()), this, SLOT(showMatchedGEMHits()));
+
+    menuBar()->addMenu(reconMenu);
+#endif
 }
 
 // tool box
@@ -421,9 +457,6 @@ void PRadEventViewer::setupInfoWindow()
 // read module list from file
 void PRadEventViewer::readModuleList()
 {
-    // build TDC groups first
-    handler->ReadTDCList("config/tdc_group_list.txt");
-
     ConfigParser c_parser;
     if(!c_parser.OpenFile("config/module_list.txt")) {
         std::cerr << "ERROR: Missing configuration file \"config/module_list.txt\""
@@ -447,7 +480,7 @@ void PRadEventViewer::readModuleList()
                      >> crate >> slot >> channel // daq settings
                      >> tdcGroup // tdc group name
                      >> type >> size_x >> size_y >> x >> y; // geometry
- 
+
             ChannelAddress daqAddr(crate, slot, channel);
             PRadDAQUnit::Geometry geo(PRadDAQUnit::ChannelType(type), size_x, size_y, x, y);
 
@@ -466,18 +499,13 @@ void PRadEventViewer::readModuleList()
     }
 
     c_parser.CloseFile();
-
-    // make handler to build the module map
-    handler->BuildChannelMap();
-
-    // set TDC Group box for the TDC view
-    setTDCGroupBox();
 }
 
 // build module maps for speed access to module
 // send the tdc group geometry to scene for annotation
-void PRadEventViewer::setTDCGroupBox()
+void PRadEventViewer::buildModuleMap()
 {
+    handler->BuildChannelMap();
     // tdc maps
     std::unordered_map< std::string, PRadTDCGroup * > tdcList = handler->GetTDCGroupSet();
     for(auto &it : tdcList)
@@ -635,9 +663,14 @@ void PRadEventViewer::Refresh()
     }
 #endif
     case EnergyView:
+    {
         handler->ChooseEvent(currentEvent - 1); // fetch data from handler
         ModuleAction(&HyCalModule::ShowEnergy);
+#ifdef RECON_DISPLAY
+        reconCurrentEvent();
+#endif
         break;
+    }
     case CustomView:
         ModuleAction(&HyCalModule::ShowCustomValue);
         break;
@@ -914,7 +947,7 @@ void PRadEventViewer::UpdateHistCanvas()
     case EnergyTDCHist:
         if(selection != nullptr) {
             histCanvas->UpdateHist(1, selection->GetHist("PHYS"));
-            PRadTDCGroup *tdc = selection->GetTDCGroup();
+            PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
             if(tdc)
                 histCanvas->UpdateHist(2, tdc->GetHist());
             else
@@ -1317,6 +1350,121 @@ void PRadEventViewer::handleRootEvents()
 {
     gSystem->ProcessEvents();
 }
+
+void PRadEventViewer::useSquareRecon()
+{
+    fUseIsland = false;
+    handler->SetHyCalClusterMethod("Square");
+}
+
+void PRadEventViewer::useIslandRecon()
+{
+    fUseIsland = true;
+    handler->SetHyCalClusterMethod("Island");
+}
+
+void PRadEventViewer::reconCurrentEvent()
+{
+    //for reconstructed event display
+    HyCal->ClearHits();
+    if (handler->GetEventCount() == 0) return;
+
+    //reconstruct GEM cluster first
+    PRadGEMSystem *gem_srs = handler->GetSRS();
+    auto thisEvent = handler->GetEvent(currentEvent-1);
+
+    if(!thisEvent.is_physics_event()) return;
+    gem_srs->Reconstruct(thisEvent);
+
+    handler->HyCalReconstruct(currentEvent-1);
+
+
+    int nHyCalHits = 0;
+    HyCalHit* thisHit = handler->GetHyCalCluster(nHyCalHits);
+
+    fDetMatch->Clear();
+    fDetCoor->HyCalClustersToLab(nHyCalHits, thisHit);
+    fDetMatch->LoadHyCalClusters(nHyCalHits, thisHit);
+
+    for (int i=0; i<NGEM; i++){
+        int type = i*NGEM;
+        fDetCoor->GEMClustersToLab(type, gem_srs->GetDetectorPlane(Form("pRadGEM%dX", i+1))->GetPlaneCluster());
+        fDetCoor->GEMClustersToLab(type+1, gem_srs->GetDetectorPlane(Form("pRadGEM%dY", i+1))->GetPlaneCluster());
+        fDetMatch->LoadGEMClusters(type, gem_srs->GetDetectorPlane(Form("pRadGEM%dX", i+1))->GetPlaneCluster());
+        fDetMatch->LoadGEMClusters(type+1, gem_srs->GetDetectorPlane(Form("pRadGEM%dY", i+1))->GetPlaneCluster());
+    }
+
+    fDetMatch->DetectorMatch();
+    fDetMatch->ProjectGEMToHyCal();
+
+    std::map<unsigned short, vector< pair<int, QString> > > thisMap;
+
+    for (int i=0; i<nHyCalHits; i++){
+        QPointF h(thisHit[i].x_log - HYCAL_SHIFT, -1.*thisHit[i].y_log);
+        HyCal->AddHyCalHits(h);
+
+        if (!fUseIsland) continue;
+        for (int nhit=0; nhit<thisHit[i].nblocks; nhit++){
+            auto it = thisMap.find(thisHit[i].moduleID[nhit]);
+            if (it == thisMap.end()){
+               std::vector<pair<int, QString> > thisVector;
+               thisVector.push_back(pair<int, QString>(i, QString::number(thisHit[i].moduleE[nhit])));
+               thisMap[thisHit[i].moduleID[nhit]] = thisVector;
+            }else{
+               (it->second).push_back(pair<int, QString>(i, QString::number(thisHit[i].moduleE[nhit]) ));
+            }
+
+        }
+   }
+
+    auto it = thisMap.begin();
+    while (it != thisMap.end()){
+       QString thisString;
+       for (unsigned int i=0; i<(it->second).size(); i++){
+         thisString += QString::number((it->second).at(i).first);
+         thisString += ": ";
+         thisString += (it->second).at(i).second;
+         thisString += " \r\n" ;
+         double thisX;
+         double thisY;
+
+         thisX = handler->GetChannelPrimex((it->first))->GetX();
+         thisY = handler->GetChannelPrimex((it->first))->GetY();
+
+         QRectF m(thisX - HYCAL_SHIFT - 10, thisY - 10, 20, 20);
+         HyCal->AddEnergyValue(thisString, m);
+       }
+      it++;
+    }
+
+
+    std::map<int, vector<GEMDetCluster> > & gemClusters = fDetMatch->GetGEM2DClusters();
+
+
+    if (!fShowMatchedGEM){
+        auto itt = gemClusters.begin();
+
+        while(itt != gemClusters.end()){
+            for(unsigned int i=0; i<(itt->second).size(); i++){
+                QPointF h((itt->second).at(i).x - HYCAL_SHIFT, -1.*(itt->second).at(i).y);
+
+                HyCal->AddGEMHits((itt->first), h);
+            }
+            itt++;
+        }
+    }else{
+        for (int i=0; i<nHyCalHits; i++){
+            for (unsigned int j=0; j<gemClusters.size(); j++){
+                for (int k=0; k<thisHit[i].gemNClusters[j]; k++){
+                    int index = thisHit[i].gemClusterID[j][k];
+                    QPointF h(gemClusters[j][index].x - HYCAL_SHIFT, -1.*gemClusters[j][index].y);
+                    HyCal->AddGEMHits(j, h);
+                }
+           }
+       }
+   }
+}
+
 
 #ifdef USE_ONLINE_MODE
 //============================================================================//
