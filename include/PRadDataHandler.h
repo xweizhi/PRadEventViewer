@@ -11,7 +11,7 @@
 #include <thread>
 
 class PRadEvioParser;
-class PRadReconstructor;
+class PRadHyCalCluster;
 class PRadDSTParser;
 class PRadDAQUnit;
 class PRadTDCGroup;
@@ -110,6 +110,7 @@ public:
     void FeedData(TDCV767Data &tdcData);
     void FeedData(TDCV1190Data &tdcData);
     void FeedData(GEMRawData &gemData);
+    void FeedData(std::vector<GEMZeroSupData> &gemData);
     void FeedTaggerHits(TDCV1190Data &tdcData);
     void FillHistograms(EventData &data);
     void UpdateEPICS(const std::string &name, const float &value);
@@ -118,7 +119,7 @@ public:
     void UpdateLiveTimeScaler(EventData &event);
     void UpdateOnlineInfo(EventData &event);
     void UpdateRunInfo(const RunInfo &ri) {runInfo = ri;};
-    void AddHyCalClusterMethod(PRadReconstructor *r, const std::string &name, const std::string &c_path);
+    void AddHyCalClusterMethod(PRadHyCalCluster *r, const std::string &name, const std::string &c_path);
     void SetHyCalClusterMethod(const std::string &name);
     void ListHyCalClusterMethods();
 
@@ -179,7 +180,7 @@ private:
     PRadEvioParser *parser;
     PRadDSTParser *dst_parser;
     PRadGEMSystem *gem_srs;
-    PRadReconstructor *hycal_recon;
+    PRadHyCalCluster *hycal_recon;
     RunInfo runInfo;
     OnlineInfo onlineInfo;
     double totalE;
@@ -193,7 +194,7 @@ private:
     std::unordered_map< std::string, PRadDAQUnit* > map_name;
     std::unordered_map< std::string, PRadTDCGroup* > map_name_tdc;
     std::unordered_map< ChannelAddress, PRadTDCGroup* > map_daq_tdc;
-    std::unordered_map< std::string, PRadReconstructor *> hycal_recon_map;
+    std::unordered_map< std::string, PRadHyCalCluster *> hycal_recon_map;
 
     std::vector< PRadDAQUnit* > channelList;
     std::vector< PRadDAQUnit* > freeList; // channels that should be freed by handler

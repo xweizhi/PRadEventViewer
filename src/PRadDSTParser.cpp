@@ -387,7 +387,7 @@ void PRadDSTParser::WriteGEMInfo() throw(PRadException)
 
     for(auto apv : apv_list)
     {
-        GEMChannelAddress addr(apv->fec_id, apv->adc_ch);
+        GEMChannelAddress addr = apv->GetAddress();
         dst_out.write((char*) &addr, sizeof(addr));
 
         vector<PRadGEMAPV::Pedestal> ped_list = apv->GetPedestalList();

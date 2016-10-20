@@ -25,7 +25,6 @@ int main(int /*argc*/, char * /*argv*/ [])
 
     // read configuration files
     handler->ReadConfig("config.txt");
-    handler->SetHyCalClusterMethod("Square");
 
     PRadBenchMark timer;
 //    handler->ReadFromDST("test.dst");

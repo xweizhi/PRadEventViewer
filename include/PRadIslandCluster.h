@@ -2,7 +2,7 @@
 #define PRAD_ISLAND_CLUSTER_H
 
 #include <string>
-#include "PRadReconstructor.h"
+#include "PRadHyCalCluster.h"
 
 //this is a c++ wrapper around the primex island algorithm
 //used for HyCal cluster reconstruction
@@ -127,7 +127,7 @@ extern "C"
     #define FA(N) hbk_common_.fa[N-1]
 }
 
-class PRadIslandCluster : public PRadReconstructor
+class PRadIslandCluster : public PRadHyCalCluster
 {
 public:
     PRadIslandCluster(PRadDataHandler *h = nullptr);
@@ -152,6 +152,7 @@ protected:
     void FinalProcessing();
 
     float fMinHitE;
+    float fLogWeightThres;
 
     blockINFO_t fBlockINFO[T_BLOCKS];
     int fModuleStatus[MSECT][MCOL][MROW];

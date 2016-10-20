@@ -20,12 +20,16 @@ PRadTDCGroup::PRadTDCGroup(const std::string &name, const ChannelAddress &addr, 
 
 PRadTDCGroup::~PRadTDCGroup()
 {
+    for(auto &ch : groupList)
+        ch->SetTDCGroup(nullptr);
+
     delete tdcHist;
 }
 
 void PRadTDCGroup::AddChannel(PRadDAQUnit *ch)
 {
     groupList.push_back(ch);
+    ch->SetTDCGroup(this);
 }
 
 void PRadTDCGroup::CleanBuffer()

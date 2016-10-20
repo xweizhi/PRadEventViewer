@@ -9,21 +9,20 @@
 #include <string>
 #include "HyCalModule.h"
 #include "PRadEventViewer.h"
-#include "PRadHVSystem.h"
-
 #if QT_VERSION >= 0x500000
 #include <QtWidgets>
 #else
 #include <QtGui>
 #endif
 
+
 HyCalModule::HyCalModule(PRadEventViewer* const p,
-                         const QString &rid,
+                         const std::string &rid,
                          const ChannelAddress &daqAddr,
-                         const QString &tdc,
+                         const std::string &tdc,
                          const Geometry &geo)
-: PRadDAQUnit(rid.toStdString(), daqAddr, tdc.toStdString(), geo),
-  console(p), name(rid), m_hover(false), m_selected(false),
+: PRadDAQUnit(rid, daqAddr, tdc, geo),
+  console(p), name(QString::fromStdString(rid)), m_hover(false), m_selected(false),
   color(Qt::white), font(QFont("times",10)), custom_value(0.)
 {
     // initialize the item
@@ -65,7 +64,7 @@ QRectF HyCalModule::boundingRect() const
 }
 
 // how to paint this item
-void HyCalModule::paint(QPainter *painter, 
+void HyCalModule::paint(QPainter *painter,
                         const QStyleOptionGraphicsItem *option,
                         QWidget * /* widget */)
 {

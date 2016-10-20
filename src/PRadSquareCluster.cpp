@@ -14,7 +14,7 @@
 using namespace std;
 
 PRadSquareCluster::PRadSquareCluster(PRadDataHandler *h)
-: PRadReconstructor(h)
+: PRadHyCalCluster(h)
 {
 }
 
@@ -34,7 +34,8 @@ void PRadSquareCluster::Configure(const string &c_path)
     fMinClusterCenterE = GetConfigValue("MIN_CLUSTER_CENTER_E", "10.0").Double();
     fMinClusterE = GetConfigValue("MIN_CLUSTER_TOTAL_E", "50.0").Double();
 
-    fLogWeightThres = GetConfigValue("LOG_WEIGHT_TREHSHOLD", "4.6").Double();
+    // default value is 3.6, suggested by the study with GEM by Weizhi
+    fLogWeightThres = GetConfigValue("LOG_WEIGHT_THRESHOLD", "3.6").Double();
 }
 
 void PRadSquareCluster::Clear()
@@ -224,9 +225,9 @@ double PRadSquareCluster::Distance(const vector<double> &p1, const vector<double
     return sqrt(quadratic_sum);
 }
 
-vector<unsigned short> & PRadSquareCluster::GetTimeForCluster(PRadDAQUnit *module)
+vector<unsigned short> &PRadSquareCluster::GetTimeForCluster(PRadDAQUnit *module)
 {
-    PRadTDCGroup* thisGroup = fHandler->GetTDCGroup(module->GetTDCName());
+    PRadTDCGroup* thisGroup = module->GetTDCGroup();
     return thisGroup->GetTimeMeasure();
 }
 

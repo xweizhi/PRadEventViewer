@@ -1,9 +1,9 @@
 #ifndef PRAD_SQUARE_CLUSTER_H
 #define PRAD_SQUARE_CLUSTER_H
 
-#include "PRadReconstructor.h"
+#include "PRadHyCalCluster.h"
 
-class PRadSquareCluster : public PRadReconstructor
+class PRadSquareCluster : public PRadHyCalCluster
 {
 public:
     PRadSquareCluster(PRadDataHandler *h = nullptr);

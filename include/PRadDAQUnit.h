@@ -8,6 +8,8 @@
 #include "TH1.h"
 #include "datastruct.h"
 
+class PRadTDCGroup;
+
 class PRadDAQUnit
 {
 public:
@@ -62,8 +64,8 @@ public:
         {};
         CalibrationConstant(const double &calf,
                             const std::vector<double> &gain,
-                            const double &pp0,
-                            const double &pp1)
+                            const double &pp0 = 0.,
+                            const double &pp1 = 0.)
         : factor(calf), base_factor(calf), base_gain(gain), p0(pp0), p1(pp1)
         {};
 
@@ -94,14 +96,11 @@ public:
         };
     };
 
-
 public:
-    PRadDAQUnit(const std::string &name, const ChannelAddress &daqAddr, const std::string &tdc = "", const Geometry &geo = Geometry());
+    PRadDAQUnit(const std::string &name, const ChannelAddress &daqAddr, const std::string &tdc_name = "", const Geometry &geo = Geometry());
     virtual ~PRadDAQUnit();
-    ChannelAddress GetDAQInfo() {return address;};
-    Pedestal GetPedestal() {return pedestal;};
-    CalibrationConstant GetCalibrationConstant() {return cal_const;};
-    std::string GetTDCName() {return tdcGroup;};
+    void AssignID(const unsigned short &id) {channelID = id;};
+    void SetTDCGroup(PRadTDCGroup *t) {tdcGroup = t;};
     void UpdatePedestal(const Pedestal &ped);
     void UpdatePedestal(const double &m, const double &s);
     void UpdateCalibrationConstant(const CalibrationConstant &c) {cal_const = c;};
@@ -112,28 +111,33 @@ public:
     void ResetHistograms();
     void AddHist(const std::string &name);
     void MapHist(const std::string &name, PRadTriggerType type);
-    TH1 *GetHist(const std::string &name = "PHYS");
-    TH1 *GetHist(PRadTriggerType type) {return hist[(size_t)type];};
-    std::vector<TH1*> GetHistList();
-    int GetOccupancy() {return occupancy;};
-    const std::string &GetName() {return channelName;};
 
-    void AssignID(const unsigned short &id) {channelID = id;};
-    unsigned short GetID() {return channelID;};
-    const double &GetCalibrationFactor() {return cal_const.factor;};
-    const unsigned short &GetADC() {return adc_value;};
-    double GetEnergy();
-    double GetEnergy(const unsigned short &adcVal);
-    double GetReferenceGain(const size_t &ref) {return cal_const.GetReferenceGain(ref);};
-    Geometry GetGeometry() {return geometry;};
-    double GetX() {return geometry.x;};
-    double GetY() {return geometry.y;};
-    const ChannelType &GetType() {return geometry.type;};
-    bool IsHyCalModule() {return (geometry.type == LeadGlass) || (geometry.type == LeadTungstate);};
-    int GetPrimexID() { return primexID; }
-    virtual double Calibration(const unsigned short &adcVal); // will be implemented by the derivative class
+    bool IsHyCalModule() const {return (geometry.type == LeadGlass) || (geometry.type == LeadTungstate);};
+    virtual double Calibration(const unsigned short &adcVal) const; // will be implemented by the derivative class
     virtual unsigned short Sparsification(const unsigned short &adcVal);
     static std::string NameFromPrimExID(int pid);
+
+    unsigned short GetID() const {return channelID;};
+    int GetPrimexID() const { return primexID; }
+    int GetOccupancy() const {return occupancy;};
+    double GetEnergy() const ;
+    double GetEnergy(const unsigned short &adcVal) const;
+    double GetX() const {return geometry.x;};
+    double GetY() const {return geometry.y;};
+    double GetCalibrationFactor() const {return cal_const.factor;};
+    double GetReferenceGain(const size_t &ref) {return cal_const.GetReferenceGain(ref);};
+    unsigned short GetADC() const {return adc_value;};
+    ChannelAddress GetDAQInfo() const {return address;};
+    Pedestal GetPedestal() const {return pedestal;};
+    CalibrationConstant GetCalibrationConstant() const {return cal_const;};
+    ChannelType GetType() const {return geometry.type;};
+    Geometry GetGeometry() const {return geometry;};
+    TH1 *GetHist(const std::string &name = "PHYS") const;
+    TH1 *GetHist(PRadTriggerType type) const {return hist[(size_t)type];};
+    std::vector<TH1*> GetHistList() const;
+    std::string GetName() const {return channelName;};
+    std::string GetTDCName() const {return tdcName;};
+    PRadTDCGroup *GetTDCGroup() const {return tdcGroup;};
 
     template<typename T>
     void FillHist(const T& t, const size_t &pos)
@@ -200,7 +204,8 @@ protected:
     Geometry geometry;
     ChannelAddress address;
     Pedestal pedestal;
-    std::string tdcGroup;
+    std::string tdcName;
+    PRadTDCGroup *tdcGroup;
     int occupancy;
     unsigned short sparsify;
     unsigned short channelID;

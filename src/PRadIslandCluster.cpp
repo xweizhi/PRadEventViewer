@@ -10,7 +10,7 @@
 #include "PRadIslandCluster.h"
 
 PRadIslandCluster::PRadIslandCluster(PRadDataHandler *h)
-: PRadReconstructor(h)
+: PRadHyCalCluster(h)
 {
 }
 //________________________________________________________________
@@ -21,6 +21,9 @@ void PRadIslandCluster::Configure(const std::string &c_path)
     std::string path;
 
     fMinHitE = GetConfigValue("MIN_BLOCK_ENERGY", "0.005").Float();
+
+    // default value is 3.6, suggested by the study with GEM by Weizhi
+    fLogWeightThres = GetConfigValue("LOG_WEIGHT_THRESHOLD", "3.6").Float();
 
     path = GetConfigValue("BLOCK_INFO_FILE", "config/blockinfo.dat");
     LoadBlockInfo(path);
@@ -309,33 +312,32 @@ void PRadIslandCluster::CallIsland(int isect)
             float xcell = fBlockINFO[id-1].x;
             float ycell = fBlockINFO[id-1].y;
 
-            if(type%10 == 1 || type%10 == 2)
+            if((type%10 == 1) || (type%10 == 2))
             {
-	        xcell += xc;
-	        ycell += yc;
+                xcell += xc;
+                ycell += yc;
             }
 
             if(ecell > ecellmax)
             {
-	        ecellmax = ecell;
-	        idmax = id;
+                ecellmax = ecell;
+                idmax = id;
             }
 
             if(ecell > 0.)
             {
-	        W  = 4.2 + log(ecell/e);
-	        if(W > 0)
+                W  = fLogWeightThres + log(ecell/e);
+                if(W > 0)
                 {
-	            sW += W;
-	            xpos += xcell*W;
-	            ypos += ycell*W;
-	        }
+                    sW += W;
+                    xpos += xcell*W;
+                    ypos += ycell*W;
+                }
             }
 
             fClusterStorage[n].E[j]  = ecell;
             fClusterStorage[n].x[j]  = xcell;
             fClusterStorage[n].y[j]  = ycell;
-
         }
 
         fHyCalCluster[n].sigma_E    = ecellmax;  // use it temproraly
@@ -777,7 +779,7 @@ void PRadIslandCluster::FinalProcessing()
         fHyCalCluster[i].y_log *= 10.; // cm to mm
 
         PRadDAQUnit *module = fHandler->GetChannel(PRadDAQUnit::NameFromPrimExID(fHyCalCluster[i].cid));
-        PRadTDCGroup *tdc = fHandler->GetTDCGroup(module->GetTDCName());
+        PRadTDCGroup *tdc = module->GetTDCGroup();
         fHyCalCluster[i].set_time(tdc->GetTimeMeasure());
     }
 }

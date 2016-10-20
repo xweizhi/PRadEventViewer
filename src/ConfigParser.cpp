@@ -236,7 +236,6 @@ const char *ConfigValue::c_str()
     return _value.c_str();
 }
 
-
 // Config Parser
 ConfigParser::ConfigParser(const string &s,
                            const string &w,
@@ -384,7 +383,6 @@ string ConfigParser::comment_out(const string &str, size_t index)
         string str_co = comment_out(str, comment_marks.at(index));
         return comment_out(str_co, ++index);
     }
-        
 }
 
 string ConfigParser::comment_out(const string &str, const string &c)
@@ -508,3 +506,100 @@ void ConfigParser::find_integer_helper(const string &str, vector<int> &result)
    result.push_back(negative*num);
    find_integer_helper(str2.substr(i), result);
 }
+
+ConfigParser &operator >> (ConfigParser &c, std::string &v)
+{
+    v = c.TakeFirst().String();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, char &v)
+{
+    v = c.TakeFirst().Char();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, unsigned char &v)
+{
+    v = c.TakeFirst().UChar();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, short &v)
+{
+    v = c.TakeFirst().Short();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, unsigned short &v)
+{
+    v = c.TakeFirst().UShort();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, int &v)
+{
+    v = c.TakeFirst().Int();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, unsigned int &v)
+{
+    v = c.TakeFirst().UInt();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, long &v)
+{
+    v = c.TakeFirst().Long();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, unsigned long &v)
+{
+    v = c.TakeFirst().ULong();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, long long &v)
+{
+    v = c.TakeFirst().LongLong();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, unsigned long long &v)
+{
+    v = c.TakeFirst().ULongLong();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, float &v)
+{
+    v = c.TakeFirst().Float();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, double &v)
+{
+    v = c.TakeFirst().Double();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, long double &v)
+{
+    v = c.TakeFirst().LongDouble();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, const char *&v)
+{
+    v = c.TakeFirst().c_str();
+    return c;
+}
+
+ConfigParser &operator >> (ConfigParser &c, ConfigValue &v)
+{
+    v = c.TakeFirst();
+    return c;
+}
+

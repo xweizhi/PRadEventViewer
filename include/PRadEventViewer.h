@@ -11,12 +11,16 @@ class HyCalView;
 class HyCalModule;
 class Spectrum;
 class SpectrumSettingPanel;
-class PRadETChannel;
 class PRadHistCanvas;
 class PRadDataHandler;
-class ETSettingPanel;
 class PRadLogBox;
+#ifdef USE_ONLINE_MODE
+class PRadETChannel;
+class ETSettingPanel;
+#endif
+#ifdef USE_CAEN_HV
 class PRadHVSystem;
+#endif
 
 //class GEM;
 class TCanvas;
@@ -55,8 +59,10 @@ enum ViewMode {
     OccupancyView,
     PedestalView,
     SigmaView,
+#ifdef USE_CAEN_HV
     HighVoltageView,
     VoltageSetView,
+#endif
     CustomView,
 };
 
@@ -81,13 +87,9 @@ public:
     QColor GetColor(const double &val);
     void UpdateStatusBar(ViewerStatus mode);
     void UpdateStatusInfo();
-    void UpdateOnlineInfo();
     void UpdateHistCanvas();
     void SelectModule(HyCalModule* module);
     PRadDataHandler *GetHandler() {return handler;};
-
-signals:
-    void HVSystemInitialized();
 
 public slots:
     void Refresh();
@@ -99,6 +101,7 @@ private slots:
     void openCalibrationFile();
     void openGainFactorFile();
     void openCustomMap();
+    void handleRootEvents();
     void saveHistToFile();
     void savePedestalFile();
     void findPeak();
@@ -112,18 +115,6 @@ private slots:
     void changeSpectrumSetting();
     void changeCurrentEvent(int evt);
     void eraseBufferAction();
-    void initOnlineMode();
-    bool connectETClient();
-    void startOnlineMode();
-    void stopOnlineMode();
-    void handleOnlineTimer();
-    void connectHVSystem();
-    void initHVSystem();
-    void disconnectHVSystem();
-    void startHVMonitor();
-    void handleRootEvents();
-    void saveHVSetting();
-    void restoreHVSetting();
     void findEvent();
     void editCustomValueLabel(QTreeWidgetItem* item, int column);
 
@@ -133,8 +124,7 @@ private:
     void generateSpectrum();
     void generateHyCalModules();
     void generateScalerBoxes();
-    void buildModuleMap();
-    void setupOnlineMode();
+    void setTDCGroupBox();
     void readModuleList();
     void readTDCList();
     void readSpecialChannels();
@@ -170,14 +160,11 @@ private:
     HyCalModule *selection;
     Spectrum *energySpectrum;
     //GEM *myGEM;
-    PRadETChannel *etChannel;
-    PRadHVSystem *hvSystem;
     HyCalScene *HyCal;
     HyCalView *view;
     PRadHistCanvas *histCanvas;
 
     QString fileName;
-    QTimer *onlineTimer;
 
     QSplitter *statusWindow;
     QSplitter *rightPanel;
@@ -198,20 +185,52 @@ private:
     QLabel *rStatusLabel;
 
     QAction *openDataAction;
-    QAction *onlineEnAction;
-    QAction *onlineDisAction;
-    QAction *hvEnableAction;
-    QAction *hvDisableAction;
-    QAction *hvSaveAction;
-    QAction *hvRestoreAction;
 
     QFileDialog *fileDialog;
-    ETSettingPanel *etSetting;
     SpectrumSettingPanel *specSetting;
     PRadLogBox *logBox;
 
     QFuture<bool> future;
     QFutureWatcher<void> watcher;
+
+#ifdef USE_ONLINE_MODE
+public:
+    void UpdateOnlineInfo();
+private slots:
+    void initOnlineMode();
+    bool connectETClient();
+    void startOnlineMode();
+    void stopOnlineMode();
+    void handleOnlineTimer();
+private:
+    void setupOnlineMode();
+    QMenu *setupOnlineMenu();
+    PRadETChannel *etChannel;
+    QTimer *onlineTimer;
+    ETSettingPanel *etSetting;
+    QAction *onlineEnAction;
+    QAction *onlineDisAction;
+#endif
+
+#ifdef USE_CAEN_HV
+signals:
+    void HVSystemInitialized();
+private slots:
+    void connectHVSystem();
+    void initHVSystem();
+    void disconnectHVSystem();
+    void startHVMonitor();
+    void saveHVSetting();
+    void restoreHVSetting();
+private:
+    PRadHVSystem *hvSystem;
+    QMenu *setupHVMenu();
+    void setupHVSystem();
+    QAction *hvEnableAction;
+    QAction *hvDisableAction;
+    QAction *hvSaveAction;
+    QAction *hvRestoreAction;
+#endif
 };
 
 #endif

@@ -14,9 +14,6 @@
 #include "TF1.h"
 #include "TSpectrum.h"
 
-#include "evioUtil.hxx"
-#include "evioFileChannel.hxx"
-
 #include <utility>
 #include <fstream>
 #include <iostream>
@@ -37,9 +34,6 @@
 #include "HtmlDelegate.h"
 #include "ConfigParser.h"
 
-#include "PRadETChannel.h"
-#include "PRadHVSystem.h"
-#include "ETSettingPanel.h"
 #include "PRadEvioParser.h"
 #include "PRadHistCanvas.h"
 #include "PRadDataHandler.h"
@@ -48,6 +42,20 @@
 #include "PRadLogBox.h"
 #include "PRadBenchMark.h"
 
+#ifdef USE_ONLINE_MODE
+#include "PRadETChannel.h"
+#include "ETSettingPanel.h"
+#endif
+
+#ifdef USE_CAEN_HV
+#include "PRadHVSystem.h"
+#endif
+
+#ifdef USE_EVIO_LIB
+#include "evioUtil.hxx"
+#include "evioFileChannel.hxx"
+#endif
+
 #define cap_value(a, min, max) \
         (((a) >= (max)) ? (max) : ((a) <= (min)) ? (min) : (a))
 
@@ -55,7 +63,7 @@
 // constructor                                                                //
 //============================================================================//
 PRadEventViewer::PRadEventViewer()
-: handler(new PRadDataHandler()), currentEvent(0), etChannel(nullptr), hvSystem(nullptr)
+: handler(new PRadDataHandler()), currentEvent(0)
 {
     initView();
     setupUI();
@@ -63,8 +71,12 @@ PRadEventViewer::PRadEventViewer()
 
 PRadEventViewer::~PRadEventViewer()
 {
-    delete hvSystem;
+#ifdef USE_ONLINE_MODE
     delete etChannel;
+#endif
+#ifdef USE_CAEN_HV
+    delete hvSystem;
+#endif
     delete handler;
 }
 
@@ -78,8 +90,12 @@ void PRadEventViewer::initView()
     generateSpectrum();
     generateHyCalModules();
 
+#ifdef USE_ONLINE_MODE
     setupOnlineMode();
-
+#endif
+#ifdef USE_CAEN_HV
+    setupHVSystem();
+#endif
     view = new HyCalView;
     view->setScene(HyCal);
 
@@ -144,11 +160,8 @@ void PRadEventViewer::generateSpectrum()
 void PRadEventViewer::generateHyCalModules()
 {
     readModuleList();
-    handler->ReadTDCList("config/tdc_group_list.txt");
 
-    // end of channel/module reading
-    buildModuleMap();
-
+    // other information for data handler
     handler->ReadEPICSChannels("config/epics_channels.txt");
     handler->ReadPedestalFile("config/pedestal.dat");
     handler->ReadCalibrationFile("config/calibration.txt");
@@ -204,32 +217,13 @@ void PRadEventViewer::createMainMenu()
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     menuBar()->addMenu(fileMenu);
 
-    // online menu, toggle on/off online mode
-    QMenu *onlineMenu = new QMenu(tr("Online &Mode"));
+#ifdef USE_ONLINE_MODE
+    menuBar()->addMenu(setupOnlineMenu());
+#endif
 
-    onlineEnAction = onlineMenu->addAction(tr("Start Online Mode"));
-    onlineDisAction = onlineMenu->addAction(tr("Stop Online Mode"));
-    onlineDisAction->setEnabled(false);
-
-    connect(onlineEnAction, SIGNAL(triggered()), this, SLOT(initOnlineMode()));
-    connect(onlineDisAction, SIGNAL(triggered()), this, SLOT(stopOnlineMode()));
-    menuBar()->addMenu(onlineMenu);
-
-    // high voltage menu
-    QMenu *hvMenu = new QMenu(tr("High &Voltage"));
-    hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
-    hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
-    hvDisableAction->setEnabled(false);
-    hvSaveAction = hvMenu->addAction(tr("Save HV Setting"));
-    hvSaveAction->setEnabled(false);
-    hvRestoreAction = hvMenu->addAction(tr("Restore HV Setting"));
-    hvRestoreAction->setEnabled(false);
-
-    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
-    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVSystem()));
-    connect(hvSaveAction, SIGNAL(triggered()), this, SLOT(saveHVSetting()));
-    connect(hvRestoreAction, SIGNAL(triggered()), this, SLOT(restoreHVSetting()));
-    menuBar()->addMenu(hvMenu);
+#ifdef USE_CAEN_HV
+    menuBar()->addMenu(setupHVMenu());
+#endif
 
     // calibration related
     QMenu *caliMenu = new QMenu(tr("&Calibration"));
@@ -256,13 +250,13 @@ void PRadEventViewer::createMainMenu()
 
     QAction *eraseAction = toolMenu->addAction(tr("Erase Buffer"));
     eraseAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_X));
-   
+
     QAction *findPeakAction = toolMenu->addAction(tr("Find Peak"));
     findPeakAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_F));
 
     QAction *fitHistAction = toolMenu->addAction(tr("Fit Histogram"));
     fitHistAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_H));
- 
+
     QAction *snapShotAction = toolMenu->addAction(tr("Take SnapShot"));
     snapShotAction->setShortcut(QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_S));
 
@@ -427,6 +421,9 @@ void PRadEventViewer::setupInfoWindow()
 // read module list from file
 void PRadEventViewer::readModuleList()
 {
+    // build TDC groups first
+    handler->ReadTDCList("config/tdc_group_list.txt");
+
     ConfigParser c_parser;
     if(!c_parser.OpenFile("config/module_list.txt")) {
         std::cerr << "ERROR: Missing configuration file \"config/module_list.txt\""
@@ -435,11 +432,10 @@ void PRadEventViewer::readModuleList()
         exit(1);
     }
 
-    QString moduleName;
-    ChannelAddress daqAddr;
-    ChannelAddress hvAddr;
-    QString tdcGroup;
-    PRadDAQUnit::Geometry geometry;
+    std::string moduleName;
+    std::string tdcGroup;
+    unsigned int crate, slot, channel, type;
+    double size_x, size_y, x, y;
 
     // some info that is not read from list
     // initialize first
@@ -447,24 +443,20 @@ void PRadEventViewer::readModuleList()
     while (c_parser.ParseLine())
     {
         if(c_parser.NbofElements() == 13) {
-            moduleName = QString::fromStdString(c_parser.TakeFirst());
-            daqAddr.crate = c_parser.TakeFirst().ULong();
-            daqAddr.slot = c_parser.TakeFirst().ULong();
-            daqAddr.channel = c_parser.TakeFirst().ULong();
-            tdcGroup = QString::fromStdString(c_parser.TakeFirst());
+            c_parser >> moduleName // module name
+                     >> crate >> slot >> channel // daq settings
+                     >> tdcGroup // tdc group name
+                     >> type >> size_x >> size_y >> x >> y; // geometry
+ 
+            ChannelAddress daqAddr(crate, slot, channel);
+            PRadDAQUnit::Geometry geo(PRadDAQUnit::ChannelType(type), size_x, size_y, x, y);
 
-            geometry.type = PRadDAQUnit::ChannelType(c_parser.TakeFirst().Int());
-            geometry.size_x = c_parser.TakeFirst().Double();
-            geometry.size_y = c_parser.TakeFirst().Double();
-            geometry.x = c_parser.TakeFirst().Double();
-            geometry.y = c_parser.TakeFirst().Double();
+            HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, geo);
 
-            hvAddr.crate = c_parser.TakeFirst().ULong();
-            hvAddr.slot = c_parser.TakeFirst().ULong();
-            hvAddr.channel = c_parser.TakeFirst().ULong();
-
-            HyCalModule* newModule = new HyCalModule(this, moduleName, daqAddr, tdcGroup, geometry);
+            c_parser >> crate >> slot >> channel; // hv settings
+            ChannelAddress hvAddr(crate, slot, channel);
             newModule->UpdateHVSetup(hvAddr);
+
             HyCal->addModule(newModule);
             handler->RegisterChannel(newModule);
         } else {
@@ -474,13 +466,18 @@ void PRadEventViewer::readModuleList()
     }
 
     c_parser.CloseFile();
+
+    // make handler to build the module map
+    handler->BuildChannelMap();
+
+    // set TDC Group box for the TDC view
+    setTDCGroupBox();
 }
 
 // build module maps for speed access to module
 // send the tdc group geometry to scene for annotation
-void PRadEventViewer::buildModuleMap()
+void PRadEventViewer::setTDCGroupBox()
 {
-    handler->BuildChannelMap();
     // tdc maps
     std::unordered_map< std::string, PRadTDCGroup * > tdcList = handler->GetTDCGroupSet();
     for(auto &it : tdcList)
@@ -610,6 +607,7 @@ void PRadEventViewer::Refresh()
     case OccupancyView:
         ModuleAction(&HyCalModule::ShowOccupancy);
         break;
+#ifdef USE_CAEN_HV
     case HighVoltageView:
     {
         auto moduleList = HyCal->GetModuleList();
@@ -618,7 +616,7 @@ void PRadEventViewer::Refresh()
             ChannelAddress hv_addr = module->GetHVInfo();
             PRadHVSystem::Voltage volt = hvSystem->GetVoltage(hv_addr.crate, hv_addr.slot, hv_addr.channel);
             if(!volt.ON)
-                module->SetColor(Qt::white);
+                module->SetColor(QColor(255, 255, 255));
             else
                 module->SetColor(energySpectrum->GetColor(volt.Vmon));
         }
@@ -635,6 +633,7 @@ void PRadEventViewer::Refresh()
         }
         break;
     }
+#endif
     case EnergyView:
         handler->ChooseEvent(currentEvent - 1); // fetch data from handler
         ModuleAction(&HyCalModule::ShowEnergy);
@@ -695,11 +694,11 @@ void PRadEventViewer::openDataFile()
         UpdateStatusBar(DATA_FILE);
     }
 
-    cout << "Parsed " << handler->GetEventCount() << " events and "
-         << handler->GetEPICSEventCount() << " EPICS events from "
-         << fileList.size() << " files." << endl
-         << " Used " << timer.GetElapsedTime() << " ms."
-         << endl;
+    std::cout << "Parsed " << handler->GetEventCount() << " events and "
+              << handler->GetEPICSEventCount() << " EPICS events from "
+              << fileList.size() << " files." << std::endl
+              << " Used " << timer.GetElapsedTime() << " ms."
+              << std::endl;
 
     updateEventRange();
 
@@ -744,10 +743,10 @@ void PRadEventViewer::initializeFromFile()
 
     updateEventRange();
 
-    cout << "Initialized data handler from file "
-         << "\"" << file.toStdString() << "\"." << endl
-         << " Used " << timer.GetElapsedTime() << " ms."
-         << endl;
+    std::cout << "Initialized data handler from file "
+              << "\"" << file.toStdString() << "\"." << std::endl
+              << " Used " << timer.GetElapsedTime() << " ms."
+              << std::endl;
 }
 
 // open calibration factor file
@@ -888,22 +887,6 @@ void PRadEventViewer::UpdateStatusBar(ViewerStatus mode)
     lStatusLabel->setText(statusText);
 }
 
-void PRadEventViewer::UpdateOnlineInfo()
-{
-    QStringList onlineText;
-    auto info = handler->GetOnlineInfo();
-
-    for(auto &trg : info.trigger_info)
-    {
-        onlineText << QString::number(trg.freq) + tr(" Hz");
-    }
-
-    onlineText << QString::number(info.live_time*100.) + tr("%");
-    onlineText << QString::number(info.beam_current) + tr(" nA");
-
-    HyCal->UpdateScalerBox(onlineText);
-}
-
 void PRadEventViewer::changeCurrentEvent(int evt)
 {
     currentEvent = evt;
@@ -931,7 +914,7 @@ void PRadEventViewer::UpdateHistCanvas()
     case EnergyTDCHist:
         if(selection != nullptr) {
             histCanvas->UpdateHist(1, selection->GetHist("PHYS"));
-            PRadTDCGroup *tdc = handler->GetTDCGroup(selection->GetTDCName());
+            PRadTDCGroup *tdc = selection->GetTDCGroup();
             if(tdc)
                 histCanvas->UpdateHist(2, tdc->GetHist());
             else
@@ -1006,10 +989,15 @@ void PRadEventViewer::UpdateStatusInfo()
               << QString::number(selection->GetOccupancy());              // Occupancy
 
     PRadDAQUnit::Pedestal ped = selection->GetPedestal();
+
+#ifdef USE_CAEN_HV
     PRadHVSystem::Voltage volt = hvSystem->GetVoltage(hvInfo.crate, hvInfo.slot, hvInfo.channel);
     QString temp = QString::number(volt.Vmon) + tr(" V ")
                    + ((volt.ON)? tr("/ ") : tr("(OFF) / "))
                    + QString::number(volt.Vset) + tr(" V");
+#else
+    QString temp = "N/A";
+#endif
 
     // second value column
     valueList << QString::number(ped.mean)                                // pedestal mean
@@ -1037,7 +1025,7 @@ void PRadEventViewer::UpdateStatusInfo()
 void PRadEventViewer::readEventFromFile(const QString &filepath)
 {
     std::cout << "Reading data from file " << filepath.toStdString() << std::endl;
-
+#ifdef USE_EVIO_LIB
     try {
         evio::evioFileChannel *chan = new evio::evioFileChannel(filepath.toStdString().c_str(),"r");
         chan->open();
@@ -1055,6 +1043,9 @@ void PRadEventViewer::readEventFromFile(const QString &filepath)
     } catch (...) {
         std::cerr << "?unknown exception" << endl;
     }
+#else
+    handler->ReadFromEvio(filepath.toStdString());
+#endif
 }
 
 void PRadEventViewer::readCustomValue(const QString &filepath)
@@ -1079,13 +1070,14 @@ void PRadEventViewer::readCustomValue(const QString &filepath)
             continue;
 
         if(c_parser.NbofElements() == 2) {
-            std::string name = c_parser.TakeFirst();
-            double value = c_parser.TakeFirst().Double();
+            std::string name;
+            double value;
+            c_parser >> name >> value;
             HyCalModule *module = dynamic_cast<HyCalModule*>(handler->GetChannel(name));
             if(module != nullptr) {
                 module->UpdateCustomValue(value);
-                min_value = min(value, min_value);
-                max_value = max(value, max_value);
+                min_value = std::min(value, min_value);
+                max_value = std::max(value, max_value);
             }
         } else {
             std::cout << "Unrecognized custom map format, skipped one line." << std::endl;
@@ -1151,7 +1143,7 @@ void PRadEventViewer::saveHistToFile()
         return;
 
     handler->SaveHistograms(rootFile.toStdString());
-    
+
     rStatusLabel->setText(tr("All histograms are saved to ") + rootFile);
 }
 
@@ -1165,7 +1157,7 @@ void PRadEventViewer::savePedestalFile()
     if(pedFile.isEmpty())
         return;
 
-    ofstream pedestalmap(pedFile.toStdString());
+    std::ofstream pedestalmap(pedFile.toStdString());
 
     for(auto &channel : handler->GetChannelList())
     {
@@ -1326,51 +1318,35 @@ void PRadEventViewer::handleRootEvents()
     gSystem->ProcessEvents();
 }
 
+#ifdef USE_ONLINE_MODE
 //============================================================================//
 // Online mode functions                                                      //
 //============================================================================//
+
 void PRadEventViewer::setupOnlineMode()
 {
     etSetting = new ETSettingPanel(this);
     onlineTimer = new QTimer(this);
     connect(onlineTimer, SIGNAL(timeout()), this, SLOT(handleOnlineTimer()));
-    connect(this, SIGNAL(HVSystemInitialized()), this, SLOT(startHVMonitor()));
     // future watcher for online mode
     connect(&watcher, SIGNAL(finished()), this, SLOT(startOnlineMode()));
 
     etChannel = new PRadETChannel();
-    hvSystem = new PRadHVSystem(this);
+}
 
-    QFile hvCrateList("config/hv_crate_list.txt");
+QMenu *PRadEventViewer::setupOnlineMenu()
+{
+    // online menu, toggle on/off online mode
+    QMenu *onlineMenu = new QMenu(tr("Online &Mode"));
 
-    if(!hvCrateList.open(QFile::ReadOnly | QFile::Text)) {
-        std::cout << "WARNING: Missing HV crate list"
-                  << "\" config/hv_crate_list.txt \", "
-                  << "no HV crate added!"
-                  << std::endl;
-        return;
-    }
+    onlineEnAction = onlineMenu->addAction(tr("Start Online Mode"));
+    onlineDisAction = onlineMenu->addAction(tr("Stop Online Mode"));
+    onlineDisAction->setEnabled(false);
 
-    std::string name, ip;
-    int id;
+    connect(onlineEnAction, SIGNAL(triggered()), this, SLOT(initOnlineMode()));
+    connect(onlineDisAction, SIGNAL(triggered()), this, SLOT(stopOnlineMode()));
 
-    QTextStream in(&hvCrateList);
-
-    while(!in.atEnd())
-    {
-        QString line = in.readLine().simplified();
-        if(line.at(0) == '#')
-            continue;
-        QStringList fields = line.split(QRegExp("\\s+"));
-        if(fields.size() == 3) {
-            name = fields.takeFirst().toStdString();
-            ip = fields.takeFirst().toStdString();
-            id = fields.takeFirst().toInt();
-            hvSystem->AddCrate(name, ip, id);
-        }
-    }
-
-    hvCrateList.close();
+    return onlineMenu;
 }
 
 void PRadEventViewer::initOnlineMode()
@@ -1495,10 +1471,85 @@ void PRadEventViewer::onlineUpdate(const size_t &max_events)
     }
 }
 
+void PRadEventViewer::UpdateOnlineInfo()
+{
+    QStringList onlineText;
+    auto info = handler->GetOnlineInfo();
 
+    for(auto &trg : info.trigger_info)
+    {
+        onlineText << QString::number(trg.freq) + tr(" Hz");
+    }
+
+    onlineText << QString::number(info.live_time*100.) + tr("%");
+    onlineText << QString::number(info.beam_current) + tr(" nA");
+
+    HyCal->UpdateScalerBox(onlineText);
+}
+#endif
+
+#ifdef USE_CAEN_HV
 //============================================================================//
 // high voltage control functions                                             //
 //============================================================================//
+
+void PRadEventViewer::setupHVSystem()
+{
+    connect(this, SIGNAL(HVSystemInitialized()), this, SLOT(startHVMonitor()));
+
+    hvSystem = new PRadHVSystem(this);
+
+    QFile hvCrateList("config/hv_crate_list.txt");
+
+    if(!hvCrateList.open(QFile::ReadOnly | QFile::Text)) {
+        std::cout << "WARNING: Missing HV crate list"
+                  << "\" config/hv_crate_list.txt \", "
+                  << "no HV crate added!"
+                  << std::endl;
+        return;
+    }
+
+    std::string name, ip;
+    int id;
+
+    QTextStream in(&hvCrateList);
+
+    while(!in.atEnd())
+    {
+        QString line = in.readLine().simplified();
+        if(line.at(0) == '#')
+            continue;
+        QStringList fields = line.split(QRegExp("\\s+"));
+        if(fields.size() == 3) {
+            name = fields.takeFirst().toStdString();
+            ip = fields.takeFirst().toStdString();
+            id = fields.takeFirst().toInt();
+            hvSystem->AddCrate(name, ip, id);
+        }
+    }
+
+    hvCrateList.close();
+}
+
+QMenu *PRadEventViewer::setupHVMenu()
+{
+    // high voltage menu
+    QMenu *hvMenu = new QMenu(tr("High &Voltage"));
+    hvEnableAction = hvMenu->addAction(tr("Connect to HV system"));
+    hvDisableAction = hvMenu->addAction(tr("Disconnect to HV system"));
+    hvDisableAction->setEnabled(false);
+    hvSaveAction = hvMenu->addAction(tr("Save HV Setting"));
+    hvSaveAction->setEnabled(false);
+    hvRestoreAction = hvMenu->addAction(tr("Restore HV Setting"));
+    hvRestoreAction->setEnabled(false);
+
+    connect(hvEnableAction, SIGNAL(triggered()), this, SLOT(connectHVSystem()));
+    connect(hvDisableAction, SIGNAL(triggered()), this, SLOT(disconnectHVSystem()));
+    connect(hvSaveAction, SIGNAL(triggered()), this, SLOT(saveHVSetting()));
+    connect(hvRestoreAction, SIGNAL(triggered()), this, SLOT(restoreHVSetting()));
+
+    return hvMenu;
+}
 
 void PRadEventViewer::connectHVSystem()
 {
@@ -1564,3 +1615,4 @@ void PRadEventViewer::restoreHVSetting()
     hvSystem->RestoreSetting(hvFile.toStdString());
     hvSystem->StartMonitor();
 }
+#endif

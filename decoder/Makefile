@@ -8,15 +8,17 @@
 
 MAKEFILE      = Makefile
 PRAD_PATH     = ..
-####### Compiler, tools and options
+# enable multi-threading in the code
+DEFINES       = -DMULTI_THREAD
 
+####### Compiler, tools and options
 CC            = gcc
 CXX           = g++
 FORTRAN       = gfortran
-FFLAGS	      = -fPIC
-CXXFLAGS_LIBS = -shared -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -Wno-unused-result -D_REENTRANT -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -std=c++11 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -O2 -std=gnu++0x -Wall -W -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I. -I$(PRAD_PATH)/include -I$(PRAD_PATH)/thirdparty/include -I$(ROOTSYS)/include
+FFLAGS        = -fPIC
+CXXFLAGS_LIBS = -shared -std=c++11 -O2 -g -pipe -Wall -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -fPIC $(DEFINES)
+CXXFLAGS      = -std=c++11 -O2 -g -pipe -Wall -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -fPIC $(DEFINES)
+INCPATH       = -I. -I$(PRAD_PATH)/include -I$(ROOTSYS)/include
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
 MKDIR         = mkdir -p
@@ -59,27 +61,25 @@ LIB_OBJECTS   = $(LIB_OBJ_DIR)/PRadDAQUnit.o \
                 $(LIB_OBJ_DIR)/PRadException.o \
                 $(LIB_OBJ_DIR)/PRadBenchMark.o \
                 $(LIB_OBJ_DIR)/ConfigParser.o \
-                $(LIB_OBJ_DIR)/PRadReconstructor.o \
-                $(LIB_OBJ_DIR)/PRadGEMSystem.o \
+                $(LIB_OBJ_DIR)/PRadHyCalCluster.o \
                 $(LIB_OBJ_DIR)/PRadIslandCluster.o \
                 $(LIB_OBJ_DIR)/PRadSquareCluster.o \
-                $(LIB_OBJ_DIR)/island.o
+                $(LIB_OBJ_DIR)/island.o \
+                $(LIB_OBJ_DIR)/PRadGEMSystem.o \
+                $(LIB_OBJ_DIR)/PRadGEMDetector.o \
+                $(LIB_OBJ_DIR)/PRadGEMPlane.o \
+                $(LIB_OBJ_DIR)/PRadGEMFEC.o \
+                $(LIB_OBJ_DIR)/PRadGEMAPV.o \
+                $(LIB_OBJ_DIR)/PRadEventFilter.o
 
 
 # examples
 TARGET        = testIsland \
                 testEPICS \
                 testLMS \
+                testGEM \
+                testSim \
                 replay
-
-EXE_SRC_DIR   = src
-
-EXE_OBJ_DIR   = obj
-
-OBJECTS       = $(EXE_OBJ_DIR)/testIsland.o \
-                $(EXE_OBJ_DIR)/testEPICS.o \
-                $(EXE_OBJ_DIR)/testLMS.o \
-                $(EXE_OBJ_DIR)/replay.o
 
 EXE_LIBS      = -L$(T_LIBS_DIR) -lPRadDecoder
 
@@ -91,22 +91,38 @@ lib: Makefile $(TARGET_LIBS)
 
 exe: Makefile $(TARGET)
 
+
+
 ####### Build rules
 
 $(TARGET_LIBS):  $(LIB_OBJECTS)
-	$(LINK) $(LFLAGS_LIBS) -o $(T_LIBS_DIR)/$(TARGET_LIBS) $(LIB_OBJECTS) $(OBJCOMP) $(LIBS)
-
-$(TARGET): $(OBJECTS)
-	$(LINK) $(LFLAGS) -o $@ $(EXE_OBJ_DIR)/$@.o $(OBJCOMP) $(LIBS) $(EXE_LIBS)
-
-$(EXE_OBJ_DIR)/%.o: $(EXE_SRC_DIR)/%.cpp
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $@ $<
+	$(LINK) $(LFLAGS_LIBS) -o $(T_LIBS_DIR)/$(TARGET_LIBS) $(LIB_OBJECTS) $(LIBS)
 
 $(LIB_OBJ_DIR)/%.o: $(LIB_SRC_DIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS_LIBS) $(INCPATH) -o $@ $<
 
 $(LIB_OBJ_DIR)/island.o: $(LIB_SRC_DIR)/island.F
 	$(FORTRAN) -c $(FFLAGS) $(INCPATH) -o $@ $<
+
+testIsland: src/testIsland.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
+
+testEPICS: src/testEPICS.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
+
+testLMS: src/testLMS.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
+
+testGEM: src/testGEM.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
+
+testSim: src/testSim.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
+
+replay: src/replay.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(INCPATH) $(LIBS) $(EXE_LIBS)
+
+
 
 ####### Clean
 clean: cleanobj cleanexe cleanlib

@@ -148,14 +148,6 @@ struct EPICSData
     EPICSData(const int &ev, std::vector<float> &val)
     : event_number(ev), values(val)
     {};
-    EPICSData(const EPICSData &e)
-    : event_number(e.event_number),
-      values(std::move(e.values))
-    {};
-    EPICSData(EPICSData &&e)
-    : event_number(e.event_number),
-      values(std::move(e.values))
-    {};
 
     void clear()
     {
@@ -195,23 +187,6 @@ struct EventData
       adc_data(adc), tdc_data(tdc), gem_data(gem), dsc_data(dsc)
     {};
 
-    // move constructor
-    EventData(const EventData &e)
-    : event_number(e.event_number), type(e.type), trigger(e.trigger), timestamp(e.timestamp),
-      adc_data(std::move(e.adc_data)),
-      tdc_data(std::move(e.tdc_data)),
-      gem_data(std::move(e.gem_data)),
-      dsc_data(std::move(e.dsc_data))
-    {};
-
-    EventData(EventData &&e)
-    : event_number(e.event_number), type(e.type), trigger(e.trigger), timestamp(e.timestamp),
-      adc_data(std::move(e.adc_data)),
-      tdc_data(std::move(e.tdc_data)),
-      gem_data(std::move(e.gem_data)),
-      dsc_data(std::move(e.dsc_data))
-    {};
-
     // functions
     void initialize(const unsigned char &t = 0) // for data taking
     {
@@ -243,20 +218,25 @@ struct EventData
     std::vector<GEM_Data> &get_gem_data() {return gem_data;};
     std::vector<DSC_Data> &get_dsc_data() {return dsc_data;};
 
-    bool is_physics_event()
+    const std::vector<ADC_Data> &get_adc_data() const {return adc_data;};
+    const std::vector<TDC_Data> &get_tdc_data() const {return tdc_data;};
+    const std::vector<GEM_Data> &get_gem_data() const {return gem_data;};
+    const std::vector<DSC_Data> &get_dsc_data() const {return dsc_data;};
+
+    bool is_physics_event() const
     {
         return ( (trigger == PHYS_LeadGlassSum) ||
                  (trigger == PHYS_TotalSum)     ||
                  (trigger == PHYS_TaggerE)      ||
                  (trigger == PHYS_Scintillator) );
     };
-    bool is_monitor_event()
+    bool is_monitor_event() const
     {
         return ( (trigger == LMS_Led) ||
                  (trigger == LMS_Alpha) );
     };
 
-    double get_beam_time()
+    double get_beam_time() const
     {
         double elapsed_time = 0.;
         if(dsc_data.size() > REF_CHANNEL)
@@ -267,7 +247,7 @@ struct EventData
         return elapsed_time;
     };
 
-    double get_live_time()
+    double get_live_time() const
     {
         double live_time = 1.;
         if(dsc_data.size() > REF_CHANNEL)
@@ -278,7 +258,7 @@ struct EventData
         return live_time;
     };
 
-    double get_beam_charge()
+    double get_beam_charge() const
     {
         double beam_charge = 0.;
         if(dsc_data.size() > FCUP_CHANNEL)
@@ -289,7 +269,7 @@ struct EventData
         return beam_charge;
     };
 
-    double get_beam_current()
+    double get_beam_current() const
     {
         double beam_time = get_beam_time();
         if(beam_time > 0.)
@@ -298,7 +278,7 @@ struct EventData
             return 0.;
     };
 
-    DSC_Data get_dsc_channel(const uint32_t &idx)
+    DSC_Data get_dsc_channel(const uint32_t &idx) const
     {
         if(dsc_data.size() <= idx)
             return DSC_Data();
@@ -306,12 +286,12 @@ struct EventData
             return dsc_data.at(idx);
     };
 
-    DSC_Data get_ref_channel()
+    DSC_Data get_ref_channel() const
     {
         return get_dsc_channel(REF_CHANNEL);
     };
 
-    DSC_Data get_dsc_scaled_by_ref(const uint32_t &idx)
+    DSC_Data get_dsc_scaled_by_ref(const uint32_t &idx) const
     {
         if(idx >= dsc_data.size())
             return DSC_Data();

@@ -4,8 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#define MULTI_THREAD
-
 enum PRadEventType
 {
     CODA_Unknown = 0x0,
@@ -82,12 +80,14 @@ enum PRadBankID
 
 struct ChannelAddress
 {
-    size_t crate;
-    size_t slot;
-    size_t channel;
+    unsigned int crate;
+    unsigned int slot;
+    unsigned int channel;
 
     ChannelAddress() {};
-    ChannelAddress(const size_t &c, const size_t &s, const size_t &ch)
+    ChannelAddress(const unsigned int &c,
+                   const unsigned int &s,
+                   const unsigned int &ch)
     : crate(c), slot(s), channel(ch)
     {};
 
@@ -149,9 +149,11 @@ struct GEMChannelAddress
 // some words defined in readout list
 #define ADC1881M_DATABEG 0xdc0adc00 //&0xff0fff00
 #define ADC1881M_DATAEND 0xfabc0005
+#define ADC1881M_ALIGNMENT 0x00000000 // 64 bit data alignment
 
 #define GEMDATA_APVBEG 0x41444300 //&0xffffff00
 #define GEMDATA_FECEND 0xfafafafa
+#define GEMDATA_ZEROSUP 0xfecfec00 //&xffffff00
 
 #define V767_HEADER_BIT  (1 << 22)
 #define V767_END_BIT     (1 << 21)
@@ -222,6 +224,14 @@ struct GEMRawData
     GEMChannelAddress addr;
     const uint32_t *buf;
     size_t size;
+};
+
+struct GEMZeroSupData
+{
+    GEMChannelAddress addr;
+    unsigned char channel;
+    unsigned char time_sample;
+    unsigned short adc_value;
 };
 
 #endif

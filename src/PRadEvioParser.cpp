@@ -61,7 +61,7 @@ void PRadEvioParser::ReadEvioFile(const char *filepath, const int &evt, const bo
         try {
             count += getEvioBlock(evio_in, buffer);
         } catch (PRadException &e) {
-            cerr << e.FailureType() << ": " 
+            cerr << e.FailureType() << ": "
                  << e.FailureDesc() << endl;
             cerr << "Abort reading from file " << filepath << endl;
             break;
@@ -127,7 +127,7 @@ void PRadEvioParser::ParseEventByHeader(PRadEventHeader *header)
     uint32_t buf_size = header->length - 1;
     uint32_t *buf = (uint32_t*) &header[1]; // skip current header
     uint32_t index = 0;
- 
+
 #ifdef MULTI_THREAD
     vector<thread> roc_threads;
 #endif
@@ -229,7 +229,7 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
 
     // number of boards given by the self defined info word in CODA readout list
     const unsigned char boardNum = data[0]&0xFF;
-    unsigned int index = 2, wordCount;
+    unsigned int index = 1, wordCount;
     ADC1881MData adcData;
 
     adcData.config.crate = (data[0]>>20)&0xF;
@@ -237,8 +237,11 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
     // parse the data for all boards
     for(unsigned char i = 0; i < boardNum; ++i)
     {
-        if(data[index] == ADC1881M_DATAEND) // self defined, end of crate word
+        if(data[index] == ADC1881M_ALIGNMENT) // 64 bit alignment, skip
+            index++;
+        else if(data[index] == ADC1881M_DATAEND) // self defined, end of crate word
             break;
+
         adcData.config.slot = (data[index]>>27)&0x1F;
         wordCount = (data[index]&0x7F) + index;
         while(++index < wordCount)
@@ -270,10 +273,12 @@ void PRadEvioParser::parseADC1881M(const uint32_t *data)
 // temporary decoder for gem data, not finished
 void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size,  const int &fec_id)
 {
-#define ZERO_SUPPRESSION_BANKNUM 99
+    // our zero suppression data is in bank 99
 
-    if(fec_id == 99) //TODO, zero suppression bank parser
+    if(fec_id == 99) {
+        parseGEMZeroSupData(data, size);
         return;
+    }
 
     GEMRawData gemData;
     size_t i = 0;
@@ -293,6 +298,41 @@ void PRadEvioParser::parseGEMData(const uint32_t *data, const size_t &size,  con
             ++i;
         }
     }
+}
+
+void PRadEvioParser::parseGEMZeroSupData(const uint32_t *data, const size_t &size)
+{
+    // hit structure (32 bit word)
+    // detector: 1 bit
+    // plane: 1 bit
+    // fec id: 4 bit
+    // adc channel id: 4 bit
+    // strip number: 7 bit
+    // time sample number: 3 bit
+    // polarity: 1 bit
+    // adc value: 11 bit
+    //
+
+    if((data[0]&0xffffff00) != GEMDATA_ZEROSUP) {
+        cerr << "Unrecognized GEM zero suppressed data header word: "
+             << "0x" << hex << setw(8) << setfill('0') << data[0]
+             << endl;
+    }
+
+    std::vector<GEMZeroSupData> gemDataPack;
+    for(size_t i = 1; i < size; ++i)
+    {
+        GEMZeroSupData gemData;
+        gemData.addr.fec_id = (data[i] >> 26)&0xf;
+        gemData.addr.adc_ch = (data[i] >> 22)&0xf;
+        gemData.channel = (data[i] >> 15)&0x7f;
+        gemData.time_sample = (data[i] >> 12)&0x7;
+        gemData.adc_value = data[i]&0x7ff;
+
+        gemDataPack.push_back(gemData);
+    }
+
+    myHandler->FeedData(gemDataPack);
 }
 
 size_t PRadEvioParser::getAPVDataSize(const uint32_t *data)
@@ -425,7 +465,7 @@ void PRadEvioParser::parseTIData(const uint32_t *data, const size_t &size, const
         tiData.time_high = data[5] & 0xffff;
         tiData.latch_word = data[6] & 0xff;
         tiData.lms_phase = (data[8] >> 16) & 0xff;
-        myHandler->FeedData(tiData);   
+        myHandler->FeedData(tiData);
     }
 }
 
@@ -436,8 +476,9 @@ void PRadEvioParser::parseEPICS(const uint32_t *data)
     while(c_parser->ParseLine())
     {
         if(c_parser->NbofElements() == 2) {
-            float number = c_parser->TakeFirst().Float();
-            string name = c_parser->TakeFirst();
+            float number;
+            string name;
+            (*c_parser) >> number >> name;
             myHandler->UpdateEPICS(name, number);
         }
     }
@@ -453,7 +494,7 @@ PRadTriggerType PRadEvioParser::bit_to_trigger(const unsigned int &bit)
         }
     }
 
-    return (PRadTriggerType) trg; 
+    return (PRadTriggerType) trg;
 }
 
 unsigned int PRadEvioParser::trigger_to_bit(const PRadTriggerType &trg)

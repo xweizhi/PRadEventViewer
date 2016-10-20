@@ -66,7 +66,7 @@ int main(int /*argc*/, char * /*argv*/ [])
     // for Gaussian, par0 is amplitude, par1 is mean, par2 is sigma
     cout << "Pedestal for W1115: mean " << pars1.at(1)
          << ", sigma " << pars1.at(2) << endl;
-    cout << "LMS for W1115: mean " << pars1.at(1)
+    cout << "LMS for W1115: mean " << pars2.at(1)
          << ", sigma " << pars2.at(2) << endl;
 
     cout << "TIMER: Finished, took " << timer.GetElapsedTime() << " ms" << endl;
